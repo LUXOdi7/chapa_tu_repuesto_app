@@ -1,0 +1,104 @@
+import 'package:dio/dio.dart';
+
+import '../../../core/network/api_client.dart';
+import '../../catalog/domain/compatibility.dart';
+import '../../catalog/domain/product.dart';
+import '../../catalog/domain/store.dart';
+
+/// Panel del proveedor. Todo requiere token con perfil `supplier`.
+class SupplierRepository {
+  const SupplierRepository(this._api);
+
+  final ApiClient _api;
+
+  /// `null` = todavia no registro su tienda (el backend responde 404). No es un
+  /// error: la app lo lleva al formulario de registro.
+  Future<Store?> myStore() async {
+    try {
+      return Store.fromJson(asMap(await _api.get('/suppliers/store')));
+    } on ApiException catch (e) {
+      if (e.isNotFound) return null;
+      rethrow;
+    }
+  }
+
+  /// Crea o actualiza la tienda. El RUC son exactamente 11 digitos y es unico.
+  Future<Store> saveStore({
+    required String businessName,
+    required String ruc,
+    required String address,
+    required String district,
+    required String phone,
+    String? openingHours,
+    String? logoUrl,
+    double? distanceKm,
+  }) async {
+    final data = await _api.post('/suppliers/store', body: {
+      'business_name': businessName,
+      'ruc': ruc,
+      'address': address,
+      'district': district,
+      'phone': phone,
+      'opening_hours': openingHours,
+      'logo_url': logoUrl,
+      'distance_km': distanceKm,
+      'payment_provider': 'simulado',
+      'payment_account': null,
+    });
+    return Store.fromJson(asMap(data));
+  }
+
+  Future<List<Product>> myProducts() async =>
+      asMapList(await _api.get('/suppliers/products'))
+          .map(Product.fromJson)
+          .toList();
+
+  Future<Product> createProduct(Map<String, dynamic> body) async =>
+      Product.fromJson(asMap(await _api.post('/suppliers/products', body: body)));
+
+  /// El PUT reemplaza tambien las compatibilidades: hay que mandarlas todas.
+  Future<Product> updateProduct(int id, Map<String, dynamic> body) async =>
+      Product.fromJson(
+          asMap(await _api.put('/suppliers/products/$id', body: body)));
+
+  /// Baja logica.
+  Future<void> deleteProduct(int id) => _api.delete('/suppliers/products/$id');
+
+  /// Sube la foto y devuelve la RUTA relativa (`/uploads/products/ab12.jpg`),
+  /// que es lo que se guarda en el producto. jpg/jpeg/png/webp, max 5 MB.
+  Future<String> uploadImage(String filePath) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+    final data = asMap(await _api.postMultipart('/uploads/image', form));
+    return data['path'] as String;
+  }
+
+  /// Cuerpo comun de POST y PUT de productos.
+  static Map<String, dynamic> productBody({
+    required String name,
+    required String category,
+    required String partCode,
+    required double price,
+    required int stock,
+    String? brand,
+    String? description,
+    String? imageUrl,
+    int? warrantyMonths,
+    bool isActive = true,
+    List<Compatibility> compatibilities = const [],
+  }) =>
+      {
+        'name': name,
+        'category': category,
+        'part_code': partCode,
+        'brand': brand,
+        'description': description,
+        'image_url': imageUrl,
+        'price': price,
+        'stock': stock,
+        'warranty_months': warrantyMonths,
+        'is_active': isActive,
+        'compatibilities': [for (final c in compatibilities) c.toJson()],
+      };
+}

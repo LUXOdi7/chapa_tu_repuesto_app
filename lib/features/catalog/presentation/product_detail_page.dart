@@ -1,0 +1,282 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/app_scope.dart';
+import '../../../core/format.dart';
+import '../../../shared/widgets/app_widgets.dart';
+import '../domain/product.dart';
+
+/// Ficha del repuesto + comparador de ofertas.
+///
+/// `offers` viene del backend con la MISMA pieza (mismo `part_code`) en otras
+/// tiendas, ya ordenada por precio y luego por distancia. Tocar una oferta
+/// cambia la tienda seleccionada; el boton de agregar usa siempre la elegida.
+class ProductDetailPage extends StatefulWidget {
+  const ProductDetailPage({super.key, required this.productId});
+
+  static const route = '/product';
+
+  final int productId;
+
+  @override
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
+}
+
+class _ProductDetailPageState extends State<ProductDetailPage> {
+  /// Oferta elegida dentro del comparador; null = la pieza que se abrio.
+  Product? _picked;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = AppScope.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Detalle del repuesto')),
+      body: AsyncView<Product>(
+        load: () => scope.catalog.product(widget.productId),
+        builder: (context, detail) {
+          final selected = _picked ?? detail;
+          // El propio producto tambien es una oferta: si el backend no lo
+          // incluye en la lista, se antepone para poder volver a elegirlo.
+          final offers = [
+            if (!detail.offers.any((o) => o.id == detail.id)) detail,
+            ...detail.offers,
+          ];
+          return _Detail(
+            detail: detail,
+            selected: selected,
+            offers: offers,
+            onPick: (p) => setState(() => _picked = p),
+            onAdd: () {
+              scope.cart.add(selected);
+              Navigator.pop(context);
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Detail extends StatelessWidget {
+  const _Detail({
+    required this.detail,
+    required this.selected,
+    required this.offers,
+    required this.onPick,
+    required this.onAdd,
+  });
+
+  final Product detail;
+  final Product selected;
+  final List<Product> offers;
+  final ValueChanged<Product> onPick;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final store = selected.store;
+    final cheapest = offers.isEmpty
+        ? selected.price
+        : offers.map((o) => o.price).reduce((a, b) => a < b ? a : b);
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              PartImage(path: selected.imageUrl, height: 200),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(detail.name, style: text.headlineSmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Chip(
+                          label: Text(categoryLabel(detail.category)),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        if (detail.brand != null)
+                          Chip(
+                            label: Text(detail.brand!),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        Chip(
+                          label: Text(detail.partCode),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        StockChip(stock: selected.stock),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text(
+                          soles(selected.price),
+                          style: text.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: scheme.primary,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (store != null) ...[
+                          Icon(Icons.storefront, size: 16, color: scheme.outline),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${store.businessName}  ${store.distanceLabel}',
+                              style: text.bodySmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (selected.warrantyMonths != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.shield_outlined,
+                              size: 16, color: scheme.outline),
+                          const SizedBox(width: 4),
+                          Text('Garantía ${selected.warrantyMonths} meses',
+                              style: text.bodySmall),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (detail.description != null &&
+                  detail.description!.isNotEmpty) ...[
+                const SectionTitle('Descripción'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(detail.description!),
+                ),
+              ],
+              const SectionTitle('Compatibilidad comprobada'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: detail.compatibilities.isEmpty
+                    ? const Text('El proveedor no cargó compatibilidades.')
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final c in detail.compatibilities)
+                            Chip(
+                              avatar: const Icon(Icons.verified,
+                                  size: 16, color: Colors.green),
+                              label: Text(c.label),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                        ],
+                      ),
+              ),
+              SectionTitle('Ofertas (${offers.length})'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  'Ordenadas por precio y luego por cercanía. Toca una para '
+                  'comprarle a esa tienda.',
+                  style: text.bodySmall?.copyWith(color: scheme.outline),
+                ),
+              ),
+              for (final offer in offers)
+                _OfferTile(
+                  product: offer,
+                  selected: offer.id == selected.id,
+                  cheapest: offer.price == cheapest,
+                  onTap: () => onPick(offer),
+                ),
+            ],
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add_shopping_cart),
+              label: Text(selected.inStock
+                  ? 'Agregar  ${soles(selected.price)}'
+                  : 'Sin stock en esta tienda'),
+              onPressed: selected.inStock ? onAdd : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OfferTile extends StatelessWidget {
+  const _OfferTile({
+    required this.product,
+    required this.selected,
+    required this.cheapest,
+    required this.onTap,
+  });
+
+  final Product product;
+  final bool selected;
+  final bool cheapest;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final store = product.store;
+
+    return ListTile(
+      selected: selected,
+      selectedTileColor: scheme.primary.withValues(alpha: 0.08),
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: scheme.secondaryContainer,
+        child: const Icon(Icons.storefront, size: 20),
+      ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(store?.businessName ?? 'Tienda',
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          if (store?.verified ?? false) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.verified_user, size: 14, color: Colors.blue),
+          ],
+        ],
+      ),
+      subtitle: Text(
+        [
+          store?.district,
+          store?.distanceLabel,
+          store?.ratingLabel,
+        ].whereType<String>().where((s) => s.isNotEmpty).join('  ·  '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(soles(product.price),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: cheapest ? Colors.green : scheme.onSurface,
+              )),
+          StockChip(stock: product.stock, dense: true),
+        ],
+      ),
+    );
+  }
+}
