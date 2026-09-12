@@ -1,7 +1,7 @@
-import 'package:chapaturepuesto/core/format.dart';
-import 'package:chapaturepuesto/features/cart/presentation/cart_store.dart';
-import 'package:chapaturepuesto/features/catalog/domain/product.dart';
-import 'package:chapaturepuesto/features/orders/domain/order.dart';
+import 'package:chapa_tu_repuesto_app/core/format.dart';
+import 'package:chapa_tu_repuesto_app/features/cart/presentation/cart_store.dart';
+import 'package:chapa_tu_repuesto_app/features/catalog/domain/product.dart';
+import 'package:chapa_tu_repuesto_app/features/orders/domain/order.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Lo que rompe la app en silencio ahora que los datos vienen del backend:
