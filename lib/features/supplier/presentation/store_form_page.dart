@@ -29,6 +29,9 @@ class _StoreFormPageState extends State<StoreFormPage> {
   late final _district = TextEditingController(text: widget.store?.district);
   late final _phone = TextEditingController(text: widget.store?.phone);
   late final _hours = TextEditingController(text: widget.store?.openingHours);
+  late final _description = TextEditingController(text: widget.store?.description);
+  late final _lat = TextEditingController(text: widget.store?.latitude?.toString());
+  late final _lng = TextEditingController(text: widget.store?.longitude?.toString());
 
   bool _busy = false;
 
@@ -40,6 +43,9 @@ class _StoreFormPageState extends State<StoreFormPage> {
     _district.dispose();
     _phone.dispose();
     _hours.dispose();
+    _description.dispose();
+    _lat.dispose();
+    _lng.dispose();
     super.dispose();
   }
 
@@ -54,6 +60,9 @@ class _StoreFormPageState extends State<StoreFormPage> {
         district: _district.text.trim(),
         phone: _phone.text.trim(),
         openingHours: _hours.text.trim().isEmpty ? null : _hours.text.trim(),
+        description: _description.text.trim().isEmpty ? null : _description.text.trim(),
+        latitude: double.tryParse(_lat.text.trim().replaceAll(',', '.')),
+        longitude: double.tryParse(_lng.text.trim().replaceAll(',', '.')),
       );
       if (!mounted) return;
       showInfo(context, 'Tienda guardada');
@@ -161,6 +170,44 @@ class _StoreFormPageState extends State<StoreFormPage> {
                 prefixIcon: Icon(Icons.schedule),
                 hintText: 'Lun-Sab 8:00-19:00',
               ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _description,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Descripción (opcional)',
+                prefixIcon: Icon(Icons.notes),
+                hintText: 'Qué vendes, marcas, especialidad...',
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Coordenadas a mano: en Google Maps, mantener pulsado sobre la
+            // tienda y copiar "lat, lng". ponytail: pedir GPS con geolocator
+            // cuando los proveedores registren desde el local.
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _lat,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    decoration: const InputDecoration(labelText: 'Latitud', hintText: '-6.7714'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lng,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    decoration: const InputDecoration(labelText: 'Longitud', hintText: '-79.8409'),
+                  ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text('Opcional: con esto el comprador ve "Cómo llegar" a tu tienda.',
+                  style: TextStyle(fontSize: 12)),
             ),
             const SizedBox(height: 24),
             FilledButton(

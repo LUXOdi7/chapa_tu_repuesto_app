@@ -9,10 +9,10 @@ import 'order_tracking_page.dart';
 /// Historial de pedidos. El backend decide que devuelve: al comprador sus
 /// compras, al proveedor los pedidos de SU tienda. La pantalla es la misma.
 class OrdersView extends StatefulWidget {
-  const OrdersView({super.key, this.title});
+  const OrdersView({super.key, this.asBuyer = false});
 
-  /// Texto del encabezado (cambia entre "mis pedidos" y "bandeja").
-  final String? title;
+  /// Un proveedor en "modo comprador" ve sus compras, no la bandeja de su tienda.
+  final bool asBuyer;
 
   @override
   State<OrdersView> createState() => _OrdersViewState();
@@ -57,8 +57,8 @@ class _OrdersViewState extends State<OrdersView> {
         ),
         Expanded(
           child: AsyncView<List<Order>>(
-            refreshKey: '$_filter|$_reload',
-            load: () => scope.orders.list(statusFilter: _filter),
+            refreshKey: '$_filter|$_reload|${widget.asBuyer}',
+            load: () => scope.orders.list(statusFilter: _filter, asBuyer: widget.asBuyer),
             isEmpty: (orders) => orders.isEmpty,
             emptyIcon: Icons.receipt_long,
             emptyMessage: _filter == null

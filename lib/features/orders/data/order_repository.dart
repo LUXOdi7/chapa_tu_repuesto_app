@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../core/network/api_client.dart';
 import '../../cart/domain/cart_item.dart';
 import '../domain/order.dart';
@@ -29,17 +31,33 @@ class OrderRepository {
     return asMapList(data).map(Order.fromJson).toList();
   }
 
-  /// Si el usuario es proveedor, el backend devuelve los pedidos de SU tienda.
-  Future<List<Order>> list({String? statusFilter}) async {
-    final data =
-        await _api.get('/orders', query: {'status_filter': statusFilter});
+  /// Si el usuario es proveedor, el backend devuelve los pedidos de SU tienda;
+  /// con `asBuyer` (modo comprador) devuelve sus compras.
+  Future<List<Order>> list({String? statusFilter, bool asBuyer = false}) async {
+    final data = await _api.get('/orders', query: {
+      'status_filter': statusFilter,
+      'as_role': asBuyer ? 'buyer' : null,
+    });
     return asMapList(data).map(Order.fromJson).toList();
   }
 
   Future<Order> byId(int id) async =>
       Order.fromJson(asMap(await _api.get('/orders/$id')));
 
-  /// Pago simulado: sin numero de operacion el backend genera uno "SIM...".
+  /// Inicia el cobro con tarjeta por la pasarela de la tienda.
+  /// Devuelve `checkout_url` para abrir en el navegador (Mercado Pago / Niubiz)
+  /// o null si la tienda no tiene pasarela: el backend ya aprobo el pago.
+  Future<PaymentStart> startPayment(int id) async {
+    final data = asMap(await _api.post('/payments/$id/start'));
+    return PaymentStart(
+      provider: data['provider'] as String,
+      checkoutUrl: data['checkout_url'] as String?,
+      order: Order.fromJson(asMap(data['order'])),
+    );
+  }
+
+  /// Pago manual (Yape / transferencia): sin numero de operacion el backend
+  /// genera uno "SIM...".
   Future<Order> pay(
     int id, {
     required PaymentMethod method,
@@ -64,10 +82,21 @@ class OrderRepository {
   Future<Map<String, dynamic>> receipt(int id) async =>
       asMap(await _api.get('/orders/$id/receipt'));
 
+  /// Constancia en PDF (bytes) para guardar/abrir/compartir.
+  Future<Uint8List> receiptPdf(int id) => _api.getBytes('/orders/$id/receipt.pdf');
+
   /// Solo se puede calificar un pedido entregado; al hacerlo queda cerrado.
   Future<void> review(int id, {required int rating, String? comment}) =>
       _api.post('/orders/$id/review', body: {
         'rating': rating,
         'comment': comment,
       });
+}
+
+class PaymentStart {
+  const PaymentStart({required this.provider, required this.order, this.checkoutUrl});
+
+  final String provider;
+  final String? checkoutUrl;
+  final Order order;
 }

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 
 import 'api_config.dart';
@@ -126,6 +128,14 @@ class ApiClient {
 
   Future<dynamic> delete(String path) =>
       _send(() => _dio.delete<dynamic>(path));
+
+  /// Descarga binaria (PDF de la constancia) con el mismo Bearer.
+  Future<Uint8List> getBytes(String path) async {
+    final data = await _send(
+      () => _dio.get<List<int>>(path, options: Options(responseType: ResponseType.bytes)),
+    );
+    return Uint8List.fromList((data as List).cast<int>());
+  }
 
   Future<dynamic> _send(Future<Response<dynamic>> Function() call) async {
     try {

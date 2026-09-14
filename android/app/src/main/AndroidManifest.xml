@@ -47,6 +47,15 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- url_launcher: checkout de la pasarela, "Como llegar" y llamar a la tienda. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
         <!-- speech_to_text necesita ver el reconocedor de voz del sistema. -->
         <intent>
             <action android:name="android.speech.RecognitionService"/>

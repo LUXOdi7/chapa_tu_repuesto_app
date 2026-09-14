@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/app_theme.dart';
+import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/user.dart';
+import 'forgot_password_page.dart';
 
 /// Login y registro en una sola pantalla: los campos extra del registro
 /// aparecen y desaparecen, que es mas corto que dos rutas casi identicas.
@@ -61,13 +64,31 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// El backend responde 501 mientras no exista `GOOGLE_CLIENT_ID`; el boton se
-  /// deja puesto porque el flujo ya esta previsto.
+  /// Google Sign-In (google_sign_in v7): el `idToken` se manda al backend, que
+  /// lo verifica y devuelve el mismo JWT del login normal. Requiere
+  /// `GOOGLE_SERVER_CLIENT_ID` (ver GUIA_INTEGRACIONES_APP.md).
+  static bool _googleReady = false;
+
   Future<void> _google() async {
+    if (ApiConfig.googleServerClientId.isEmpty) {
+      showInfo(context, 'Falta configurar GOOGLE_SERVER_CLIENT_ID (ver guía).');
+      return;
+    }
     final scope = AppScope.of(context);
     setState(() => _busy = true);
     try {
-      await scope.session.start(await scope.auth.google('pendiente'));
+      if (!_googleReady) {
+        await GoogleSignIn.instance.initialize(serverClientId: ApiConfig.googleServerClientId);
+        _googleReady = true;
+      }
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null) throw Exception('Google no devolvio idToken');
+      await scope.session.start(await scope.auth.google(idToken, role: _role));
+    } on GoogleSignInException catch (e) {
+      if (e.code != GoogleSignInExceptionCode.canceled && mounted) {
+        showInfo(context, 'Google: ${e.description ?? e.code.name}');
+      }
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -180,7 +201,7 @@ class _LoginPageState extends State<LoginPage> {
                       SegmentedButton<UserRole>(
                         showSelectedIcon: false,
                         segments: [
-                          for (final role in UserRole.values)
+                          for (final role in UserRole.registrable)
                             ButtonSegment(value: role, label: Text(role.label)),
                         ],
                         selected: {_role},
@@ -216,6 +237,19 @@ class _LoginPageState extends State<LoginPage> {
                           ? 'Ya tengo cuenta, ingresar'
                           : 'No tengo cuenta, registrarme'),
                     ),
+                    if (!_registering)
+                      TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => ForgotPasswordPage(
+                                        email: _email.text.trim()),
+                                  ),
+                                ),
+                        child: const Text('Olvidé mi contraseña'),
+                      ),
                   ],
                 ),
               ),

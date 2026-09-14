@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../domain/product.dart';
+import '../domain/store.dart';
 
 /// Catalogo publico: no necesita token.
 ///
@@ -36,6 +37,9 @@ class CatalogRepository {
     int? year,
     int? storeId,
     bool? onlyInStock,
+    bool? onlyVerified,
+    double? minPrice,
+    double? maxPrice,
     String orderBy = 'relevance',
     int limit = 20,
     int offset = 0,
@@ -50,6 +54,9 @@ class CatalogRepository {
       'year': year,
       'store_id': storeId,
       'only_in_stock': onlyInStock,
+      'only_verified': onlyVerified,
+      'min_price': minPrice,
+      'max_price': maxPrice,
       'order_by': orderBy,
       'limit': limit,
       'offset': offset,
@@ -61,4 +68,17 @@ class CatalogRepository {
   /// precio y luego por distancia.
   Future<Product> product(int id) async =>
       Product.fromJson(asMap(await _api.get('/catalog/products/$id')));
+
+  /// Tiendas (para el directorio y el mapa). `withLocation` = solo con lat/lng.
+  Future<List<Store>> stores({String? q, bool withLocation = false, bool onlyVerified = false}) async =>
+      asMapList(await _api.get('/catalog/stores', query: {
+        'q': q,
+        'with_location': withLocation ? true : null,
+        'only_verified': onlyVerified ? true : null,
+      })).map(Store.fromJson).toList();
+
+  Future<Store> store(int id) async => Store.fromJson(asMap(await _api.get('/catalog/stores/$id')));
+
+  Future<List<StoreReview>> storeReviews(int id) async =>
+      asMapList(await _api.get('/catalog/stores/$id/reviews')).map(StoreReview.fromJson).toList();
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../features/admin/data/admin_repository.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/auth/presentation/session.dart';
 import '../features/cart/presentation/cart_store.dart';
@@ -22,6 +23,7 @@ class AppScope extends InheritedWidget {
     required this.catalog,
     required this.orders,
     required this.suppliers,
+    required this.admin,
     required this.cart,
     required super.child,
   });
@@ -32,6 +34,7 @@ class AppScope extends InheritedWidget {
   final CatalogRepository catalog;
   final OrderRepository orders;
   final SupplierRepository suppliers;
+  final AdminRepository admin;
   final CartStore cart;
 
   static AppScope of(BuildContext context) {
@@ -44,6 +47,7 @@ class AppScope extends InheritedWidget {
   static CatalogRepository catalogOf(BuildContext c) => of(c).catalog;
   static OrderRepository ordersOf(BuildContext c) => of(c).orders;
   static SupplierRepository suppliersOf(BuildContext c) => of(c).suppliers;
+  static AdminRepository adminOf(BuildContext c) => of(c).admin;
   static CartStore cartOf(BuildContext c) => of(c).cart;
 
   @override

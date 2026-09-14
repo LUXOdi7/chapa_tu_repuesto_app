@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'core/app_scope.dart';
 import 'core/app_theme.dart';
 import 'core/network/api_client.dart';
+import 'features/admin/data/admin_repository.dart';
+import 'features/admin/presentation/admin_shell.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/session.dart';
@@ -12,10 +14,12 @@ import 'features/cart/presentation/checkout_page.dart';
 import 'features/catalog/data/catalog_repository.dart';
 import 'features/catalog/presentation/product_detail_page.dart';
 import 'features/catalog/presentation/search_page.dart';
+import 'features/catalog/presentation/store_page.dart';
 import 'features/orders/data/order_repository.dart';
 import 'features/orders/presentation/order_tracking_page.dart';
 import 'features/orders/presentation/orders_page.dart';
 import 'features/orders/presentation/receipt_page.dart';
+import 'features/profile/presentation/profile_page.dart';
 import 'features/supplier/data/supplier_repository.dart';
 import 'features/supplier/presentation/supplier_shell.dart';
 
@@ -24,6 +28,11 @@ void main() => runApp(const ChapaTuRepuestoApp());
 /// Tema claro/oscuro conmutable. Un `ValueNotifier` global evita montar un
 /// gestor de estado entero para un unico switch de UI.
 final themeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
+
+/// Proveedor en "modo comprador": ve la app como un comprador (busca, carrito,
+/// sus compras) y vuelve a su panel con un toque. Solo UI; el backend ya deja
+/// comprar a un proveedor (menos en su propia tienda).
+final shopMode = ValueNotifier<bool>(false);
 
 class ChapaTuRepuestoApp extends StatefulWidget {
   const ChapaTuRepuestoApp({super.key});
@@ -39,6 +48,7 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
   late final _catalog = CatalogRepository(_api);
   late final _orders = OrderRepository(_api);
   late final _suppliers = SupplierRepository(_api);
+  late final _admin = AdminRepository(_api);
   late final _session = Session(_api, _auth);
   final _cart = CartStore();
 
@@ -66,6 +76,7 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
       catalog: _catalog,
       orders: _orders,
       suppliers: _suppliers,
+      admin: _admin,
       cart: _cart,
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeMode,
@@ -82,13 +93,16 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
     );
   }
 
-  /// Rutas con argumentos tipados. `onGenerateRoute` basta para cuatro
-  /// destinos: ponytail: pasar a go_router si aparecen deep links.
+  /// Rutas con argumentos tipados. ponytail: pasar a go_router si aparecen
+  /// deep links (p. ej. volver de la pasarela directo al pedido).
   Route<dynamic>? _generateRoute(RouteSettings settings) =>
       switch (settings.name) {
         ProductDetailPage.route => MaterialPageRoute<void>(
             builder: (_) =>
                 ProductDetailPage(productId: settings.arguments! as int),
+          ),
+        StorePage.route => MaterialPageRoute<void>(
+            builder: (_) => StorePage(storeId: settings.arguments! as int),
           ),
         CheckoutPage.route =>
           MaterialPageRoute<void>(builder: (_) => const CheckoutPage()),
@@ -99,6 +113,8 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
         ReceiptPage.route => MaterialPageRoute<void>(
             builder: (_) => ReceiptPage(orderId: settings.arguments! as int),
           ),
+        ProfilePage.route =>
+          MaterialPageRoute<void>(builder: (_) => const ProfilePage()),
         _ => null,
       };
 }
@@ -121,17 +137,30 @@ class _Root extends StatelessWidget {
           );
         }
         final user = session.user;
-        if (user == null) return const LoginPage();
-        return user.isSupplier ? const SupplierShell() : const BuyerShell();
+        if (user == null) {
+          shopMode.value = false;
+          return const LoginPage();
+        }
+        if (user.isAdmin) return const AdminShell();
+        if (!user.isSupplier) return const BuyerShell();
+        return ValueListenableBuilder<bool>(
+          valueListenable: shopMode,
+          builder: (context, buying, _) =>
+              buying ? const BuyerShell(asSupplier: true) : const SupplierShell(),
+        );
       },
     );
   }
 }
 
-/// Contenedor de las 3 pantallas del comprador. Un `IndexedStack` conserva el
+/// Contenedor de las 4 pestañas del comprador. Un `IndexedStack` conserva el
 /// scroll y los filtros al cambiar de pestaña.
 class BuyerShell extends StatefulWidget {
-  const BuyerShell({super.key});
+  const BuyerShell({super.key, this.asSupplier = false});
+
+  /// Proveedor en modo comprador: muestra el boton para volver a su panel y
+  /// pide sus compras (no la bandeja de su tienda) en "Pedidos".
+  final bool asSupplier;
 
   @override
   State<BuyerShell> createState() => _BuyerShellState();
@@ -140,7 +169,7 @@ class BuyerShell extends StatefulWidget {
 class _BuyerShellState extends State<BuyerShell> {
   int _tab = 0;
 
-  static const _titles = ['ChapaTuRepuesto', 'Mi carrito', 'Mis pedidos'];
+  static const _titles = ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito', 'Mis pedidos'];
 
   @override
   Widget build(BuildContext context) {
@@ -150,32 +179,27 @@ class _BuyerShellState extends State<BuyerShell> {
       appBar: AppBar(
         title: Text(_titles[_tab]),
         actions: [
+          if (widget.asSupplier)
+            TextButton.icon(
+              onPressed: () => shopMode.value = false,
+              icon: const Icon(Icons.storefront, color: Colors.white),
+              label: const Text('Mi tienda', style: TextStyle(color: Colors.white)),
+            ),
           IconButton(
-            tooltip: 'Cambiar tema',
-            icon: Icon(Theme.of(context).brightness == Brightness.dark
-                ? Icons.light_mode
-                : Icons.dark_mode),
-            onPressed: () => themeMode.value =
-                Theme.of(context).brightness == Brightness.dark
-                    ? ThemeMode.light
-                    : ThemeMode.dark,
-          ),
-          PopupMenuButton<String>(
+            tooltip: 'Mi cuenta',
             icon: const Icon(Icons.account_circle_outlined),
-            onSelected: (_) => scope.session.signOut(),
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Text(scope.session.user?.name ?? ''),
-              ),
-              const PopupMenuItem(value: 'out', child: Text('Cerrar sesión')),
-            ],
+            onPressed: () => Navigator.pushNamed(context, ProfilePage.route),
           ),
         ],
       ),
       body: IndexedStack(
         index: _tab,
-        children: const [SearchView(), CartView(), OrdersView()],
+        children: [
+          const SearchView(),
+          const StoresView(),
+          const CartView(),
+          OrdersView(asBuyer: widget.asSupplier),
+        ],
       ),
       bottomNavigationBar: ListenableBuilder(
         listenable: scope.cart,
@@ -185,6 +209,8 @@ class _BuyerShellState extends State<BuyerShell> {
           destinations: [
             const NavigationDestination(
                 icon: Icon(Icons.search), label: 'Buscar'),
+            const NavigationDestination(
+                icon: Icon(Icons.storefront_outlined), label: 'Tiendas'),
             NavigationDestination(
               icon: Badge.count(
                 count: scope.cart.unitCount,

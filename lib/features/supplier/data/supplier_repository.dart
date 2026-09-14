@@ -29,24 +29,39 @@ class SupplierRepository {
     required String address,
     required String district,
     required String phone,
+    String? description,
     String? openingHours,
     String? logoUrl,
     double? distanceKm,
+    double? latitude,
+    double? longitude,
   }) async {
     final data = await _api.post('/suppliers/store', body: {
       'business_name': businessName,
       'ruc': ruc,
+      'description': description,
       'address': address,
       'district': district,
+      'latitude': latitude,
+      'longitude': longitude,
       'phone': phone,
       'opening_hours': openingHours,
       'logo_url': logoUrl,
       'distance_km': distanceKm,
-      'payment_provider': 'simulado',
-      'payment_account': null,
     });
     return Store.fromJson(asMap(data));
   }
+
+  /// Afiliacion a la pasarela. `account`: token de Mercado Pago o
+  /// "merchantId|usuario|clave" de Niubiz; null para modo simulado.
+  Future<Store> configurePayment({required String provider, String? account}) async =>
+      Store.fromJson(asMap(await _api.put('/suppliers/store/payment', body: {
+        'payment_provider': provider,
+        'payment_account': account,
+      })));
+
+  /// Resumen para la portada del panel (productos, pedidos por estado, ventas).
+  Future<Map<String, dynamic>> dashboard() async => asMap(await _api.get('/suppliers/dashboard'));
 
   Future<List<Product>> myProducts() async =>
       asMapList(await _api.get('/suppliers/products'))

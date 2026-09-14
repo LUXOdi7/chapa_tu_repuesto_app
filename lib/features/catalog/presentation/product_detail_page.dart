@@ -4,6 +4,7 @@ import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/product.dart';
+import 'store_page.dart';
 
 /// Ficha del repuesto + comparador de ofertas.
 ///
@@ -127,17 +128,28 @@ class _Detail extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        if (store != null) ...[
-                          Icon(Icons.storefront, size: 16, color: scheme.outline),
-                          const SizedBox(width: 4),
+                        if (store != null)
                           Flexible(
-                            child: Text(
-                              '${store.businessName}  ${store.distanceLabel}',
-                              style: text.bodySmall,
-                              overflow: TextOverflow.ellipsis,
+                            child: InkWell(
+                              onTap: () => Navigator.pushNamed(
+                                  context, StorePage.route, arguments: store.id),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.storefront, size: 16, color: scheme.outline),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      '${store.businessName}  ${store.distanceLabel}',
+                                      style: text.bodySmall?.copyWith(
+                                          decoration: TextDecoration.underline),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ],
                       ],
                     ),
                     if (selected.warrantyMonths != null) ...[

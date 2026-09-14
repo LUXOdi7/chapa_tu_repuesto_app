@@ -36,11 +36,41 @@ class AuthRepository {
     return AuthResult.fromJson(asMap(data));
   }
 
-  /// Hoy responde 501 hasta que el backend tenga `GOOGLE_CLIENT_ID`.
-  Future<AuthResult> google(String idToken) async {
-    final data = await _api.post('/auth/google', body: {'id_token': idToken});
+  /// Responde 501 hasta que el backend tenga `GOOGLE_CLIENT_ID` (ver guía).
+  Future<AuthResult> google(String idToken, {UserRole role = UserRole.buyer}) async {
+    final data = await _api.post('/auth/google', body: {
+      'id_token': idToken,
+      'role': role.key,
+    });
+    return AuthResult.fromJson(asMap(data));
+  }
+
+  /// Envía un código de 6 dígitos al correo (siempre responde 200).
+  Future<void> forgot(String email) => _api.post('/auth/forgot', body: {'email': email});
+
+  /// Cambia la contraseña con el código y deja la sesión iniciada.
+  Future<AuthResult> reset({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    final data = await _api.post('/auth/reset', body: {
+      'email': email,
+      'code': code,
+      'password': password,
+    });
     return AuthResult.fromJson(asMap(data));
   }
 
   Future<User> me() async => User.fromJson(asMap(await _api.get('/auth/me')));
+
+  Future<User> updateProfile({String? name, String? phone, String? password}) async =>
+      User.fromJson(asMap(await _api.patch('/auth/me', body: {
+        'name': name,
+        'phone': phone,
+        'password': password,
+      })));
+
+  Future<void> sendFeedback({required String subject, required String message}) =>
+      _api.post('/feedback', body: {'subject': subject, 'message': message});
 }

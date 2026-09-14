@@ -102,6 +102,25 @@ void main() {
     expect(order.store.businessName, 'Todo Moto JLO');
     // Ni `paid_at` ni `payment_op_number` vienen: siguen siendo null.
     expect(order.paidAt, isNull);
+    // Sin `events`/`buyer`/`payment_provider` (respuesta antigua) tampoco revienta.
+    expect(order.events, isEmpty);
+    expect(order.storeHasGateway, isFalse);
+  });
+
+  test('el pedido con pasarela y eventos decide el flujo de pago', () {
+    final order = Order.fromJson({
+      ...orderJson,
+      'store': {...orderJson['store'] as Map, 'payment_provider': 'mercadopago'},
+      'buyer': {'id': 1, 'name': 'Taller Julio', 'phone': '999', 'email': 'j@x.pe'},
+      'events': [
+        {'status': 'created', 'status_label': 'Creado', 'note': '', 'created_at': '2026-09-08T00:35:14'},
+      ],
+    });
+    // Tarjeta en tienda con Mercado Pago/Niubiz: abre el checkout externo.
+    expect(order.storeHasGateway, isTrue);
+    expect(order.buyerName, 'Taller Julio');
+    expect(order.events.single.status, 'created');
+    expect(order.events.single.at.isUtc, isFalse); // ya convertida a local
   });
 
   test('las fechas del backend son UTC aunque no traigan zona', () {

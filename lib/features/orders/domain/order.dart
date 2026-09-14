@@ -36,6 +36,23 @@ class OrderItem {
       );
 }
 
+/// Un paso del historial del pedido: quien lo movio y cuando.
+class OrderEvent {
+  const OrderEvent({required this.status, required this.statusLabel, required this.note, required this.at});
+
+  final String status;
+  final String statusLabel;
+  final String note;
+  final DateTime at;
+
+  factory OrderEvent.fromJson(Map<String, dynamic> json) => OrderEvent(
+        status: json['status'] as String? ?? '',
+        statusLabel: json['status_label'] as String? ?? '',
+        note: json['note'] as String? ?? '',
+        at: parseServerDate(json['created_at'] as String),
+      );
+}
+
 /// Un pedido pertenece SIEMPRE a una sola tienda: el backend parte el carrito
 /// en una orden por proveedor al hacer checkout.
 class Order {
@@ -52,11 +69,15 @@ class Order {
     required this.createdAt,
     required this.store,
     this.items = const [],
+    this.events = const [],
     this.paymentOpNumber,
+    this.paymentProvider,
     this.paidAt,
     this.deliveryAddress,
     this.notes,
     this.updatedAt,
+    this.buyerName,
+    this.buyerPhone,
   });
 
   final int id;
@@ -76,16 +97,26 @@ class Order {
   final double total;
   final PaymentMethod paymentMethod;
   final String? paymentOpNumber;
+  final String? paymentProvider;
   final DateTime? paidAt;
+  final String? buyerName;
+  final String? buyerPhone;
   final String? deliveryAddress;
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final Store store;
   final List<OrderItem> items;
+  final List<OrderEvent> events;
 
   bool get isCancelled => status == 'cancelled';
   bool get canPay => status == 'created';
+  bool get isPaid => paidAt != null;
+
+  /// La tienda cobra con tarjeta por pasarela (Mercado Pago / Niubiz): el pago
+  /// pasa por `/payments/{id}/start` y abre el checkout externo.
+  bool get storeHasGateway =>
+      store.paymentProvider != null && store.paymentProvider != 'simulado';
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
         id: json['id'] as int,
@@ -101,7 +132,10 @@ class Order {
         total: (json['total'] as num?)?.toDouble() ?? 0,
         paymentMethod: PaymentMethod.parse(json['payment_method'] as String?),
         paymentOpNumber: json['payment_op_number'] as String?,
+        paymentProvider: json['payment_provider'] as String?,
         paidAt: parseServerDateOrNull(json['paid_at'] as String?),
+        buyerName: (json['buyer'] as Map?)?['name'] as String?,
+        buyerPhone: (json['buyer'] as Map?)?['phone'] as String?,
         deliveryAddress: json['delivery_address'] as String?,
         notes: json['notes'] as String?,
         createdAt: parseServerDate(json['created_at'] as String),
@@ -109,6 +143,10 @@ class Order {
         store: Store.fromJson((json['store'] as Map).cast<String, dynamic>()),
         items: (json['items'] as List?)
                 ?.map((e) => OrderItem.fromJson((e as Map).cast<String, dynamic>()))
+                .toList() ??
+            const [],
+        events: (json['events'] as List?)
+                ?.map((e) => OrderEvent.fromJson((e as Map).cast<String, dynamic>()))
                 .toList() ??
             const [],
       );

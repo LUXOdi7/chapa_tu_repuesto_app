@@ -9,8 +9,14 @@ class ApiConfig {
 
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.101:9000',
+    defaultValue: 'http://10.132.183.51:9000',
   );
+
+  /// Client ID de tipo WEB de Google Cloud (el mismo que `GOOGLE_CLIENT_ID`
+  /// del backend). Vacio = el boton de Google avisa que falta configurarlo.
+  ///
+  ///   flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
+  static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
   /// El backend guarda rutas relativas (`/uploads/products/ab12.jpg`) para que
   /// las imagenes sigan sirviendo si cambia de servidor: la URL completa se

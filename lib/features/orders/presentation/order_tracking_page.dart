@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
+import '../../catalog/presentation/store_page.dart';
 import '../domain/order.dart';
 import '../domain/payment_method.dart';
 import 'receipt_page.dart';
@@ -41,14 +47,31 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// El pago es simulado: si no se escribe numero de operacion, el backend
-  /// genera uno "SIM...".
+  /// Tarjeta en tienda con pasarela: `/payments/{id}/start` devuelve la URL
+  /// del checkout (Mercado Pago o Niubiz); se abre en el navegador y el
+  /// backend aprueba el pedido cuando la pasarela confirma. Sin pasarela o con
+  /// Yape/transferencia: pago manual con numero de operacion.
   Future<void> _pay(Order order) async {
     // El repositorio se toma ANTES del dialogo: despues del await el context
     // ya no es de fiar.
     final repo = AppScope.ordersOf(context);
     final controller = TextEditingController();
     var method = order.paymentMethod;
+
+    if (order.storeHasGateway && method == PaymentMethod.card) {
+      await _run(() async {
+        final start = await repo.startPayment(order.id);
+        final url = start.checkoutUrl;
+        if (url == null) return; // ya quedo aprobado (simulado)
+        if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+          throw Exception('No se pudo abrir el checkout de ${start.provider}.');
+        }
+        if (mounted) {
+          showInfo(context, 'Cuando termines de pagar, vuelve y toca actualizar.');
+        }
+      });
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -63,7 +86,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                 decoration: const InputDecoration(labelText: 'Método'),
                 items: [
                   for (final m in PaymentMethod.values)
-                    DropdownMenuItem(value: m, child: Text(m.label)),
+                    // Con pasarela real, "tarjeta" pasa por el checkout externo
+                    if (m != PaymentMethod.card || !order.storeHasGateway)
+                      DropdownMenuItem(value: m, child: Text(m.label)),
                 ],
                 onChanged: (m) => setLocal(() => method = m ?? method),
               ),
@@ -158,6 +183,19 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ));
   }
 
+  /// Descarga el PDF con el Bearer (url_launcher no manda cabeceras) y lo
+  /// abre con el visor del telefono.
+  Future<void> _downloadPdf(Order order) async {
+    final repo = AppScope.ordersOf(context);
+    await _run(() async {
+      final bytes = await repo.receiptPdf(order.id);
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/${order.code}.pdf');
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFilex.open(file.path, type: 'application/pdf');
+    });
+  }
+
   Future<void> _changeStatus(Order order, String status) async {
     final repo = AppScope.ordersOf(context);
     if (status == 'cancelled') {
@@ -239,17 +277,45 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   _Fact(label: 'Tienda', value: order.store.businessName),
                   if (order.store.phone != null)
                     _Fact(label: 'Teléfono', value: order.store.phone!),
+                  if (order.buyerName != null)
+                    _Fact(label: 'Comprador', value: order.buyerName!),
+                  if (order.buyerPhone != null)
+                    _Fact(label: 'Tel. comprador', value: order.buyerPhone!),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pushNamed(
-                        context,
-                        ReceiptPage.route,
-                        arguments: order.id,
-                      ),
-                      icon: const Icon(Icons.description_outlined),
-                      label: const Text('Ver constancia'),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => Navigator.pushNamed(
+                              context, StorePage.route, arguments: order.store.id),
+                          icon: const Icon(Icons.storefront_outlined),
+                          label: const Text('Ver tienda'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => openDirections(context, order.store),
+                          icon: const Icon(Icons.directions),
+                          label: const Text('Cómo llegar'),
+                        ),
+                        if (order.isPaid) ...[
+                          OutlinedButton.icon(
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              ReceiptPage.route,
+                              arguments: order.id,
+                            ),
+                            icon: const Icon(Icons.description_outlined),
+                            label: const Text('Ver constancia'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _busy ? null : () => _downloadPdf(order),
+                            icon: const Icon(Icons.picture_as_pdf_outlined),
+                            label: const Text('Descargar PDF'),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -362,6 +428,13 @@ class _Timeline extends StatelessWidget {
     }
 
     final current = orderTimeline.indexOf(order.status);
+    DateTime? when(String status) {
+      for (final e in order.events) {
+        if (e.status == status) return e.at;
+      }
+      return null;
+    }
+
     return Stepper(
       currentStep: current < 0 ? 0 : current,
       physics: const NeverScrollableScrollPhysics(),
@@ -372,7 +445,9 @@ class _Timeline extends StatelessWidget {
             title: Text(i == current
                 ? order.statusLabel
                 : orderStatusLabel(orderTimeline[i])),
-            subtitle: i == current ? const Text('Estado actual') : null,
+            subtitle: when(orderTimeline[i]) != null
+                ? Text(dateTimeLabel(when(orderTimeline[i])!))
+                : (i == current ? const Text('Estado actual') : null),
             content: const SizedBox.shrink(),
             isActive: i <= current,
             state: switch (i - current) {

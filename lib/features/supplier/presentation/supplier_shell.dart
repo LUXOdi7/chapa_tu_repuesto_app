@@ -5,7 +5,11 @@ import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/domain/product.dart';
 import '../../catalog/domain/store.dart';
+import '../../orders/domain/order.dart';
 import '../../orders/presentation/orders_page.dart';
+import '../../profile/presentation/profile_page.dart';
+import '../../../main.dart' show shopMode;
+import 'payment_config_page.dart';
 import 'product_form_page.dart';
 import 'store_form_page.dart';
 
@@ -25,7 +29,7 @@ class _SupplierShellState extends State<SupplierShell> {
   int _tab = 0;
   int _reload = 0;
 
-  static const _titles = ['Pedidos de mi tienda', 'Mis repuestos', 'Mi tienda'];
+  static const _titles = ['Mi tienda', 'Pedidos de mi tienda', 'Mis repuestos'];
 
   @override
   Widget build(BuildContext context) {
@@ -46,22 +50,27 @@ class _SupplierShellState extends State<SupplierShell> {
             appBar: AppBar(
               title: Text(_titles[_tab]),
               actions: [
+                TextButton.icon(
+                  onPressed: () => shopMode.value = true,
+                  icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+                  label: const Text('Comprar', style: TextStyle(color: Colors.white)),
+                ),
                 IconButton(
-                  tooltip: 'Cerrar sesión',
-                  icon: const Icon(Icons.logout),
-                  onPressed: scope.session.signOut,
+                  tooltip: 'Mi cuenta',
+                  icon: const Icon(Icons.account_circle_outlined),
+                  onPressed: () => Navigator.pushNamed(context, ProfilePage.route),
                 ),
               ],
             ),
             body: IndexedStack(
               index: _tab,
               children: [
-                const OrdersView(),
-                const _SupplierProducts(),
                 _StoreTab(
                   store: store,
                   onEdited: () => setState(() => _reload++),
                 ),
+                const OrdersView(),
+                const _SupplierProducts(),
               ],
             ),
             bottomNavigationBar: NavigationBar(
@@ -69,11 +78,11 @@ class _SupplierShellState extends State<SupplierShell> {
               onDestinationSelected: (i) => setState(() => _tab = i),
               destinations: const [
                 NavigationDestination(
+                    icon: Icon(Icons.storefront), label: 'Tienda'),
+                NavigationDestination(
                     icon: Icon(Icons.inbox_outlined), label: 'Pedidos'),
                 NavigationDestination(
                     icon: Icon(Icons.inventory_2_outlined), label: 'Repuestos'),
-                NavigationDestination(
-                    icon: Icon(Icons.storefront), label: 'Tienda'),
               ],
             ),
           );
@@ -184,19 +193,60 @@ class _StoreTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = AppScope.of(context).session.user;
+    final scope = AppScope.of(context);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (!store.verified)
+          Card(
+            color: Colors.orange.withValues(alpha: 0.15),
+            child: const ListTile(
+              leading: Icon(Icons.pending_actions, color: Colors.orange),
+              title: Text('Tienda pendiente de verificación'),
+              subtitle: Text('El administrador revisa tu RUC. Ya puedes publicar; '
+                  'la insignia de verificada aparece cuando lo apruebe.'),
+            ),
+          ),
+        // Resumen del negocio
+        AsyncView<Map<String, dynamic>>(
+          refreshKey: store.id,
+          load: scope.suppliers.dashboard,
+          builder: (context, d) {
+            final byStatus = (d['orders_by_status'] as Map).cast<String, dynamic>();
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    _Kpi(label: 'Por despachar', value: '${d['pending_to_ship']}', icon: Icons.local_shipping_outlined),
+                    _Kpi(label: 'Repuestos', value: '${d['products']}', icon: Icons.inventory_2_outlined),
+                    _Kpi(label: 'Sin stock', value: '${d['out_of_stock']}', icon: Icons.remove_shopping_cart_outlined),
+                    _Kpi(label: 'Vendido', value: soles((d['total_sold'] as num?) ?? 0), icon: Icons.payments_outlined),
+                    _Kpi(label: 'Cerrados', value: '${byStatus['closed'] ?? 0}', icon: Icons.task_alt),
+                  ].map((k) => Expanded(child: k)).toList(),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(store.businessName,
-                    style: Theme.of(context).textTheme.titleLarge),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(store.businessName,
+                          style: Theme.of(context).textTheme.titleLarge),
+                    ),
+                    if (store.verified)
+                      const Icon(Icons.verified_user, color: Colors.blue),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(store.ratingLabel),
                 const Divider(height: 24),
@@ -206,6 +256,11 @@ class _StoreTab extends StatelessWidget {
                     text: [store.address, store.district]
                         .whereType<String>()
                         .join(', ')),
+                _Line(
+                    icon: Icons.map_outlined,
+                    text: store.hasLocation
+                        ? 'Ubicación: ${store.latitude}, ${store.longitude}'
+                        : 'Sin ubicación en el mapa'),
                 _Line(
                     icon: Icons.phone_outlined, text: store.phone ?? 'Sin teléfono'),
                 _Line(
@@ -227,16 +282,64 @@ class _StoreTab extends StatelessWidget {
           icon: const Icon(Icons.edit_outlined),
           label: const Text('Editar datos de la tienda'),
         ),
+        const SizedBox(height: 8),
+        // Medio de cobro: nucleo del modelo de negocio
+        Card(
+          child: ListTile(
+            leading: Icon(
+              store.paymentConfigured ? Icons.credit_score : Icons.credit_card_off_outlined,
+              color: store.paymentConfigured ? Colors.green : Colors.orange,
+            ),
+            title: const Text('Medio de cobro'),
+            subtitle: Text(switch (store.paymentProvider) {
+              'mercadopago' => 'Mercado Pago · configurado',
+              'niubiz' => 'Niubiz · configurado',
+              _ => 'Sin pasarela: los pagos con tarjeta se simulan',
+            }),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final saved = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(builder: (_) => PaymentConfigPage(store: store)),
+              );
+              if (saved == true) onEdited();
+            },
+          ),
+        ),
         const SizedBox(height: 24),
-        if (user != null)
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: Text(user.name),
-            subtitle: Text(user.email),
+        Text('Estados del pedido', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 4),
+        for (final st in orderTimeline)
+          Row(
+            children: [
+              Icon(orderStatusIcon(st), size: 16, color: orderStatusColor(st)),
+              const SizedBox(width: 8),
+              Text(orderStatusLabel(st), style: Theme.of(context).textTheme.bodySmall),
+            ],
           ),
       ],
     );
   }
+}
+
+class _Kpi extends StatelessWidget {
+  const _Kpi({required this.label, required this.value, required this.icon});
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 4),
+          FittedBox(
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Text(label, style: const TextStyle(fontSize: 10), textAlign: TextAlign.center),
+        ],
+      );
 }
 
 class _Line extends StatelessWidget {

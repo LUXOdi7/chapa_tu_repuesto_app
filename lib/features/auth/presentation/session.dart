@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/network/api_client.dart';
 import '../data/auth_repository.dart';
@@ -53,10 +54,20 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Tras editar el perfil (`PATCH /auth/me`).
+  void updateUser(User user) {
+    _user = user;
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     _api.token = null;
     _user = null;
     await _storage.delete(key: _tokenKey);
+    // Si entro con Google, olvidar la cuenta para poder elegir otra.
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {/* sin Google configurado no pasa nada */}
     notifyListeners();
   }
 }
