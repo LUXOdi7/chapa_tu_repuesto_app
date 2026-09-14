@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart' show XFile;
 
 import '../../../core/network/api_client.dart';
 import '../../catalog/domain/compatibility.dart';
@@ -81,9 +82,10 @@ class SupplierRepository {
 
   /// Sube la foto y devuelve la RUTA relativa (`/uploads/products/ab12.jpg`),
   /// que es lo que se guarda en el producto. jpg/jpeg/png/webp, max 5 MB.
-  Future<String> uploadImage(String filePath) async {
+  /// Se mandan los bytes: en web no hay ruta de archivo.
+  Future<String> uploadImage(XFile file) async {
     final form = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath),
+      'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.name),
     });
     final data = asMap(await _api.postMultipart('/uploads/image', form));
     return data['path'] as String;

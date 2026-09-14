@@ -1,4 +1,8 @@
 import 'package:chapa_tu_repuesto_app/core/format.dart';
+import 'package:chapa_tu_repuesto_app/core/network/api_client.dart';
+import 'package:chapa_tu_repuesto_app/features/auth/data/auth_repository.dart';
+import 'package:chapa_tu_repuesto_app/features/auth/domain/user.dart';
+import 'package:chapa_tu_repuesto_app/features/auth/presentation/session.dart';
 import 'package:chapa_tu_repuesto_app/features/cart/presentation/cart_store.dart';
 import 'package:chapa_tu_repuesto_app/features/catalog/domain/product.dart';
 import 'package:chapa_tu_repuesto_app/features/orders/domain/order.dart';
@@ -81,6 +85,48 @@ void main() {
     expect(product.compatibilities, isEmpty);
     expect(product.offers, isEmpty);
     expect(product.description, isNull);
+  });
+
+  test('cerrar sesion avisa a la UI aunque falle el almacenamiento o Google', () async {
+    // En web, GoogleSignIn.signOut() sin initialize se colgaba y la app no
+    // volvia al login. Sin plugins (como aqui) tampoco debe reventar.
+    final api = ApiClient();
+    final session = Session(api, AuthRepository(api));
+    var notified = false;
+    session.addListener(() => notified = true);
+    await session.signOut();
+    expect(notified, isTrue);
+    expect(session.user, isNull);
+  });
+
+  test('el pedido trae chat y reputacion del comprador', () {
+    final order = Order.fromJson({
+      ...orderJson,
+      'buyer': {'id': 1, 'name': 'Taller', 'rating_avg': 4.5, 'rating_count': 2},
+      'message_count': 3,
+      'can_review_buyer': true,
+    });
+    expect(order.messageCount, 3);
+    expect(order.canReviewBuyer, isTrue);
+    expect(order.buyerRatingLabel, '4.5 ★ (2)');
+    final msg = ChatMessage.fromJson({'id': 9, 'sender_id': 1, 'sender_name': 'Taller', 'body': 'hola', 'created_at': '2026-09-08T00:35:14'});
+    expect(msg.body, 'hola');
+    expect(UserMoto.fromJson({'id': 1, 'moto_brand': 'Bajaj', 'moto_model': 'Pulsar NS 200', 'year': 2020}).label, 'Bajaj Pulsar NS 200 2020');
+  });
+
+  test('la pagina de resultados expone lo entendido del dictado como chips', () {
+    final page = ProductPage.fromJson({
+      'total': 1,
+      'items': [productJson],
+      'parsed': {'year': 2020, 'moto': ['pulsar', '200'], 'brands': ['Brembo'], 'category': 'frenos', 'terms': ['pastilla']},
+    });
+    expect(page.parsedChips, ['2020', 'pulsar', '200', 'Brembo', 'Frenos', 'pastilla']);
+    expect(ProductPage.fromJson({'total': 0, 'items': []}).parsedChips, isEmpty);
+  });
+
+  test('los importes se aceptan como numero o como texto', () {
+    // El panel del proveedor serializaba Decimal como "28.38".
+    expect(Product.fromJson({...productJson, 'price': '28.38'}).price, 28.38);
   });
 
   test('el producto sobrevive al ida y vuelta del carrito persistido', () {

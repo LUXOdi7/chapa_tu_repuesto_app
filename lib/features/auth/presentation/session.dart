@@ -26,6 +26,10 @@ class Session extends ChangeNotifier {
   User? _user;
   bool _restoring = true;
 
+  /// Motos del comprador; se cargan al iniciar sesion y se usan en el
+  /// buscador (arranca filtrado) y en la ficha ("compatible con tu ...").
+  List<UserMoto> motos = const [];
+
   User? get user => _user;
   bool get restoring => _restoring;
   bool get isSignedIn => _user != null;
@@ -38,6 +42,7 @@ class Session extends ChangeNotifier {
       _api.token = token;
       try {
         _user = await _auth.me();
+        await refreshMotos();
       } catch (_) {
         _api.token = null;
         await _storage.delete(key: _tokenKey);
@@ -52,6 +57,17 @@ class Session extends ChangeNotifier {
     _user = result.user;
     await _storage.write(key: _tokenKey, value: result.token);
     notifyListeners();
+    await refreshMotos();
+  }
+
+  Future<void> refreshMotos() async {
+    if (_user == null || _user!.isAdmin) return;
+    try {
+      motos = await _auth.motos();
+    } catch (_) {
+      motos = const [];
+    }
+    notifyListeners();
   }
 
   /// Tras editar el perfil (`PATCH /auth/me`).
@@ -60,14 +76,22 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Lo pone LoginPage tras `GoogleSignIn.instance.initialize`. En web,
+  /// `signOut()` sin inicializar se queda esperando para siempre.
+  static bool googleReady = false;
+
   Future<void> signOut() async {
     _api.token = null;
     _user = null;
-    await _storage.delete(key: _tokenKey);
-    // Si entro con Google, olvidar la cuenta para poder elegir otra.
+    motos = const [];
+    notifyListeners(); // primero la UI: la limpieza de abajo es best-effort
     try {
-      await GoogleSignIn.instance.signOut();
-    } catch (_) {/* sin Google configurado no pasa nada */}
-    notifyListeners();
+      await _storage.delete(key: _tokenKey);
+    } catch (_) {/* sin almacenamiento (tests) */}
+    if (googleReady) {
+      try {
+        await GoogleSignIn.instance.signOut(); // para poder elegir otra cuenta
+      } catch (_) {/* nada que cerrar */}
+    }
   }
 }

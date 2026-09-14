@@ -1,3 +1,5 @@
+import '../../../core/network/api_client.dart';
+
 /// Tienda de autopartes.
 ///
 /// El backend la devuelve en tres tamaños distintos: resumida dentro de cada
@@ -59,54 +61,58 @@ class Store {
       : '${ratingAvg.toStringAsFixed(1)} ★ ($ratingCount)';
 
   factory Store.fromJson(Map<String, dynamic> json) => Store(
-        id: json['id'] as int,
-        businessName: json['business_name'] as String? ?? 'Tienda',
-        district: json['district'] as String?,
-        distanceKm: (json['distance_km'] as num?)?.toDouble(),
-        latitude: (json['latitude'] as num?)?.toDouble(),
-        longitude: (json['longitude'] as num?)?.toDouble(),
-        ratingAvg: (json['rating_avg'] as num?)?.toDouble() ?? 0,
-        ratingCount: json['rating_count'] as int? ?? 0,
-        verified: json['verified'] as bool? ?? false,
-        ruc: json['ruc'] as String?,
-        description: json['description'] as String?,
-        address: json['address'] as String?,
-        phone: json['phone'] as String?,
-        openingHours: json['opening_hours'] as String?,
-        logoUrl: json['logo_url'] as String?,
-        paymentProvider: json['payment_provider'] as String?,
-        paymentConfigured: json['payment_configured'] as bool? ?? false,
-        productCount: json['product_count'] as int?,
-      );
+    id: json['id'] as int,
+    businessName: json['business_name'] as String? ?? 'Tienda',
+    district: json['district'] as String?,
+    distanceKm: asDouble(json['distance_km']),
+    latitude: asDouble(json['latitude']),
+    longitude: asDouble(json['longitude']),
+    ratingAvg: asDouble(json['rating_avg']) ?? 0,
+    ratingCount: json['rating_count'] as int? ?? 0,
+    verified: json['verified'] as bool? ?? false,
+    ruc: json['ruc'] as String?,
+    description: json['description'] as String?,
+    address: json['address'] as String?,
+    phone: json['phone'] as String?,
+    openingHours: json['opening_hours'] as String?,
+    logoUrl: json['logo_url'] as String?,
+    paymentProvider: json['payment_provider'] as String?,
+    paymentConfigured: json['payment_configured'] as bool? ?? false,
+    productCount: json['product_count'] as int?,
+  );
 
   /// Solo lo que necesita el carrito persistido para volver a dibujarse.
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'business_name': businessName,
-        'district': district,
-        'distance_km': distanceKm,
-        'latitude': latitude,
-        'longitude': longitude,
-        'rating_avg': ratingAvg,
-        'rating_count': ratingCount,
-        'verified': verified,
-        'phone': phone,
-        'address': address,
-        'payment_provider': paymentProvider,
-      };
+    'id': id,
+    'business_name': businessName,
+    'district': district,
+    'distance_km': distanceKm,
+    'latitude': latitude,
+    'longitude': longitude,
+    'rating_avg': ratingAvg,
+    'rating_count': ratingCount,
+    'verified': verified,
+    'phone': phone,
+    'address': address,
+    'payment_provider': paymentProvider,
+  };
 }
 
 /// Calificación recibida por una tienda.
 class StoreReview {
-  const StoreReview({required this.rating, required this.comment, required this.buyerName});
+  const StoreReview({
+    required this.rating,
+    required this.comment,
+    required this.buyerName,
+  });
 
   final int rating;
   final String comment;
   final String buyerName;
 
   factory StoreReview.fromJson(Map<String, dynamic> json) => StoreReview(
-        rating: json['rating'] as int? ?? 0,
-        comment: json['comment'] as String? ?? '',
-        buyerName: json['buyer_name'] as String? ?? '',
-      );
+    rating: json['rating'] as int? ?? 0,
+    comment: json['comment'] as String? ?? '',
+    buyerName: json['buyer_name'] as String? ?? '',
+  );
 }

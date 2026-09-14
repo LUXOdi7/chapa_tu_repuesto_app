@@ -73,4 +73,17 @@ class AuthRepository {
 
   Future<void> sendFeedback({required String subject, required String message}) =>
       _api.post('/feedback', body: {'subject': subject, 'message': message});
+
+  // ---- Mis motos ----
+  Future<List<UserMoto>> motos() async =>
+      asMapList(await _api.get('/auth/me/motos')).map(UserMoto.fromJson).toList();
+
+  Future<UserMoto> addMoto({required String brand, required String model, required int year}) async =>
+      UserMoto.fromJson(asMap(await _api.post('/auth/me/motos', body: {
+        'moto_brand': brand,
+        'moto_model': model,
+        'year': year,
+      })));
+
+  Future<void> deleteMoto(int id) => _api.delete('/auth/me/motos/$id');
 }

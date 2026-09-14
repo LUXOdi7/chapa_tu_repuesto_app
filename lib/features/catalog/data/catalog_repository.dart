@@ -79,6 +79,14 @@ class CatalogRepository {
 
   Future<Store> store(int id) async => Store.fromJson(asMap(await _api.get('/catalog/stores/$id')));
 
+  // ---- Alertas de stock / precio ----
+  Future<List<Map<String, dynamic>>> alerts() async => asMapList(await _api.get('/alerts'));
+
+  Future<void> createAlert({required String partCode, double? maxPrice, bool notifyStock = true}) =>
+      _api.post('/alerts', body: {'part_code': partCode, 'max_price': maxPrice, 'notify_stock': notifyStock});
+
+  Future<void> deleteAlert(int id) => _api.delete('/alerts/$id');
+
   Future<List<StoreReview>> storeReviews(int id) async =>
       asMapList(await _api.get('/catalog/stores/$id/reviews')).map(StoreReview.fromJson).toList();
 }

@@ -1,3 +1,5 @@
+import '../../../core/network/api_client.dart';
+import '../../../core/format.dart';
 import 'compatibility.dart';
 import 'store.dart';
 
@@ -57,7 +59,7 @@ class Product {
         partCode: json['part_code'] as String? ?? '',
         brand: json['brand'] as String?,
         imageUrl: json['image_url'] as String?,
-        price: (json['price'] as num?)?.toDouble() ?? 0,
+        price: asDouble(json['price']) ?? 0,
         stock: json['stock'] as int? ?? 0,
         // El backend ya calcula `in_stock`; el fallback cubre las respuestas
         // del panel del proveedor, que no lo incluyen.
@@ -101,6 +103,7 @@ class ProductPage {
     required this.items,
     this.limit = 20,
     this.offset = 0,
+    this.parsed,
   });
 
   final int total;
@@ -108,12 +111,30 @@ class ProductPage {
   final int limit;
   final int offset;
 
+  /// Lo que el backend entendio de la oracion dictada (`q`): anio, palabras
+  /// de moto, marcas de repuesto, categoria y texto libre. Null sin `q`.
+  final Map<String, dynamic>? parsed;
+
+  /// Chips legibles: "2020", "pulsar", "Brembo", "Frenos", "pastilla".
+  List<String> get parsedChips {
+    final p = parsed;
+    if (p == null) return const [];
+    return [
+      if (p['year'] != null) '${p['year']}',
+      ...(p['moto'] as List? ?? const []).cast<String>(),
+      ...(p['brands'] as List? ?? const []).cast<String>(),
+      if (p['category'] != null) categoryLabel(p['category'] as String),
+      ...(p['terms'] as List? ?? const []).cast<String>(),
+    ];
+  }
+
   bool get hasMore => offset + items.length < total;
 
   factory ProductPage.fromJson(Map<String, dynamic> json) => ProductPage(
         total: json['total'] as int? ?? 0,
         limit: json['limit'] as int? ?? 20,
         offset: json['offset'] as int? ?? 0,
+        parsed: (json['parsed'] as Map?)?.cast<String, dynamic>(),
         items: Product._list(json['items']).map(Product.fromJson).toList(),
       );
 }

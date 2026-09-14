@@ -4,6 +4,8 @@ import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/product.dart';
+import '../../auth/domain/user.dart';
+import '../../profile/presentation/alerts_page.dart';
 import 'store_page.dart';
 
 /// Ficha del repuesto + comparador de ofertas.
@@ -36,6 +38,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         load: () => scope.catalog.product(widget.productId),
         builder: (context, detail) {
           final selected = _picked ?? detail;
+          // "Mis motos" que encajan en alguna compatibilidad declarada.
+          final myMotos = scope.session.motos
+              .where((m) => detail.compatibilities.any((c) =>
+                  c.motoBrand == m.brand &&
+                  c.motoModel == m.model &&
+                  m.year >= c.yearFrom &&
+                  m.year <= c.yearTo))
+              .toList();
           // El propio producto tambien es una oferta: si el backend no lo
           // incluye en la lista, se antepone para poder volver a elegirlo.
           final offers = [
@@ -46,6 +56,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             detail: detail,
             selected: selected,
             offers: offers,
+            myMotos: myMotos,
             onPick: (p) => setState(() => _picked = p),
             onAdd: () {
               scope.cart.add(selected);
@@ -63,6 +74,7 @@ class _Detail extends StatelessWidget {
     required this.detail,
     required this.selected,
     required this.offers,
+    required this.myMotos,
     required this.onPick,
     required this.onAdd,
   });
@@ -70,6 +82,7 @@ class _Detail extends StatelessWidget {
   final Product detail;
   final Product selected;
   final List<Product> offers;
+  final List<UserMoto> myMotos;
   final ValueChanged<Product> onPick;
   final VoidCallback onAdd;
 
@@ -95,6 +108,23 @@ class _Detail extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(detail.name, style: text.headlineSmall),
+                    if (myMotos.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.verified, size: 18, color: Colors.green),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Compatible con tu ${myMotos.map((m) => '${m.brand} ${m.model}').join(' y tu ')}',
+                                style: text.bodyMedium?.copyWith(
+                                    color: Colors.green, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -216,12 +246,26 @@ class _Detail extends StatelessWidget {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: FilledButton.icon(
-              icon: const Icon(Icons.add_shopping_cart),
-              label: Text(selected.inStock
-                  ? 'Agregar  ${soles(selected.price)}'
-                  : 'Sin stock en esta tienda'),
-              onPressed: selected.inStock ? onAdd : null,
+            child: Row(
+              children: [
+                // Alerta de stock/precio para este codigo de parte.
+                IconButton.outlined(
+                  tooltip: 'Avísame cuando haya stock o baje de precio',
+                  icon: const Icon(Icons.notifications_none),
+                  onPressed: () => showCreateAlertDialog(context,
+                      partCode: detail.partCode, price: selected.price),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.add_shopping_cart),
+                    label: Text(selected.inStock
+                        ? 'Agregar  ${soles(selected.price)}'
+                        : 'Sin stock en esta tienda'),
+                    onPressed: selected.inStock ? onAdd : null,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

@@ -65,6 +65,10 @@ class _SearchViewState extends State<SearchView> {
   String get _motoLabel =>
       [_motoBrand, _motoModel, _year?.toString()].whereType<String>().join(' ');
 
+  /// Si la moto activa es una de "Mis motos", el encabezado lo dice.
+  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any(
+      (m) => m.brand == _motoBrand && m.model == _motoModel && m.year == _year);
+
   /// Cualquier cambio de esta cadena recarga el `AsyncView`.
   String get _searchKey =>
       '$_query|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy|$_limit';
@@ -96,6 +100,36 @@ class _SearchViewState extends State<SearchView> {
               ),
             ],
           ),
+        ),
+        // Mis motos: un toque y el catalogo queda filtrado por esa moto.
+        ListenableBuilder(
+          listenable: scope.session,
+          builder: (context, _) => scope.session.motos.isEmpty
+              ? const SizedBox.shrink()
+              : SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                    children: [
+                      for (final moto in scope.session.motos) ...[
+                        ChoiceChip(
+                          avatar: const Icon(Icons.two_wheeler, size: 16),
+                          label: Text(moto.label),
+                          selected: _motoBrand == moto.brand &&
+                              _motoModel == moto.model &&
+                              _year == moto.year,
+                          visualDensity: VisualDensity.compact,
+                          onSelected: (on) => on
+                              ? _filtersKey.currentState
+                                  ?.select(moto.brand, moto.model, moto.year)
+                              : _filtersKey.currentState?.clear(),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                    ],
+                  ),
+                ),
         ),
         _FilterChips(
           category: _category,
@@ -138,11 +172,33 @@ class _SearchViewState extends State<SearchView> {
               children: [
                 _ResultsHeader(
                   count: page.total,
-                  moto: _hasMoto ? _motoLabel : null,
+                  moto: _hasMoto
+                      ? (_isMyMoto(context) ? 'tu $_motoLabel' : _motoLabel)
+                      : null,
                   onClear: _hasMoto || _category != null || _onlyInStock
                       ? _reset
                       : null,
                 ),
+                // Lo que se entendio de la oracion dictada/escrita.
+                if (page.parsedChips.isNotEmpty)
+                  SizedBox(
+                    height: 36,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      children: [
+                        const Center(child: Text('Entendí: ')),
+                        for (final chip in page.parsedChips) ...[
+                          Chip(
+                            label: Text(chip),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                      ],
+                    ),
+                  ),
                 Expanded(
                   // Android entrega un primer frame de ancho 0 al arrancar en
                   // frio y `SliverGridDelegateWithMaxCrossAxisExtent` asserta

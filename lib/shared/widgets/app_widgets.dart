@@ -144,7 +144,10 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
     }
   }
 
-  void _retry() => setState(() => _future = widget.load());
+  void _retry() {
+    final future = widget.load(); // fuera del setState: la arrow devolvia la Future
+    setState(() => _future = future);
+  }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(

@@ -318,7 +318,9 @@ class _StoresTabState extends State<_StoresTab> {
                   title: Text(s.businessName),
                   subtitle: Text('RUC ${s.ruc}  ·  ${s.district}\n${s.address}'),
                   isThreeLine: true,
-                  trailing: FilledButton.tonal(
+                  // TextButton, no FilledButton: el tema le da a FilledButton ancho
+                  // infinito (CTA a pantalla completa) y como `trailing` revienta el layout.
+                  trailing: TextButton(
                     onPressed: () async {
                       try {
                         await admin.verifyStore(s.id, !s.verified);

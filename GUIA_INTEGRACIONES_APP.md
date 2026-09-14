@@ -124,9 +124,9 @@ credenciales de esa tienda a su cuenta. Un carrito con 3 tiendas = 3 pedidos
 ### 3.9 Verificación del pago y constancia
 
 Tras `payment_verified` aparecen **Ver constancia** (JSON dibujado) y
-**Descargar PDF**: se baja `GET /orders/{id}/receipt.pdf` con el Bearer (`dio`),
-se guarda en temporal (`path_provider`) y se abre con el visor del teléfono
-(`open_filex`). Comprador y proveedor lo pueden descargar.
+**Descargar PDF**: la app pide `GET /orders/{id}/receipt-link` (enlace firmado
+de 10 min) y lo abre con `url_launcher`, igual en Android (visor/navegador) y
+en web (nueva pestaña). Comprador y proveedor lo pueden descargar.
 
 ### 3.10 Seguimiento
 
@@ -138,6 +138,40 @@ calcula para ESTE usuario. Botones extra: Ver tienda, Cómo llegar.
 
 Correos automáticos los manda el backend (necesita SMTP). La calificación al
 cerrar está en `order_tracking_page.dart` → `_review`.
+
+### 3.12 Mis motos
+
+`profile/presentation/my_motos_page.dart` (misma cascada marca → modelo → año
+del catálogo) → `POST /auth/me/motos`. La sesión las cachea
+(`Session.motos`): el buscador muestra un chip por moto (un toque = filtro
+completo, encabezado "compatibles con tu …") y la ficha marca "Compatible con tu
+Pulsar NS 200" cuando alguna compatibilidad declarada la incluye.
+
+### 3.13 Chat por pedido
+
+`orders/presentation/chat_page.dart`: burbujas, envío y refresco cada 4 s
+con `after_id` (solo lo nuevo). Botón "Consultar / Mensajes (N)" en el
+seguimiento. Quien recibe tiene aviso por correo; push con FCM: ver
+`docs/INTEGRACIONES.md §6` del backend (necesita proyecto Firebase).
+
+### 3.14 Alertas de stock / precio
+
+Campana en la ficha → `showCreateAlertDialog` (`profile/presentation/alerts_page.dart`)
+→ `POST /alerts`. Lista y borrado en *Mi cuenta → Mis alertas*. El aviso llega
+por correo cuando una tienda edita el producto y cumple la condición.
+
+### 3.15 Reputación en dos vías
+
+La tienda, en el seguimiento de un pedido entregado/cerrado, ve
+"Calificar comprador" (`_reviewBuyer`) → `POST /orders/{id}/buyer-review`. La
+calificación aparece junto al nombre del comprador en cada pedido de la tienda
+y en *Mi cuenta* del comprador.
+
+### 3.16 Panel admin en web
+
+Es el mismo `AdminShell`: `flutter build web` y servir `build/web` (Caddy,
+Nginx o `python -m http.server`). Entrar con la cuenta admin.
+
 
 ---
 
@@ -156,6 +190,10 @@ cerrar está en `order_tracking_page.dart` → `_review`.
 3. App: `--dart-define=GOOGLE_SERVER_CLIENT_ID=<ID web>`.
    Backend: `GOOGLE_CLIENT_ID=<ID web>` en `.env` y `.\ctr run`.
 4. `google_sign_in` 7.x ya está en `pubspec.yaml`; no requiere `google-services.json`.
+5. **Web**: en el cliente OAuth *Aplicación web* añade como *Origen autorizado de
+   JavaScript* la URL donde corre la app (`http://localhost:PUERTO` en desarrollo;
+   usa `flutter run -d chrome --web-port=5000` para que sea fijo). En web el
+   botón usa el One Tap de Google (`attemptLightweightAuthentication`).
 
 Errores típicos: `DEVELOPER_ERROR` / código 10 = SHA-1 o paquete no coinciden
 con el cliente Android; `idToken == null` = falta el `serverClientId`.
@@ -191,7 +229,6 @@ backend. Afecta a: código de recuperación y avisos de cada estado.
 | `image_picker` | Foto del repuesto | — |
 | `google_sign_in` | Login Google | Cliente OAuth Android (SHA-1) |
 | `url_launcher` | Checkout, Cómo llegar, Llamar | `queries` VIEW https / DIAL tel (ya en manifest) |
-| `path_provider` + `open_filex` | Guardar y abrir el PDF | — |
 | `flutter_secure_storage` | JWT y carrito | — |
 | `dio` | HTTP con Bearer, multipart y bytes | `usesCleartextTraffic` para HTTP en desarrollo |
 
@@ -210,7 +247,23 @@ backend. Afecta a: código de recuperación y avisos de cada estado.
 
 ---
 
-## 6. Antes de publicar en Play Store
+## 6. Android y web: qué cambia
+
+Todo funciona en las dos plataformas con el mismo código. Diferencias internas:
+
+| Función | Android | Web |
+|---|---|---|
+| Login Google | `authenticate()` (selector de cuenta) | `attemptLightweightAuthentication()` (One Tap) + `clientId` |
+| PDF | `url_launcher` abre el visor | `url_launcher` abre pestaña |
+| Foto del repuesto | `image_picker` galería | `image_picker` diálogo de archivo; se suben bytes, no ruta |
+| Dictado | reconocedor del sistema | Web Speech API (Chrome) |
+| Token / carrito | EncryptedSharedPreferences | WebCrypto en `localStorage` (requiere `localhost` o HTTPS) |
+| Cómo llegar / Llamar | app de mapas / marcador | Google Maps en pestaña / `tel:` |
+| Backend | `http://10.0.2.2:9000` o IP LAN | `http://localhost:9000` (CORS `*` ya configurado) |
+
+Probar en web: `flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:9000`.
+
+## 7. Antes de publicar en Play Store
 
 1. `applicationId` propio y keystore de release (`android/app/build.gradle.kts`).
 2. Quitar `usesCleartextTraffic` y apuntar `API_BASE_URL` a HTTPS.

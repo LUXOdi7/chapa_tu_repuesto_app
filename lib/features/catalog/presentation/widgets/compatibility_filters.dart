@@ -88,6 +88,14 @@ class CompatibilityFiltersState extends State<CompatibilityFilters> {
   /// La usa la pantalla desde el boton "Quitar moto".
   void clear() => _pickBrand(null);
 
+  /// Selecciona una moto guardada ("Mis motos"): carga cada nivel de la
+  /// cascada y deja los desplegables coherentes con lo elegido.
+  Future<void> select(String brand, String model, int year) async {
+    await _pickBrand(brand);
+    await _pickModel(model);
+    _pickYear(year);
+  }
+
   bool get hasMoto => _brand != null;
 
   String get motoLabel =>

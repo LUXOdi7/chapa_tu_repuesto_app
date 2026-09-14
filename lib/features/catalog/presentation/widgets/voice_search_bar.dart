@@ -69,7 +69,8 @@ class _VoiceSearchBarState extends State<VoiceSearchBar> {
       onChanged: widget.onChanged,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        hintText: 'Repuesto, código de parte o modelo...',
+        hintText: 'Ej: pastillas de freno para Pulsar 200 del 2020',
+        hintStyle: const TextStyle(fontSize: 13),
         prefixIcon: const Icon(Icons.search),
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
@@ -122,8 +123,9 @@ class _ListeningSheetState extends State<_ListeningSheet> {
     widget.speech.listen(
       onResult: _onResult,
       listenOptions: SpeechListenOptions(
-        listenFor: const Duration(seconds: 20),
+        listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
+        partialResults: true,
       ),
     );
   }
@@ -153,7 +155,10 @@ class _ListeningSheetState extends State<_ListeningSheet> {
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
-              _partial.isEmpty ? 'Di el repuesto que necesitas' : _partial,
+              _partial.isEmpty
+                  ? 'Di una frase completa: repuesto, marca, modelo y año.\n'
+                      'Ej: "kit de arrastre para Honda XR 150 del 2018"'
+                  : _partial,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: _partial.isEmpty ? scheme.outline : scheme.primary,

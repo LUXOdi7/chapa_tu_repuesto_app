@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -7,6 +8,7 @@ import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/user.dart';
 import 'forgot_password_page.dart';
+import 'session.dart';
 
 /// Login y registro en una sola pantalla: los campos extra del registro
 /// aparecen y desaparecen, que es mas corto que dos rutas casi identicas.
@@ -67,8 +69,10 @@ class _LoginPageState extends State<LoginPage> {
   /// Google Sign-In (google_sign_in v7): el `idToken` se manda al backend, que
   /// lo verifica y devuelve el mismo JWT del login normal. Requiere
   /// `GOOGLE_SERVER_CLIENT_ID` (ver GUIA_INTEGRACIONES_APP.md).
-  static bool _googleReady = false;
-
+  ///
+  /// Android: `authenticate()` abre el selector de cuenta. Web: no existe
+  /// `authenticate()`; `attemptLightweightAuthentication()` muestra el One Tap
+  /// de Google y devuelve null si el usuario lo cierra.
   Future<void> _google() async {
     if (ApiConfig.googleServerClientId.isEmpty) {
       showInfo(context, 'Falta configurar GOOGLE_SERVER_CLIENT_ID (ver guía).');
@@ -77,11 +81,17 @@ class _LoginPageState extends State<LoginPage> {
     final scope = AppScope.of(context);
     setState(() => _busy = true);
     try {
-      if (!_googleReady) {
-        await GoogleSignIn.instance.initialize(serverClientId: ApiConfig.googleServerClientId);
-        _googleReady = true;
+      if (!Session.googleReady) {
+        await GoogleSignIn.instance.initialize(
+          clientId: kIsWeb ? ApiConfig.googleServerClientId : null,
+          serverClientId: ApiConfig.googleServerClientId,
+        );
+        Session.googleReady = true;
       }
-      final account = await GoogleSignIn.instance.authenticate();
+      final account = kIsWeb
+          ? await GoogleSignIn.instance.attemptLightweightAuthentication()
+          : await GoogleSignIn.instance.authenticate();
+      if (account == null) return; // cerro el One Tap
       final idToken = account.authentication.idToken;
       if (idToken == null) throw Exception('Google no devolvio idToken');
       await scope.session.start(await scope.auth.google(idToken, role: _role));

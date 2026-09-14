@@ -35,6 +35,8 @@ class User {
     this.avatarUrl,
     this.isActive = true,
     this.storeId,
+    this.buyerRatingAvg = 0,
+    this.buyerRatingCount = 0,
   });
 
   final int id;
@@ -48,6 +50,14 @@ class User {
   /// Solo para proveedores: null si todavía no registró su tienda.
   final int? storeId;
 
+  /// Reputación como comprador (la tienda lo califica al entregar).
+  final double buyerRatingAvg;
+  final int buyerRatingCount;
+
+  String get buyerRatingLabel => buyerRatingCount == 0
+      ? 'Sin calificaciones como comprador'
+      : '${buyerRatingAvg.toStringAsFixed(1)} ★ como comprador ($buyerRatingCount)';
+
   bool get isSupplier => role == UserRole.supplier;
   bool get isAdmin => role == UserRole.admin;
 
@@ -60,6 +70,27 @@ class User {
         isActive: json['is_active'] as bool? ?? true,
         role: UserRole.parse(json['role'] as String?),
         storeId: json['store_id'] as int?,
+        buyerRatingAvg: (json['buyer_rating_avg'] as num?)?.toDouble() ?? 0,
+        buyerRatingCount: json['buyer_rating_count'] as int? ?? 0,
+      );
+}
+
+/// Moto guardada por el comprador ("Mis motos").
+class UserMoto {
+  const UserMoto({required this.id, required this.brand, required this.model, required this.year});
+
+  final int id;
+  final String brand;
+  final String model;
+  final int year;
+
+  String get label => '$brand $model $year';
+
+  factory UserMoto.fromJson(Map<String, dynamic> json) => UserMoto(
+        id: json['id'] as int,
+        brand: json['moto_brand'] as String? ?? '',
+        model: json['moto_model'] as String? ?? '',
+        year: json['year'] as int? ?? 0,
       );
 }
 

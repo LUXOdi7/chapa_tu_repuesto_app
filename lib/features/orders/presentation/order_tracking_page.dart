@@ -1,8 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
@@ -11,6 +7,7 @@ import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/store_page.dart';
 import '../domain/order.dart';
 import '../domain/payment_method.dart';
+import 'chat_page.dart';
 import 'receipt_page.dart';
 
 /// Seguimiento del pedido.
@@ -183,17 +180,58 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ));
   }
 
-  /// Descarga el PDF con el Bearer (url_launcher no manda cabeceras) y lo
-  /// abre con el visor del telefono.
+  /// Abre el PDF en el navegador/visor (Android y web) con un enlace firmado.
   Future<void> _downloadPdf(Order order) async {
     final repo = AppScope.ordersOf(context);
     await _run(() async {
-      final bytes = await repo.receiptPdf(order.id);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/${order.code}.pdf');
-      await file.writeAsBytes(bytes, flush: true);
-      await OpenFilex.open(file.path, type: 'application/pdf');
+      final url = await repo.receiptPdfUrl(order.id);
+      if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+        throw Exception('No se pudo abrir el PDF.');
+      }
     });
+  }
+
+  /// La tienda califica al comprador (puntualidad de pago / recepcion).
+  Future<void> _reviewBuyer(Order order) async {
+    final repo = AppScope.ordersOf(context);
+    final comment = TextEditingController();
+    var rating = 5;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setLocal) => AlertDialog(
+          title: Text('Califica a ${order.buyerName ?? 'el comprador'}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('¿Pagó puntual y recibió sin problemas?'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    IconButton(
+                      onPressed: () => setLocal(() => rating = i),
+                      icon: Icon(i <= rating ? Icons.star : Icons.star_border, color: Colors.amber),
+                    ),
+                ],
+              ),
+              TextField(
+                controller: comment,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Comentario (opcional)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Ahora no')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Enviar')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+    await _run(() => repo.reviewBuyer(order.id,
+        rating: rating, comment: comment.text.trim().isEmpty ? null : comment.text.trim()));
   }
 
   Future<void> _changeStatus(Order order, String status) async {
@@ -278,7 +316,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   if (order.store.phone != null)
                     _Fact(label: 'Teléfono', value: order.store.phone!),
                   if (order.buyerName != null)
-                    _Fact(label: 'Comprador', value: order.buyerName!),
+                    _Fact(
+                        label: 'Comprador',
+                        value: '${order.buyerName!}  ·  ${order.buyerRatingLabel}'),
                   if (order.buyerPhone != null)
                     _Fact(label: 'Tel. comprador', value: order.buyerPhone!),
                   const SizedBox(height: 12),
@@ -288,12 +328,31 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
+                        // OutlinedButton: el tema da ancho infinito a FilledButton y
+                        // dentro de un Wrap eso revienta el layout.
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await Navigator.push(context,
+                                MaterialPageRoute<void>(builder: (_) => ChatPage(order: order)));
+                            if (mounted) _refresh();
+                          },
+                          icon: const Icon(Icons.chat_bubble_outline),
+                          label: Text(order.messageCount == 0
+                              ? 'Consultar'
+                              : 'Mensajes (${order.messageCount})'),
+                        ),
                         OutlinedButton.icon(
                           onPressed: () => Navigator.pushNamed(
                               context, StorePage.route, arguments: order.store.id),
                           icon: const Icon(Icons.storefront_outlined),
                           label: const Text('Ver tienda'),
                         ),
+                        if (order.canReviewBuyer)
+                          OutlinedButton.icon(
+                            onPressed: _busy ? null : () => _reviewBuyer(order),
+                            icon: const Icon(Icons.star_outline),
+                            label: const Text('Calificar comprador'),
+                          ),
                         OutlinedButton.icon(
                           onPressed: () => openDirections(context, order.store),
                           icon: const Icon(Icons.directions),

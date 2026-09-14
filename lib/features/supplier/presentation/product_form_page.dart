@@ -68,7 +68,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
     setState(() => _uploadingLabel = 'Subiendo foto...');
     try {
-      final path = await AppScope.suppliersOf(context).uploadImage(picked.path);
+      final path = await AppScope.suppliersOf(context).uploadImage(picked);
       if (mounted) setState(() => _imagePath = path);
     } catch (e) {
       if (mounted) showError(context, e);

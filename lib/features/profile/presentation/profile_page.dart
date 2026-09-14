@@ -5,6 +5,8 @@ import '../../../core/app_theme.dart';
 import '../../../main.dart' show shopMode, themeMode;
 import '../../../shared/widgets/app_widgets.dart';
 import '../../auth/domain/user.dart';
+import 'alerts_page.dart';
+import 'my_motos_page.dart';
 
 /// Mi cuenta: datos, contraseña, tema, sugerencias y cierre de sesión.
 /// La misma pantalla sirve a comprador, proveedor y admin.
@@ -154,6 +156,31 @@ class _ProfilePageState extends State<ProfilePage> {
                 subtitle: Text(user.phone ?? 'Sin teléfono'),
                 onTap: _busy ? null : () => _editProfile(user),
               ),
+              if (!user.isAdmin) ...[
+                ListenableBuilder(
+                  listenable: session,
+                  builder: (context, _) => ListTile(
+                    leading: const Icon(Icons.two_wheeler),
+                    title: const Text('Mis motos'),
+                    subtitle: Text(session.motos.isEmpty
+                        ? 'Guarda tu moto para buscar solo lo compatible'
+                        : session.motos.map((m) => m.label).join(', ')),
+                    onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MyMotosPage())),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notifications_none),
+                  title: const Text('Mis alertas'),
+                  subtitle: const Text('Avisos de stock y precio'),
+                  onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AlertsPage())),
+                ),
+                if (user.buyerRatingCount > 0)
+                  ListTile(
+                    leading: const Icon(Icons.star_outline),
+                    title: const Text('Mi reputación como comprador'),
+                    subtitle: Text(user.buyerRatingLabel),
+                  ),
+              ],
               if (user.isSupplier)
                 ValueListenableBuilder<bool>(
                   valueListenable: shopMode,

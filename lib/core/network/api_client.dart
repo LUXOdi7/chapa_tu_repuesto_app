@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 
 import 'api_config.dart';
@@ -129,13 +127,6 @@ class ApiClient {
   Future<dynamic> delete(String path) =>
       _send(() => _dio.delete<dynamic>(path));
 
-  /// Descarga binaria (PDF de la constancia) con el mismo Bearer.
-  Future<Uint8List> getBytes(String path) async {
-    final data = await _send(
-      () => _dio.get<List<int>>(path, options: Options(responseType: ResponseType.bytes)),
-    );
-    return Uint8List.fromList((data as List).cast<int>());
-  }
 
   Future<dynamic> _send(Future<Response<dynamic>> Function() call) async {
     try {
@@ -162,3 +153,11 @@ Map<String, dynamic> asMap(dynamic data) => (data as Map).cast<String, dynamic>(
 
 List<Map<String, dynamic>> asMapList(dynamic data) =>
     (data as List).map((e) => (e as Map).cast<String, dynamic>()).toList();
+
+/// Los importes pueden llegar como numero o como texto ("28.38") segun el
+/// endpoint serialice dicts o modelos; aqui se normaliza una sola vez.
+double? asDouble(dynamic v) => switch (v) {
+      num n => n.toDouble(),
+      String s => double.tryParse(s),
+      _ => null,
+    };
