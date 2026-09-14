@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart' show XFile;
 
 import 'api_config.dart';
 
@@ -103,7 +104,7 @@ class ApiClient {
       _send(() => _dio.get<dynamic>(path, queryParameters: _clean(query)));
 
   Future<dynamic> post(String path, {Object? body}) =>
-      _send(() => _dio.post<dynamic>(path, data: body));
+      _send(() => _dio.post<dynamic>(path, data: stripNulls(body)));
 
   /// `/auth/login` es el UNICO endpoint que recibe form-urlencoded. Mandarlo
   /// como JSON devuelve 422, no 401.
@@ -115,14 +116,22 @@ class ApiClient {
         ),
       );
 
-  Future<dynamic> postMultipart(String path, FormData form) =>
-      _send(() => _dio.post<dynamic>(path, data: form));
-
   Future<dynamic> put(String path, {Object? body}) =>
-      _send(() => _dio.put<dynamic>(path, data: body));
+      _send(() => _dio.put<dynamic>(path, data: stripNulls(body)));
 
   Future<dynamic> patch(String path, {Object? body}) =>
-      _send(() => _dio.patch<dynamic>(path, data: body));
+      _send(() => _dio.patch<dynamic>(path, data: stripNulls(body)));
+
+  /// Sube una imagen (jpg/png/webp, max 5 MB) a `uploads/<folder>/` del
+  /// backend y devuelve la RUTA relativa que se guarda en la BD. Van los
+  /// bytes: en web no hay ruta de archivo.
+  Future<String> uploadImage(XFile file, {String folder = 'products'}) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.name),
+    });
+    final data = asMap(await _send(() => _dio.post<dynamic>('/uploads/image', data: form, queryParameters: {'folder': folder})));
+    return data['path'] as String;
+  }
 
   Future<dynamic> delete(String path) =>
       _send(() => _dio.delete<dynamic>(path));
@@ -136,6 +145,12 @@ class ApiClient {
       throw ApiException.from(e);
     }
   }
+
+  /// Los campos en null no se mandan en el cuerpo: el backend tiene defaults
+  /// (`opening_hours`, `distance_km`...) y un `null` explicito da 422.
+  static Object? stripNulls(Object? body) => body is Map
+      ? {for (final e in body.entries) if (e.value != null) e.key: e.value}
+      : body;
 
   /// Los filtros vacios no se mandan: `?category=` filtraria por cadena vacia.
   static Map<String, dynamic>? _clean(Map<String, dynamic>? query) {

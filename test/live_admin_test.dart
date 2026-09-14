@@ -82,9 +82,8 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(0), 'taller.julio@demo.pe');
       await tester.enterText(find.byType(TextFormField).at(1), '123456');
       await tester.tap(find.widgetWithText(FilledButton, 'Ingresar'));
-      await settle(3000);
       // Chips "Mis motos" en el buscador y filtro al tocar
-      expect(find.textContaining('Pulsar NS 200'), findsWidgets);
+      await waitFor(find.textContaining('Bajaj Pulsar NS 200'));
       await tester.tap(find.textContaining('Bajaj Pulsar NS 200').first);
       await waitFor(find.textContaining('compatibles con tu'));
       // Ficha: compatible con tu moto + campana de alerta
@@ -121,6 +120,47 @@ void main() {
       await tester.enterText(find.byType(TextField).last, 'Hola, tienen stock?');
       await tester.tap(find.byIcon(Icons.send));
       await waitFor(find.text('Hola, tienen stock?'));
+    });
+  });
+
+  testWidgets('proveedor: editar tienda guarda (antes daba 422 por nulls)', (tester) async {
+    if (!const bool.fromEnvironment('LIVE')) return;
+    HttpOverrides.global = null;
+    TestWidgetsFlutterBinding.ensureInitialized().defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      (call) async => null,
+    );
+    await tester.runAsync(() async {
+      Future<void> settle([int ms = 1500]) async {
+        await Future<void>.delayed(Duration(milliseconds: ms));
+        await tester.pump();
+        final err = tester.takeException();
+        if (err != null) fail('EXCEPCION: $err');
+      }
+
+      Future<void> waitFor(Finder f, [int seconds = 15]) async {
+        for (var i = 0; i < seconds * 4; i++) {
+          await settle(250);
+          if (f.evaluate().isNotEmpty) return;
+          final lists = find.byType(ListView).hitTestable();
+          if (i % 4 == 3 && lists.evaluate().isNotEmpty) {
+            await tester.drag(lists.last, const Offset(0, -300), warnIfMissed: false);
+          }
+        }
+        fail('No aparecio: $f');
+      }
+
+      await tester.pumpWidget(const ChapaTuRepuestoApp());
+      await settle();
+      await tester.enterText(find.byType(TextFormField).at(0), 'proveedor1@demo.pe');
+      await tester.enterText(find.byType(TextFormField).at(1), '123456');
+      await tester.tap(find.widgetWithText(FilledButton, 'Ingresar'));
+      await waitFor(find.text('Editar datos de la tienda'));
+      await tester.tap(find.text('Editar datos de la tienda'));
+      await waitFor(find.text('Guardar cambios'));
+      expect(find.text('Marcar mi tienda en el mapa').evaluate().isEmpty, isTrue); // ya tiene ubicacion
+      await tester.tap(find.text('Guardar cambios'));
+      await waitFor(find.text('Tienda guardada'), 10);
     });
   });
 }

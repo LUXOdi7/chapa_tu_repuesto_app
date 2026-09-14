@@ -103,9 +103,21 @@ class _SupplierProductsState extends State<_SupplierProducts> {
   int _reload = 0;
 
   Future<void> _open([Product? product]) async {
+    // La lista no trae compatibilidades: se pide el producto completo para
+    // que el formulario (y su PUT) no las pierda.
+    Product? full = product;
+    if (product != null) {
+      try {
+        full = await AppScope.suppliersOf(context).product(product.id);
+      } catch (e) {
+        if (mounted) showError(context, e);
+        return;
+      }
+    }
+    if (!mounted) return;
     final saved = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => ProductFormPage(product: product)),
+      MaterialPageRoute(builder: (_) => ProductFormPage(product: full)),
     );
     if (saved == true && mounted) setState(() => _reload++);
   }

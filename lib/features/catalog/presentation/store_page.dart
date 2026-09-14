@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
+import '../../../shared/widgets/map_picker_page.dart';
 import '../domain/product.dart';
 import '../domain/store.dart';
 import 'product_detail_page.dart';
@@ -46,6 +48,15 @@ class StorePage extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 24),
           children: [
             _Header(store: store),
+            if (store.hasLocation)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: StoreMap(point: LatLng(store.latitude!, store.longitude!)),
+                ),
+              ),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(

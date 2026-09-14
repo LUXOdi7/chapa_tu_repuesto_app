@@ -64,11 +64,12 @@ class AuthRepository {
 
   Future<User> me() async => User.fromJson(asMap(await _api.get('/auth/me')));
 
-  Future<User> updateProfile({String? name, String? phone, String? password}) async =>
+  Future<User> updateProfile({String? name, String? phone, String? password, String? avatarUrl}) async =>
       User.fromJson(asMap(await _api.patch('/auth/me', body: {
         'name': name,
         'phone': phone,
         'password': password,
+        'avatar_url': avatarUrl,
       })));
 
   Future<void> sendFeedback({required String subject, required String message}) =>

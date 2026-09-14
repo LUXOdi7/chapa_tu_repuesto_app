@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/app_theme.dart';
+import '../../../core/network/api_config.dart';
 import '../../../main.dart' show shopMode, themeMode;
 import '../../../shared/widgets/app_widgets.dart';
 import '../../auth/domain/user.dart';
@@ -75,6 +77,23 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /// Foto de perfil -> uploads/avatars/ -> PATCH /auth/me.
+  Future<void> _changeAvatar() async {
+    final scope = AppScope.of(context);
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 85);
+    if (picked == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final path = await scope.api.uploadImage(picked, folder: 'avatars');
+      scope.session.updateUser(await scope.auth.updateProfile(avatarUrl: path));
+      if (mounted) showInfo(context, 'Foto actualizada');
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _feedback() async {
     final auth = AppScope.of(context).auth;
     final subject = TextEditingController();
@@ -127,14 +146,32 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: kBrandAmber,
-                    backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
-                    child: user.avatarUrl == null
-                        ? Text(user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
-                            style: const TextStyle(fontSize: 24, color: Colors.black87))
-                        : null,
+                  InkWell(
+                    onTap: _busy ? null : _changeAvatar,
+                    customBorder: const CircleBorder(),
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 34,
+                          backgroundColor: kBrandAmber,
+                          backgroundImage: user.avatarUrl != null
+                              ? NetworkImage(ApiConfig.imageUrl(user.avatarUrl)!)
+                              : null,
+                          child: user.avatarUrl == null
+                              ? Text(user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
+                                  style: const TextStyle(fontSize: 26, color: Colors.black87))
+                              : null,
+                        ),
+                        const Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: CircleAvatar(
+                            radius: 11,
+                            child: Icon(Icons.photo_camera, size: 13),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

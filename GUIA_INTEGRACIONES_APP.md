@@ -167,7 +167,21 @@ La tienda, en el seguimiento de un pedido entregado/cerrado, ve
 calificación aparece junto al nombre del comprador en cada pedido de la tienda
 y en *Mi cuenta* del comprador.
 
-### 3.16 Panel admin en web
+### 3.16 Foto de perfil y logo de la tienda
+
+*Mi cuenta* → tocar el avatar → `image_picker` → `ApiClient.uploadImage(file, folder: 'avatars')`
+→ `PATCH /auth/me {avatar_url}`. *Editar tienda* → tocar el círculo del logo →
+`folder: 'logos'`. Todo cae en `uploads/<folder>/` del backend; la app guarda la
+ruta relativa y la resuelve con `ApiConfig.imageUrl`.
+
+### 3.17 Ubicación en mapa (OpenStreetMap)
+
+`shared/widgets/map_picker_page.dart` (`flutter_map`, sin API key). *Editar
+tienda → Marcar mi tienda en el mapa* → tocar → *Usar* rellena lat/lng. La
+ficha pública muestra `StoreMap` con el marcador. Política de uso de OSM y
+proveedores con clave: `solicitud_servicios.md §7` del backend.
+
+### 3.18 Panel admin en web
 
 Es el mismo `AdminShell`: `flutter build web` y servir `build/web` (Caddy,
 Nginx o `python -m http.server`). Entrar con la cuenta admin.
@@ -229,6 +243,7 @@ backend. Afecta a: código de recuperación y avisos de cada estado.
 | `image_picker` | Foto del repuesto | — |
 | `google_sign_in` | Login Google | Cliente OAuth Android (SHA-1) |
 | `url_launcher` | Checkout, Cómo llegar, Llamar | `queries` VIEW https / DIAL tel (ya en manifest) |
+| `flutter_map` + `latlong2` | Mapa OSM (elegir ubicación, ficha de tienda) | — (tiles públicos con User-Agent) |
 | `flutter_secure_storage` | JWT y carrito | — |
 | `dio` | HTTP con Bearer, multipart y bytes | `usesCleartextTraffic` para HTTP en desarrollo |
 

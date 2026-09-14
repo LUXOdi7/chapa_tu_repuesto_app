@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
 
 import '../../../core/network/api_client.dart';
@@ -80,16 +79,13 @@ class SupplierRepository {
   /// Baja logica.
   Future<void> deleteProduct(int id) => _api.delete('/suppliers/products/$id');
 
-  /// Sube la foto y devuelve la RUTA relativa (`/uploads/products/ab12.jpg`),
-  /// que es lo que se guarda en el producto. jpg/jpeg/png/webp, max 5 MB.
-  /// Se mandan los bytes: en web no hay ruta de archivo.
-  Future<String> uploadImage(XFile file) async {
-    final form = FormData.fromMap({
-      'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.name),
-    });
-    final data = asMap(await _api.postMultipart('/uploads/image', form));
-    return data['path'] as String;
-  }
+  /// Foto del repuesto -> `uploads/products/`. Devuelve la ruta relativa.
+  Future<String> uploadImage(XFile file) => _api.uploadImage(file);
+
+  /// Un producto CON sus compatibilidades (la lista no las trae): se usa
+  /// antes de editar, si no el PUT las borraria.
+  Future<Product> product(int id) async =>
+      Product.fromJson(asMap(await _api.get('/suppliers/products/$id')));
 
   /// Cuerpo comun de POST y PUT de productos.
   static Map<String, dynamic> productBody({

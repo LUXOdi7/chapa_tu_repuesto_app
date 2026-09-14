@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../shared/widgets/app_widgets.dart';
+import '../../../shared/widgets/map_picker_page.dart';
+import '../../../core/network/api_config.dart';
 import '../../catalog/domain/store.dart';
 
 /// Alta y edicion de la tienda del proveedor (`POST /suppliers/store` sirve
@@ -32,6 +36,39 @@ class _StoreFormPageState extends State<StoreFormPage> {
   late final _description = TextEditingController(text: widget.store?.description);
   late final _lat = TextEditingController(text: widget.store?.latitude?.toString());
   late final _lng = TextEditingController(text: widget.store?.longitude?.toString());
+  late String? _logoPath = widget.store?.logoUrl;
+  bool _uploading = false;
+
+  Future<void> _pickLogo() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 85);
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final path = await AppScope.of(context).api.uploadImage(picked, folder: 'logos');
+      if (mounted) setState(() => _logoPath = path);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  /// Mapa OpenStreetMap: tocar sobre el local rellena lat/lng.
+  Future<void> _pickOnMap() async {
+    final lat = double.tryParse(_lat.text.trim().replaceAll(',', '.'));
+    final lng = double.tryParse(_lng.text.trim().replaceAll(',', '.'));
+    final point = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(initial: lat != null && lng != null ? LatLng(lat, lng) : null),
+      ),
+    );
+    if (point == null || !mounted) return;
+    setState(() {
+      _lat.text = point.latitude.toStringAsFixed(6);
+      _lng.text = point.longitude.toStringAsFixed(6);
+    });
+  }
 
   bool _busy = false;
 
@@ -61,6 +98,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
         phone: _phone.text.trim(),
         openingHours: _hours.text.trim().isEmpty ? null : _hours.text.trim(),
         description: _description.text.trim().isEmpty ? null : _description.text.trim(),
+        logoUrl: _logoPath,
         latitude: double.tryParse(_lat.text.trim().replaceAll(',', '.')),
         longitude: double.tryParse(_lng.text.trim().replaceAll(',', '.')),
       );
@@ -101,6 +139,22 @@ class _StoreFormPageState extends State<StoreFormPage> {
                   'negocio. Aparecerán en el catálogo y en las constancias.',
                 ),
               ),
+            // Logo de la tienda -> uploads/logos/
+            Center(
+              child: InkWell(
+                onTap: _uploading ? null : _pickLogo,
+                customBorder: const CircleBorder(),
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundImage:
+                      _logoPath != null ? NetworkImage(ApiConfig.imageUrl(_logoPath)!) : null,
+                  child: _uploading
+                      ? const CircularProgressIndicator()
+                      : (_logoPath == null ? const Icon(Icons.add_a_photo_outlined, size: 28) : null),
+                ),
+              ),
+            ),
+            const Center(child: Padding(padding: EdgeInsets.only(top: 4, bottom: 12), child: Text('Logo (opcional)'))),
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
@@ -182,9 +236,13 @@ class _StoreFormPageState extends State<StoreFormPage> {
               ),
             ),
             const SizedBox(height: 12),
-            // Coordenadas a mano: en Google Maps, mantener pulsado sobre la
-            // tienda y copiar "lat, lng". ponytail: pedir GPS con geolocator
-            // cuando los proveedores registren desde el local.
+            OutlinedButton.icon(
+              onPressed: _pickOnMap,
+              icon: const Icon(Icons.map_outlined),
+              label: Text(_lat.text.isEmpty ? 'Marcar mi tienda en el mapa' : 'Cambiar ubicación en el mapa'),
+            ),
+            const SizedBox(height: 8),
+            // Tambien a mano (o pegando "lat, lng" de Google Maps).
             Row(
               children: [
                 Expanded(
@@ -206,7 +264,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
             ),
             const Padding(
               padding: EdgeInsets.only(top: 4),
-              child: Text('Opcional: con esto el comprador ve "Cómo llegar" a tu tienda.',
+              child: Text('Opcional: con esto el comprador ve tu tienda en el mapa y "Cómo llegar".',
                   style: TextStyle(fontSize: 12)),
             ),
             const SizedBox(height: 24),

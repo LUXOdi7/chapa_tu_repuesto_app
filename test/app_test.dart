@@ -99,6 +99,11 @@ void main() {
     expect(session.user, isNull);
   });
 
+  test('los null no viajan en el cuerpo (el backend tiene defaults y un null da 422)', () {
+    expect(ApiClient.stripNulls({'a': 1, 'b': null, 'c': ''}), {'a': 1, 'c': ''});
+    expect(ApiClient.stripNulls([1, null]), [1, null]); // solo mapas
+  });
+
   test('el pedido trae chat y reputacion del comprador', () {
     final order = Order.fromJson({
       ...orderJson,
