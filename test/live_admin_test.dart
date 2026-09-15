@@ -53,7 +53,12 @@ void main() {
     await tester.runAsync(() async {
       Future<void> settle([int ms = 1500]) async {
         await Future<void>.delayed(Duration(milliseconds: ms));
-        await tester.pump();
+        // Varios frames con tiempo: las transiciones de ruta (300 ms) se
+        // completan; con un solo pump() quedaban a medio camino y los botones
+        // fuera de la pantalla.
+        for (var f = 0; f < 5; f++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         final err = tester.takeException();
         if (err != null) fail('EXCEPCION: $err');
       }
@@ -119,7 +124,19 @@ void main() {
       await waitFor(find.byType(TextField));
       await tester.enterText(find.byType(TextField).last, 'Hola, tienen stock?');
       await tester.tap(find.byIcon(Icons.send));
-      await waitFor(find.text('Hola, tienen stock?'));
+      await waitFor(find.text('Hoy')); // chip de fecha = el mensaje ya esta en la lista
+      // Chip de fecha "Hoy" una sola vez, hora en la burbuja
+      expect(find.text('Hoy'), findsOneWidget);
+      expect(find.text('Hola, tienen stock?'), findsNWidgets(1)); // solo la burbuja (el campo ya se vacio)
+      await back();
+      await back();
+      // Campana -> bandeja de notificaciones con recargar
+      await waitFor(find.byIcon(Icons.notifications_outlined));
+      await tester.tap(find.byIcon(Icons.notifications_outlined));
+      await waitFor(find.text('Notificaciones'));
+      await waitFor(find.byIcon(Icons.refresh));
+      await tester.tap(find.byIcon(Icons.refresh));
+      await settle(1500);
     });
   });
 
@@ -133,7 +150,12 @@ void main() {
     await tester.runAsync(() async {
       Future<void> settle([int ms = 1500]) async {
         await Future<void>.delayed(Duration(milliseconds: ms));
-        await tester.pump();
+        // Varios frames con tiempo: las transiciones de ruta (300 ms) se
+        // completan; con un solo pump() quedaban a medio camino y los botones
+        // fuera de la pantalla.
+        for (var f = 0; f < 5; f++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         final err = tester.takeException();
         if (err != null) fail('EXCEPCION: $err');
       }
@@ -161,6 +183,48 @@ void main() {
       expect(find.text('Marcar mi tienda en el mapa').evaluate().isEmpty, isTrue); // ya tiene ubicacion
       await tester.tap(find.text('Guardar cambios'));
       await waitFor(find.text('Tienda guardada'), 10);
+    });
+  });
+
+  testWidgets('proveedor 4 recibe en la campana el mensaje del comprador', (tester) async {
+    if (!const bool.fromEnvironment('LIVE')) return;
+    HttpOverrides.global = null;
+    TestWidgetsFlutterBinding.ensureInitialized().defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      (call) async => null,
+    );
+    await tester.runAsync(() async {
+      Future<void> settle([int ms = 1500]) async {
+        await Future<void>.delayed(Duration(milliseconds: ms));
+        // Varios frames con tiempo: las transiciones de ruta (300 ms) se
+        // completan; con un solo pump() quedaban a medio camino y los botones
+        // fuera de la pantalla.
+        for (var f = 0; f < 5; f++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        final err = tester.takeException();
+        if (err != null) fail('EXCEPCION: $err');
+      }
+
+      Future<void> waitFor(Finder f, [int seconds = 15]) async {
+        for (var i = 0; i < seconds * 4; i++) {
+          await settle(250);
+          if (f.evaluate().isNotEmpty) return;
+        }
+        fail('No aparecio: $f');
+      }
+
+      await tester.pumpWidget(const ChapaTuRepuestoApp());
+      await settle();
+      await tester.enterText(find.byType(TextFormField).at(0), 'proveedor4@demo.pe');
+      await tester.enterText(find.byType(TextFormField).at(1), '123456');
+      await tester.tap(find.widgetWithText(FilledButton, 'Ingresar'));
+      await waitFor(find.byIcon(Icons.notifications_outlined));
+      await waitFor(find.byType(Badge)); // hay no leidas
+      await tester.tap(find.byIcon(Icons.notifications_outlined));
+      await waitFor(find.textContaining('Mensaje de'));
+      await tester.tap(find.byIcon(Icons.done_all));
+      await settle(1500);
     });
   });
 }

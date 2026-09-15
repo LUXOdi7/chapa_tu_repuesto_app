@@ -7,6 +7,7 @@ import '../../catalog/domain/product.dart';
 import '../../catalog/domain/store.dart';
 import '../../orders/domain/order.dart';
 import '../../orders/presentation/orders_page.dart';
+import '../../profile/presentation/notifications_page.dart';
 import '../../profile/presentation/profile_page.dart';
 import '../../../main.dart' show shopMode;
 import 'payment_config_page.dart';
@@ -55,6 +56,7 @@ class _SupplierShellState extends State<SupplierShell> {
                   icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
                   label: const Text('Comprar', style: TextStyle(color: Colors.white)),
                 ),
+                const NotificationBell(),
                 IconButton(
                   tooltip: 'Mi cuenta',
                   icon: const Icon(Icons.account_circle_outlined),

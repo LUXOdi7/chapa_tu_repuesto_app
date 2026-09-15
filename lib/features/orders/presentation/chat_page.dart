@@ -70,7 +70,8 @@ class _ChatPageState extends State<ChatPage> {
     if (text.isEmpty) return;
     setState(() => _sending = true);
     try {
-      final sent = await AppScope.ordersOf(context).sendMessage(widget.order.id, text);
+      final sent = await AppScope.ordersOf(context)
+          .sendMessage(widget.order.id, text);
       if (!mounted) return;
       _input.clear();
       setState(() => _messages.add(sent));
@@ -83,8 +84,8 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      });
+    if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +94,9 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Pedido ${widget.order.code}'),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh)],
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+        ],
       ),
       body: Column(
         children: [
@@ -101,41 +104,93 @@ class _ChatPageState extends State<ChatPage> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                    ? const EmptyState(
-                        message: 'Escribe tu consulta sobre este pedido.\nLa otra parte recibe un aviso por correo.',
-                        icon: Icons.chat_bubble_outline,
-                      )
-                    : ListView.builder(
-                        controller: _scroll,
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, i) {
-                          final m = _messages[i];
-                          final mine = m.senderId == me;
-                          return Align(
-                            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                ? const EmptyState(
+                    message: 'Escribe tu consulta sobre este pedido.\nLa otra parte recibe un aviso por correo.',
+                    icon: Icons.chat_bubble_outline,
+                  )
+                : ListView.builder(
+                    controller: _scroll,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, i) {
+                      final m = _messages[i];
+                      final mine = m.senderId == me;
+                      // Chip de fecha centrado una sola vez por dia (como WhatsApp).
+                      final newDay =
+                          i == 0 || !sameDay(_messages[i - 1].at, m.at);
+                      return Column(
+                        children: [
+                          if (newDay)
+                            Center(
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: scheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  dayLabel(m.at),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: scheme.outline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Align(
+                            alignment: mine
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
                             child: Container(
                               margin: const EdgeInsets.symmetric(vertical: 3),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.75),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.sizeOf(context).width * 0.75,
+                              ),
                               decoration: BoxDecoration(
-                                color: mine ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+                                color: mine
+                                    ? scheme.primaryContainer
+                                    : scheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (!mine)
-                                    Text(m.senderName,
-                                        style: TextStyle(fontSize: 11, color: scheme.outline, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      m.senderName,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: scheme.outline,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   Text(m.body),
-                                  Text(dateTimeLabel(m.at), style: TextStyle(fontSize: 10, color: scheme.outline)),
+                                  Text(
+                                    timeLabel(m.at),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: scheme.outline,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
           ),
           SafeArea(
             child: Padding(
@@ -147,7 +202,9 @@ class _ChatPageState extends State<ChatPage> {
                       controller: _input,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(hintText: 'Escribe un mensaje'),
+                      decoration: const InputDecoration(
+                        hintText: 'Escribe un mensaje',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 6),

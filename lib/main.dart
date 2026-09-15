@@ -19,6 +19,7 @@ import 'features/orders/data/order_repository.dart';
 import 'features/orders/presentation/order_tracking_page.dart';
 import 'features/orders/presentation/orders_page.dart';
 import 'features/orders/presentation/receipt_page.dart';
+import 'features/profile/presentation/notifications_page.dart';
 import 'features/profile/presentation/profile_page.dart';
 import 'features/supplier/data/supplier_repository.dart';
 import 'features/supplier/presentation/supplier_shell.dart';
@@ -185,6 +186,7 @@ class _BuyerShellState extends State<BuyerShell> {
               icon: const Icon(Icons.storefront, color: Colors.white),
               label: const Text('Mi tienda', style: TextStyle(color: Colors.white)),
             ),
+          const NotificationBell(),
           IconButton(
             tooltip: 'Mi cuenta',
             icon: const Icon(Icons.account_circle_outlined),

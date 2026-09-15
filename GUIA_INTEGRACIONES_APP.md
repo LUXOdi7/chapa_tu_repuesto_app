@@ -149,7 +149,8 @@ Pulsar NS 200" cuando alguna compatibilidad declarada la incluye.
 
 ### 3.13 Chat por pedido
 
-`orders/presentation/chat_page.dart`: burbujas, envío y refresco cada 4 s
+`orders/presentation/chat_page.dart`: burbujas con la hora, chip de fecha
+centrado una vez por día ("Hoy", "Ayer", fecha), envío y refresco cada 4 s
 con `after_id` (solo lo nuevo). Botón "Consultar / Mensajes (N)" en el
 seguimiento. Quien recibe tiene aviso por correo; push con FCM: ver
 `docs/INTEGRACIONES.md §6` del backend (necesita proyecto Firebase).
@@ -166,6 +167,14 @@ La tienda, en el seguimiento de un pedido entregado/cerrado, ve
 "Calificar comprador" (`_reviewBuyer`) → `POST /orders/{id}/buyer-review`. La
 calificación aparece junto al nombre del comprador en cada pedido de la tienda
 y en *Mi cuenta* del comprador.
+
+### 3.15b Notificaciones (campana)
+
+`profile/presentation/notifications_page.dart`: `NotificationBell` (junto al
+icono de usuario en comprador y proveedor; badge de no leídas, se refresca cada
+30 s y al volver) y `NotificationsPage` (recargar, marcar todas, tocar → abre el
+pedido). Llegan: cambios de estado, mensajes del chat, alertas cumplidas,
+cambio de nombre de un producto de un pedido en curso y calificaciones.
 
 ### 3.16 Foto de perfil y logo de la tienda
 

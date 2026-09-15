@@ -87,4 +87,15 @@ class AuthRepository {
       })));
 
   Future<void> deleteMoto(int id) => _api.delete('/auth/me/motos/$id');
+
+  // ---- Notificaciones (campana) ----
+  Future<List<Map<String, dynamic>>> notifications() async =>
+      asMapList(asMap(await _api.get('/notifications'))['items']);
+
+  Future<int> unreadNotifications() async =>
+      asMap(await _api.get('/notifications/unread-count'))['unread'] as int? ?? 0;
+
+  Future<void> markNotificationRead(int id) => _api.patch('/notifications/$id/read');
+
+  Future<void> markAllNotificationsRead() => _api.post('/notifications/read-all');
 }

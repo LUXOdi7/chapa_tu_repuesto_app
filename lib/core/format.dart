@@ -33,6 +33,24 @@ String shortDate(DateTime d) => '${_two(d.day)}/${_two(d.month)}/${d.year}';
 String dateTimeLabel(DateTime d) =>
     '${shortDate(d)} ${_two(d.hour)}:${_two(d.minute)}';
 
+/// "19:35"
+String timeLabel(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
+
+/// Separador de dia tipo WhatsApp: "Hoy", "Ayer" o la fecha.
+String dayLabel(DateTime d, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final day = DateTime(d.year, d.month, d.day);
+  final diff = DateTime(today.year, today.month, today.day).difference(day).inDays;
+  return switch (diff) {
+    0 => 'Hoy',
+    1 => 'Ayer',
+    _ => shortDate(d),
+  };
+}
+
+bool sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
 /// Las categorias llegan del backend en minuscula y en ingles/sin tildes
 /// (`frenos`, `electrico`, `transmision`): la UI nunca las muestra crudas.
 const _categoryLabels = <String, String>{

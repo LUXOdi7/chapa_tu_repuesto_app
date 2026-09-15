@@ -9,7 +9,8 @@ class ApiConfig {
 
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.1.195.229:9000',
+    defaultValue: 'http://192.168.1.153:9000',
+    //defaultValue: 'http://10.1.194.178:9000',
   );
 
   /// Client ID de tipo WEB de Google Cloud (el mismo que `GOOGLE_CLIENT_ID`

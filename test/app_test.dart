@@ -104,6 +104,16 @@ void main() {
     expect(ApiClient.stripNulls([1, null]), [1, null]); // solo mapas
   });
 
+  test('el chat muestra la fecha una vez por dia y la hora en la burbuja', () {
+    final now = DateTime(2026, 9, 15, 10, 0);
+    expect(dayLabel(DateTime(2026, 9, 15, 8), now: now), 'Hoy');
+    expect(dayLabel(DateTime(2026, 9, 14, 23, 59), now: now), 'Ayer');
+    expect(dayLabel(DateTime(2026, 9, 1), now: now), '01/09/2026');
+    expect(timeLabel(DateTime(2026, 9, 15, 8, 5)), '08:05');
+    expect(sameDay(DateTime(2026, 9, 15, 0, 1), DateTime(2026, 9, 15, 23, 59)), isTrue);
+    expect(sameDay(DateTime(2026, 9, 15, 23, 59), DateTime(2026, 9, 16, 0, 0)), isFalse);
+  });
+
   test('el pedido trae chat y reputacion del comprador', () {
     final order = Order.fromJson({
       ...orderJson,
