@@ -81,3 +81,9 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   notificaciones junto al icono de usuario con recargar; chat con fecha una
   vez por día y hora en burbuja; aviso por cambio de nombre de producto.
 - 2026-09-15 · Mantener este archivo actualizado con cada indicación nueva.
+- 2026-09-15 · En la raíz `D:\ChapaTuRepuesto` (fuera de los repos): `INSTALACION.md`
+  (manual desde cero: versiones, Docker, venv, ctr, Flutter, workspace VS Code)
+  y `Sugerencias.md` (ideas priorizadas A–F).
+- 2026-09-15 · `CONTEXTO-ACTUAL.md` en la raíz: explicación completa del
+  proyecto para el equipo (roles, BD, flujo de pedido, imágenes, voz,
+  notificaciones, pruebas). Actualizarlo cuando cambie algo de fondo.
