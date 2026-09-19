@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "App emulador",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=API_BASE_URL=http://10.0.2.2:9000"
+      ]
+    },
+    {
+      "name": "App Chrome",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--web-port=5000",
+        "--dart-define=API_BASE_URL=http://localhost:9000"
+      ]
+    }
+  ]
+}
