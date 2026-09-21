@@ -83,7 +83,10 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
 - 2026-09-15 · Mantener este archivo actualizado con cada indicación nueva.
 - 2026-09-15 · En la raíz `D:\ChapaTuRepuesto` (fuera de los repos): `INSTALACION.md`
   (manual desde cero: versiones, Docker, venv, ctr, Flutter, workspace VS Code)
-  y `Sugerencias.md` (ideas priorizadas A–F).
-- 2026-09-15 · `CONTEXTO-ACTUAL.md` en la raíz: explicación completa del
+  y `Sugerencias-A-IMPLEMENTAR.md` (ideas priorizadas A–F).
+- 2026-09-15 · `CONTEXTO-ACTUAL-PROYECTO.md` en la raíz: explicación completa del
   proyecto para el equipo (roles, BD, flujo de pedido, imágenes, voz,
   notificaciones, pruebas). Actualizarlo cuando cambie algo de fondo.
+- 2026-09-17 · `PENDIENTE.md` en la raíz: checklist de servicios/credenciales que
+  faltan (Google, SMTP, MP, Niubiz, dominio, keystore, legales, FCM, Yape vía
+  pasarela, RUC API, mapas, Sentry, SUNAT) con cómo conseguir cada clave.
