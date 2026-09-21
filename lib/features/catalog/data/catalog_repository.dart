@@ -1,3 +1,4 @@
+import '../../../core/format.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/product.dart';
 import '../domain/store.dart';
@@ -11,6 +12,22 @@ class CatalogRepository {
   const CatalogRepository(this._api);
 
   final ApiClient _api;
+
+  /// Trae las categorias y actualiza el mapa global `categoryLabels`.
+  Future<void> loadCategories() async {
+    final rows = asMapList(await _api.get('/catalog/categories'));
+    if (rows.isEmpty) return;
+    categoryLabels
+      ..clear()
+      ..addEntries(rows.map((r) => MapEntry(r['key'] as String, r['label'] as String)));
+  }
+
+  /// Admin y tiendas. Devuelve la clave (si ya existia, la misma).
+  Future<String> createCategory(String label) async {
+    final r = asMap(await _api.post('/catalog/categories', body: {'label': label}));
+    categoryLabels[r['key'] as String] = r['label'] as String;
+    return r['key'] as String;
+  }
 
   Future<List<String>> motoBrands() async =>
       (await _api.get('/catalog/moto-brands') as List).cast<String>();

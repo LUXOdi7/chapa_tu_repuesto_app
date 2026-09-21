@@ -91,7 +91,7 @@ class _VoiceSearchBarState extends State<VoiceSearchBar> {
               // en tema oscuro, y este es el boton estrella de la pantalla.
               style: IconButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.secondary,
-                foregroundColor: Colors.black87,
+                foregroundColor: Colors.white,
               ),
               onPressed: _dictate,
             ),
@@ -148,7 +148,7 @@ class _ListeningSheetState extends State<_ListeningSheet> {
             CircleAvatar(
               radius: 36,
               backgroundColor: scheme.secondary,
-              child: const Icon(Icons.mic, size: 34, color: Colors.black87),
+              child: const Icon(Icons.mic, size: 34, color: Colors.white),
             ),
             const SizedBox(height: 16),
             Text('Escuchando...',

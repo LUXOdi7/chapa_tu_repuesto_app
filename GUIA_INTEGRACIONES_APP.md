@@ -66,7 +66,8 @@ Additional run args*: `--dart-define=API_BASE_URL=... --dart-define=GOOGLE_SERVE
 |---|---|---|
 | Registrar tienda (RUC, dirección, horario, contacto, **lat/lng**, descripción) | `supplier/presentation/store_form_page.dart` | `POST /suppliers/store` |
 | Resumen (por despachar, repuestos, sin stock, vendido) | `supplier_shell.dart` → `_StoreTab` | `GET /suppliers/dashboard` |
-| Publicar/editar repuesto con foto y compatibilidades | `product_form_page.dart` | `POST/PUT /suppliers/products`, `POST /uploads/image` |
+| Publicar/editar repuesto con hasta 5 fotos, categoría (o crear una nueva) y compatibilidades | `product_form_page.dart` | `POST/PUT /suppliers/products` (`image_urls`), `POST /uploads/image`, `POST /catalog/categories` |
+| Repuestos agrupados por categoría (alfabético) y perfil público de la tienda | `supplier_shell.dart` | `GET /suppliers/products`, `GET /catalog/stores/{id}` |
 | Bandeja de pedidos y avance de estados | `orders/presentation/orders_page.dart`, `order_tracking_page.dart` | `GET /orders`, `PATCH /orders/{id}/status` |
 
 Las coordenadas se escriben a mano (en Google Maps: mantener pulsado sobre el

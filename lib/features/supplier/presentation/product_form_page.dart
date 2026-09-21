@@ -39,7 +39,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   late String _category = widget.product?.category ?? knownCategories.first;
   late bool _active = widget.product?.isActive ?? true;
-  late String? _imagePath = widget.product?.imageUrl;
+  /// Galeria: hasta 5 rutas; la primera es la portada.
+  late final List<String> _images = [...?widget.product?.imageUrls];
+  static const _maxImages = 5;
   late final List<Compatibility> _compatibilities =
       [...?widget.product?.compatibilities];
 
@@ -58,22 +60,50 @@ class _ProductFormPageState extends State<ProductFormPage> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1280,
-      imageQuality: 85,
-    );
-    if (picked == null || !mounted) return;
-
-    setState(() => _uploadingLabel = 'Subiendo foto...');
+  Future<void> _pickImages() async {
+    final room = _maxImages - _images.length;
+    if (room <= 0) return;
+    final picked = await ImagePicker().pickMultiImage(maxWidth: 1280, imageQuality: 85, limit: room);
+    if (picked.isEmpty || !mounted) return;
+    setState(() => _uploadingLabel = 'Subiendo ${picked.length} foto(s)...');
     try {
-      final path = await AppScope.suppliersOf(context).uploadImage(picked);
-      if (mounted) setState(() => _imagePath = path);
+      final repo = AppScope.suppliersOf(context);
+      for (final file in picked.take(room)) {
+        final path = await repo.uploadImage(file);
+        if (mounted) setState(() => _images.add(path));
+      }
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
       if (mounted) setState(() => _uploadingLabel = null);
+    }
+  }
+
+  /// Nueva categoria desde el formulario (tiendas y admin).
+  Future<void> _newCategory() async {
+    final ctrl = TextEditingController();
+    final label = await showDialog<String>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Nueva categoría'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(labelText: 'Nombre', hintText: 'Accesorios, Cascos...'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(d, ctrl.text.trim()), child: const Text('Crear')),
+        ],
+      ),
+    );
+    if (label == null || label.length < 2 || !mounted) return;
+    try {
+      final key = await AppScope.catalogOf(context).createCategory(label);
+      if (mounted) setState(() => _category = key);
+    } catch (e) {
+      if (mounted) showError(context, e);
     }
   }
 
@@ -97,7 +127,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
         brand: _brand.text.trim().isEmpty ? null : _brand.text.trim(),
         description:
             _description.text.trim().isEmpty ? null : _description.text.trim(),
-        imageUrl: _imagePath,
+        imageUrl: _images.isEmpty ? null : _images.first,
+        imageUrls: _images,
         price: double.parse(_price.text.replaceAll(',', '.')),
         stock: int.parse(_stock.text),
         warrantyMonths: int.tryParse(_warranty.text),
@@ -130,6 +161,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Galeria: portada grande + miniaturas; mantener pulsado una
+            // miniatura la convierte en portada; la X la quita.
             AspectRatio(
               aspectRatio: 16 / 9,
               child: ClipRRect(
@@ -137,7 +170,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    PartImage(path: _imagePath),
+                    PartImage(path: _images.isEmpty ? null : _images.first),
                     if (_uploadingLabel != null)
                       Container(
                         color: Colors.black54,
@@ -149,12 +182,68 @@ class _ProductFormPageState extends State<ProductFormPage> {
               ),
             ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _uploadingLabel == null ? _pickImage : null,
-              icon: const Icon(Icons.photo_camera_outlined),
-              label: Text(_imagePath == null ? 'Subir foto' : 'Cambiar foto'),
+            SizedBox(
+              height: 64,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (var i = 0; i < _images.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _images.insert(0, _images.removeAt(i))),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(width: 64, height: 64, child: PartImage(path: _images[i], height: 64)),
+                            ),
+                            if (i == 0)
+                              const Positioned(
+                                left: 4,
+                                bottom: 4,
+                                child: Icon(Icons.star, size: 16, color: Colors.amber),
+                              ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: InkWell(
+                                onTap: () => setState(() => _images.removeAt(i)),
+                                child: const CircleAvatar(
+                                  radius: 10,
+                                  backgroundColor: Colors.black54,
+                                  child: Icon(Icons.close, size: 12, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (_images.length < _maxImages)
+                    InkWell(
+                      onTap: _uploadingLabel == null ? _pickImages : null,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Theme.of(context).colorScheme.outline),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.add_a_photo_outlined),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 12),
+              child: Text(
+                'Hasta $_maxImages fotos (opcional). Toca una miniatura para hacerla portada.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
 
             TextFormField(
               controller: _name,
@@ -164,14 +253,27 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   (v == null || v.trim().length < 3) ? 'Obligatorio' : null,
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Categoría'),
-              items: [
-                for (final key in knownCategories)
-                  DropdownMenuItem(value: key, child: Text(categoryLabel(key))),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    key: ValueKey('cat|$_category|${categoryLabels.length}'),
+                    initialValue: categoryLabels.containsKey(_category) ? _category : null,
+                    decoration: const InputDecoration(labelText: 'Categoría'),
+                    items: [
+                      for (final key in knownCategories)
+                        DropdownMenuItem(value: key, child: Text(categoryLabel(key))),
+                    ],
+                    onChanged: (v) => setState(() => _category = v ?? _category),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: 'Nueva categoría',
+                  icon: const Icon(Icons.add),
+                  onPressed: _newCategory,
+                ),
               ],
-              onChanged: (v) => setState(() => _category = v ?? _category),
             ),
             const SizedBox(height: 12),
             TextFormField(

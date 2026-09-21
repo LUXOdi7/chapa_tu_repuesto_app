@@ -60,8 +60,17 @@ class Session extends ChangeNotifier {
     await refreshMotos();
   }
 
+  /// Lo llama main.dart para que categorias y motos esten listas al entrar.
+  Future<void> Function()? loadCategories;
+
   Future<void> refreshMotos() async {
-    if (_user == null || _user!.isAdmin) return;
+    try {
+      await loadCategories?.call();
+    } catch (_) {/* se queda el mapa base */}
+    if (_user == null || _user!.isAdmin) {
+      notifyListeners();
+      return;
+    }
     try {
       motos = await _auth.motos();
     } catch (_) {

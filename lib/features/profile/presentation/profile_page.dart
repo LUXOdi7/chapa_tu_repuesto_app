@@ -159,7 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               : null,
                           child: user.avatarUrl == null
                               ? Text(user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
-                                  style: const TextStyle(fontSize: 26, color: Colors.black87))
+                                  style: const TextStyle(fontSize: 26, color: Colors.white))
                               : null,
                         ),
                         const Positioned(

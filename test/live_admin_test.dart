@@ -74,9 +74,15 @@ void main() {
         for (var i = 0; i < seconds * 4; i++) {
           await settle(250);
           if (f.evaluate().isNotEmpty) return;
-          final lists = find.byType(ListView).hitTestable();
+          // Baja la lista/grilla visible mas profunda (la ultima en el arbol).
+          final lists = find
+              .byWidgetPredicate((w) =>
+                  w is Scrollable &&
+                  w.axisDirection == AxisDirection.down &&
+                  w.physics is! NeverScrollableScrollPhysics)
+              .hitTestable();
           if (i % 4 == 3 && lists.evaluate().isNotEmpty) {
-            await tester.drag(lists.last, const Offset(0, -300), warnIfMissed: false);
+            await tester.drag(lists.last, const Offset(0, -400), warnIfMissed: false);
           }
         }
         fail('No aparecio: $f');
@@ -87,6 +93,19 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(0), 'taller.julio@demo.pe');
       await tester.enterText(find.byType(TextFormField).at(1), '123456');
       await tester.tap(find.widgetWithText(FilledButton, 'Ingresar'));
+      // "Ver mas" agrega la siguiente pagina sin reiniciar la grilla
+      await waitFor(find.textContaining('restantes)'));
+      final antes = (tester.widget(find.textContaining('restantes)')) as Text).data!;
+      await tester.ensureVisible(find.textContaining('restantes)'));
+      await settle(300);
+      await tester.tap(find.textContaining('restantes)'));
+      // Tras cargar, el boton queda al final de la grilla (mas abajo): se baja
+      // hasta verlo otra vez y el contador debe haber cambiado.
+      await settle(1500);
+      await waitFor(find.textContaining('restantes)'), 10);
+      final despues = (tester.widget(find.textContaining('restantes)')) as Text).data!;
+      expect(despues, isNot(antes)); // (65 restantes) -> (45 restantes)
+      expect(find.byType(CircularProgressIndicator), findsNothing);
       // Chips "Mis motos" en el buscador y filtro al tocar
       await waitFor(find.textContaining('Bajaj Pulsar NS 200'));
       await tester.tap(find.textContaining('Bajaj Pulsar NS 200').first);
@@ -119,15 +138,17 @@ void main() {
       await settle(600);
       await waitFor(find.text('Ver tienda').hitTestable(), 15);
       expect(find.byType(OrderTrackingPage), findsOneWidget);
-      await waitFor(find.textContaining('Consultar').hitTestable());
-      await tester.tap(find.textContaining('Consultar').hitTestable().first);
+      // "Consultar" la primera vez; "Mensajes (N)" si ya hubo chat en esa orden
+      final chatBtn = find.textContaining(RegExp('Consultar|Mensajes'));
+      await waitFor(chatBtn.hitTestable());
+      await tester.tap(chatBtn.hitTestable().first);
       await waitFor(find.byType(TextField));
       await tester.enterText(find.byType(TextField).last, 'Hola, tienen stock?');
       await tester.tap(find.byIcon(Icons.send));
       await waitFor(find.text('Hoy')); // chip de fecha = el mensaje ya esta en la lista
       // Chip de fecha "Hoy" una sola vez, hora en la burbuja
       expect(find.text('Hoy'), findsOneWidget);
-      expect(find.text('Hola, tienen stock?'), findsNWidgets(1)); // solo la burbuja (el campo ya se vacio)
+      expect(find.text('Hola, tienen stock?'), findsWidgets); // en burbuja (el campo ya se vacio); puede haber de corridas previas
       await back();
       await back();
       // Campana -> bandeja de notificaciones con recargar
@@ -164,9 +185,15 @@ void main() {
         for (var i = 0; i < seconds * 4; i++) {
           await settle(250);
           if (f.evaluate().isNotEmpty) return;
-          final lists = find.byType(ListView).hitTestable();
+          // Baja la lista/grilla visible mas profunda (la ultima en el arbol).
+          final lists = find
+              .byWidgetPredicate((w) =>
+                  w is Scrollable &&
+                  w.axisDirection == AxisDirection.down &&
+                  w.physics is! NeverScrollableScrollPhysics)
+              .hitTestable();
           if (i % 4 == 3 && lists.evaluate().isNotEmpty) {
-            await tester.drag(lists.last, const Offset(0, -300), warnIfMissed: false);
+            await tester.drag(lists.last, const Offset(0, -400), warnIfMissed: false);
           }
         }
         fail('No aparecio: $f');

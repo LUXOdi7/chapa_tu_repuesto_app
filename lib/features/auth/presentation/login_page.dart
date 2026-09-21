@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/app_scope.dart';
-import '../../../core/app_theme.dart';
 import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/user.dart';
@@ -123,17 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 12),
-                    CircleAvatar(
-                      radius: 34,
-                      backgroundColor: kBrandAmber,
-                      child: const Icon(Icons.two_wheeler,
-                          size: 38, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('ChapaTuRepuesto',
-                        textAlign: TextAlign.center,
-                        style: text.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    const BrandLogo(height: 170),
                     const SizedBox(height: 4),
                     Text(
                       _registering

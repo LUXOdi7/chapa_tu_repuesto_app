@@ -27,7 +27,7 @@ class _AdminShellState extends State<AdminShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin · ${_titles[_tab]}'),
+        title: BrandTitle('Admin · ${_titles[_tab]}'),
         actions: [
           IconButton(
             tooltip: 'Mi cuenta',
@@ -99,11 +99,63 @@ class _StatsTabState extends State<_StatsTab> {
                   title: Text(orderStatusLabel(e.key)),
                   trailing: Text('${e.value}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
+              SectionTitle(
+                'Categorías de repuesto',
+                trailing: TextButton.icon(
+                  onPressed: () async {
+                    await _newCategory(context);
+                    if (mounted) setState(() => _reload++);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nueva'),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final key in knownCategories)
+                      Chip(label: Text(categoryLabel(key)), visualDensity: VisualDensity.compact),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         );
       },
     );
+  }
+}
+
+/// Alta de categoria desde el panel (tambien pueden las tiendas).
+Future<void> _newCategory(BuildContext context) async {
+  final catalog = AppScope.catalogOf(context);
+  final ctrl = TextEditingController();
+  final label = await showDialog<String>(
+    context: context,
+    builder: (d) => AlertDialog(
+      title: const Text('Nueva categoría'),
+      content: TextField(
+        controller: ctrl,
+        autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(labelText: 'Nombre'),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(d, ctrl.text.trim()), child: const Text('Crear')),
+      ],
+    ),
+  );
+  if (label == null || label.length < 2 || !context.mounted) return;
+  try {
+    await catalog.createCategory(label);
+    if (context.mounted) showInfo(context, 'Categoría "$label" creada');
+  } catch (e) {
+    if (context.mounted) showError(context, e);
   }
 }
 
@@ -113,32 +165,39 @@ class _StatGrid extends StatelessWidget {
   final List<(String, String, IconData)> items;
 
   @override
-  Widget build(BuildContext context) => GridView.count(
-        crossAxisCount: 2,
+  // Tarjetas compactas de alto fijo: en web/tablet entran 4-6 por fila en
+  // vez de estirarse a media pantalla.
+  Widget build(BuildContext context) => GridView(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 2.2,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 200,
+          mainAxisExtent: 64,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+        ),
         children: [
           for (final (label, value, icon) in items)
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 child: Row(
                   children: [
-                    Icon(icon, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 10),
+                    Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(value,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
-                          Text(label, style: Theme.of(context).textTheme.bodySmall),
+                          Text(label,
+                              style: Theme.of(context).textTheme.labelSmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),

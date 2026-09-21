@@ -31,7 +31,15 @@ class _SearchViewState extends State<SearchView> {
   String? _category;
   bool _onlyInStock = false;
   String _orderBy = 'relevance';
-  int _limit = 20;
+
+  /// Paginas extra cargadas con "Ver mas". Se acumulan sin tocar el
+  /// `AsyncView` (que solo pide la primera pagina), asi la grilla no se
+  /// reconstruye ni pierde el scroll. `_extraFor` recuerda para que busqueda
+  /// valen: si cambia la busqueda, se descartan.
+  final List<Product> _extra = [];
+  String _extraFor = '';
+  bool _loadingMore = false;
+  static const _pageSize = 20;
 
   Timer? _debounce;
 
@@ -52,7 +60,6 @@ class _SearchViewState extends State<SearchView> {
 
   void _reset() {
     setState(() {
-      _limit = 20;
       _category = null;
       _onlyInStock = false;
       _orderBy = 'relevance';
@@ -71,7 +78,38 @@ class _SearchViewState extends State<SearchView> {
 
   /// Cualquier cambio de esta cadena recarga el `AsyncView`.
   String get _searchKey =>
-      '$_query|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy|$_limit';
+      '$_query|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy';
+
+  List<Product> get _extraItems => _extraFor == _searchKey ? _extra : const [];
+
+  Future<void> _loadMore(int offset) async {
+    if (_loadingMore) return;
+    final key = _searchKey;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await AppScope.catalogOf(context).products(
+        q: _query.isEmpty ? null : _query,
+        category: _category,
+        motoBrand: _motoBrand,
+        motoModel: _motoModel,
+        year: _year,
+        onlyInStock: _onlyInStock ? true : null,
+        orderBy: _orderBy,
+        limit: _pageSize,
+        offset: offset,
+      );
+      if (!mounted || key != _searchKey) return;
+      setState(() {
+        if (_extraFor != key) _extra.clear();
+        _extraFor = key;
+        _extra.addAll(page.items);
+      });
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +133,6 @@ class _SearchViewState extends State<SearchView> {
                   _motoBrand = brand;
                   _motoModel = model;
                   _year = year;
-                  _limit = 20;
                 }),
               ),
             ],
@@ -135,18 +172,9 @@ class _SearchViewState extends State<SearchView> {
           category: _category,
           onlyInStock: _onlyInStock,
           orderBy: _orderBy,
-          onCategory: (c) => setState(() {
-            _category = c;
-            _limit = 20;
-          }),
-          onStock: (v) => setState(() {
-            _onlyInStock = v;
-            _limit = 20;
-          }),
-          onOrder: (o) => setState(() {
-            _orderBy = o;
-            _limit = 20;
-          }),
+          onCategory: (c) => setState(() => _category = c),
+          onStock: (v) => setState(() => _onlyInStock = v),
+          onOrder: (o) => setState(() => _orderBy = o),
         ),
         Expanded(
           child: AsyncView<ProductPage>(
@@ -159,7 +187,7 @@ class _SearchViewState extends State<SearchView> {
               year: _year,
               onlyInStock: _onlyInStock ? true : null,
               orderBy: _orderBy,
-              limit: _limit,
+              limit: _pageSize,
             ),
             isEmpty: (page) => page.items.isEmpty,
             emptyIcon: Icons.search_off,
@@ -168,7 +196,10 @@ class _SearchViewState extends State<SearchView> {
                     'Prueba quitando el año o el modelo.'
                 : 'No encontramos repuestos para esa búsqueda.\n'
                     'Prueba con el código de parte.',
-            builder: (context, page) => Column(
+            builder: (context, page) {
+              final items = [...page.items, ..._extraItems];
+              final remaining = page.total - items.length;
+              return Column(
               children: [
                 _ResultsHeader(
                   count: page.total,
@@ -216,9 +247,25 @@ class _SearchViewState extends State<SearchView> {
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
                             ),
-                            itemCount: page.items.length,
+                            // Ultima celda: boton "Ver mas" (no se reinicia la
+                            // grilla; los nuevos se agregan debajo).
+                            itemCount: items.length + (remaining > 0 ? 1 : 0),
                             itemBuilder: (context, i) {
-                              final product = page.items[i];
+                              if (i == items.length) {
+                                return Center(
+                                  child: _loadingMore
+                                      ? const CircularProgressIndicator()
+                                      : FilledButton.tonalIcon(
+                                          onPressed: () => _loadMore(items.length),
+                                          icon: const Icon(Icons.expand_more),
+                                          label: Text('Ver más\n($remaining restantes)',
+                                              textAlign: TextAlign.center),
+                                          style: FilledButton.styleFrom(
+                                              minimumSize: const Size(0, 48)),
+                                        ),
+                                );
+                              }
+                              final product = items[i];
                               return ProductCard(
                                 product: product,
                                 compatibilityConfirmed: _hasMoto,
@@ -236,18 +283,9 @@ class _SearchViewState extends State<SearchView> {
                           ),
                   ),
                 ),
-                if (page.hasMore)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => _limit += 20),
-                      icon: const Icon(Icons.expand_more),
-                      label: Text('Ver más (${page.total - page.items.length} '
-                          'restantes)'),
-                    ),
-                  ),
               ],
-            ),
+            );
+            },
           ),
         ),
       ],
