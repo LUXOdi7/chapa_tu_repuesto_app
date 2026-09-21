@@ -19,6 +19,13 @@ class ApiConfig {
   ///   flutter run --dart-define=GOOGLE_SERVER_CLIENT_ID=xxxx.apps.googleusercontent.com
   static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
+  /// Lo que devuelve `GET /health` del backend (`GOOGLE_CLIENT_ID` del .env).
+  /// Lo carga [Session.restore]; evita depender del --dart-define.
+  static String googleClientIdFromServer = '';
+
+  static String get googleClientId =>
+      googleServerClientId.isNotEmpty ? googleServerClientId : googleClientIdFromServer;
+
   /// El backend guarda rutas relativas (`/uploads/products/ab12.jpg`) para que
   /// las imagenes sigan sirviendo si cambia de servidor: la URL completa se
   /// arma aqui.

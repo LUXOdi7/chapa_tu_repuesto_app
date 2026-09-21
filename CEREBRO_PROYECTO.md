@@ -97,6 +97,11 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
 - 2026-09-20 · Login con logo de fondo blanco (`ctr_logo_white.png`); tarjetas
   del resumen admin compactas (grilla de alto fijo). `INSTALACION.md §4`: cómo
   activar Google (SHA-1 por compañero, puerto 5000) y el correo de Lucía.
+- 2026-09-20 · Google en web: boton oficial `renderButton` (popup) via
+  `auth/presentation/google/` (import condicional web/stub) + stream
+  `authenticationEvents`; web solo `clientId`, Android solo `serverClientId`.
+  El client ID viaja en `GET /health` (`google_client_id`): la app ya no
+  necesita `--dart-define` para Google.
 - 2026-09-17 · `PENDIENTE.md` en la raíz: checklist de servicios/credenciales que
   faltan (Google, SMTP, MP, Niubiz, dominio, keystore, legales, FCM, Yape vía
   pasarela, RUC API, mapas, Sentry, SUNAT) con cómo conseguir cada clave.

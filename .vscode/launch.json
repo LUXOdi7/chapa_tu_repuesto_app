@@ -6,7 +6,7 @@
       "type": "dart",
       "args": [
         "--dart-define=API_BASE_URL=http://10.0.2.2:9000",
-        "--dart-define=GOOGLE_SERVER_CLIENT_ID=355069887752-1lvto7cabv9kjtn235m6qc4kuf9tft70.apps.googleusercontent.com"
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=517447522240-t5vs374u6tk3rimrufkpnomu3974h7gs.apps.googleusercontent.com"
       ]
     },
     {
@@ -14,8 +14,8 @@
       "request": "launch",
       "type": "dart",
       "args": [
-        "--dart-define=API_BASE_URL=http://192.168.1.45:9000",
-        "--dart-define=GOOGLE_SERVER_CLIENT_ID=355069887752-1lvto7cabv9kjtn235m6qc4kuf9tft70.apps.googleusercontent.com"
+        "--dart-define=API_BASE_URL=http://192.168.1.18:9000",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=517447522240-t5vs374u6tk3rimrufkpnomu3974h7gs.apps.googleusercontent.com"
       ]
     },
     {
@@ -26,7 +26,7 @@
       "args": [
         "--web-port=5000",
         "--dart-define=API_BASE_URL=http://localhost:9000",
-        "--dart-define=GOOGLE_SERVER_CLIENT_ID=355069887752-1lvto7cabv9kjtn235m6qc4kuf9tft70.apps.googleusercontent.com"
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=517447522240-t5vs374u6tk3rimrufkpnomu3974h7gs.apps.googleusercontent.com"
       ]
     }
   ]

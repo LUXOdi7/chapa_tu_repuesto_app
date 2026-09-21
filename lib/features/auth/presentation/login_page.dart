@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/app_scope.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/user.dart';
 import 'forgot_password_page.dart';
+import 'google/google_button.dart';
 import 'session.dart';
 
 /// Login y registro en una sola pantalla: los campos extra del registro
@@ -30,8 +34,55 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscure = true;
   UserRole _role = UserRole.buyer;
 
+  /// Web: el boton lo dibuja Google y el resultado llega por este stream.
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _googleEvents;
+  bool _googleInit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) _initGoogleWeb();
+  }
+
+  /// El client ID puede llegar del backend (/health) un instante despues de
+  /// arrancar: se espera hasta 5 s antes de inicializar y dibujar el boton.
+  Future<void> _initGoogleWeb() async {
+    for (var i = 0; i < 20 && ApiConfig.googleClientId.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+    final clientId = ApiConfig.googleClientId;
+    if (clientId.isEmpty || !mounted) return;
+    try {
+      if (!Session.googleReady) {
+        await GoogleSignIn.instance.initialize(clientId: clientId);
+        Session.googleReady = true;
+      }
+      _googleEvents = GoogleSignIn.instance.authenticationEvents.listen((event) async {
+        if (event is! GoogleSignInAuthenticationEventSignIn || !mounted) return;
+        final idToken = event.user.authentication.idToken;
+        if (idToken == null) {
+          showInfo(context, 'Google no devolvió idToken');
+          return;
+        }
+        final scope = AppScope.of(context);
+        setState(() => _busy = true);
+        try {
+          await scope.session.start(await scope.auth.google(idToken, role: _role));
+        } catch (e) {
+          if (mounted) showError(context, e);
+        } finally {
+          if (mounted) setState(() => _busy = false);
+        }
+      });
+      if (mounted) setState(() => _googleInit = true);
+    } catch (e) {
+      if (mounted) showInfo(context, 'Google: $e');
+    }
+  }
+
   @override
   void dispose() {
+    _googleEvents?.cancel();
     _name.dispose();
     _email.dispose();
     _phone.dispose();
@@ -73,33 +124,51 @@ class _LoginPageState extends State<LoginPage> {
   /// `authenticate()`; `attemptLightweightAuthentication()` muestra el One Tap
   /// de Google y devuelve null si el usuario lo cierra.
   Future<void> _google() async {
-    if (ApiConfig.googleServerClientId.isEmpty) {
-      showInfo(context, 'Falta configurar GOOGLE_SERVER_CLIENT_ID (ver guía).');
+    final clientId = ApiConfig.googleClientId;
+    if (clientId.isEmpty) {
+      showInfo(context,
+          'Google no está configurado: pon GOOGLE_CLIENT_ID en el .env del backend '
+          '(o compila con --dart-define=GOOGLE_SERVER_CLIENT_ID). Ver INSTALACION.md §4.');
       return;
     }
     final scope = AppScope.of(context);
     setState(() => _busy = true);
     try {
       if (!Session.googleReady) {
+        // Web: solo `clientId` (el plugin web rechaza serverClientId).
+        // Android: solo `serverClientId` (necesario para recibir el idToken).
         await GoogleSignIn.instance.initialize(
-          clientId: kIsWeb ? ApiConfig.googleServerClientId : null,
-          serverClientId: ApiConfig.googleServerClientId,
+          clientId: kIsWeb ? clientId : null,
+          serverClientId: kIsWeb ? null : clientId,
         );
         Session.googleReady = true;
       }
       final account = kIsWeb
           ? await GoogleSignIn.instance.attemptLightweightAuthentication()
           : await GoogleSignIn.instance.authenticate();
-      if (account == null) return; // cerro el One Tap
+      if (account == null) {
+        // En web el One Tap no aparece si el origen (http://localhost:5000) no
+        // esta autorizado en el cliente web, si el usuario lo cerro varias
+        // veces (Google lo silencia un rato) o si no hay sesion de Google en
+        // el navegador.
+        if (mounted && kIsWeb) {
+          showInfo(context, 'Google no mostró el inicio de sesión. Revisa la consola del '
+              'navegador (F12) y que http://localhost:5000 esté en "Orígenes autorizados".');
+        }
+        return;
+      }
       final idToken = account.authentication.idToken;
-      if (idToken == null) throw Exception('Google no devolvio idToken');
+      if (idToken == null) throw Exception('Google no devolvió idToken');
       await scope.session.start(await scope.auth.google(idToken, role: _role));
     } on GoogleSignInException catch (e) {
       if (e.code != GoogleSignInExceptionCode.canceled && mounted) {
         showInfo(context, 'Google: ${e.description ?? e.code.name}');
       }
+    } on ApiException catch (e) {
+      if (mounted) showError(context, e); // 401/501 del backend, ya redactado
     } catch (e) {
-      if (mounted) showError(context, e);
+      // Errores del plugin/navegador: mostrar el texto real, no "inesperado".
+      if (mounted) showInfo(context, 'Google: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -223,11 +292,16 @@ class _LoginPageState extends State<LoginPage> {
                           : Text(_registering ? 'Crear cuenta' : 'Ingresar'),
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: _busy ? null : _google,
-                      icon: const Icon(Icons.g_mobiledata, size: 28),
-                      label: const Text('Continuar con Google'),
-                    ),
+                    // Web: boton oficial de Google (popup). Android: el nuestro
+                    // abre el selector de cuenta nativo.
+                    if (kIsWeb && _googleInit)
+                      Center(child: googleWebButton())
+                    else
+                      OutlinedButton.icon(
+                        onPressed: _busy ? null : _google,
+                        icon: const Icon(Icons.g_mobiledata, size: 28),
+                        label: Text(kIsWeb ? 'Cargando Google...' : 'Continuar con Google'),
+                      ),
                     TextButton(
                       onPressed: _busy
                           ? null
