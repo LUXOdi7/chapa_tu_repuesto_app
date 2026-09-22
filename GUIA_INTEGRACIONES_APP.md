@@ -90,6 +90,22 @@ nombre, descripción, marca, código y moto compatible, así "pastillas pulsar
 2020" funciona dictado de corrido. No necesita ningún servicio: usa el
 reconocedor de voz del teléfono (permiso `RECORD_AUDIO`, ya en el manifest).
 
+**Web**: usa la Web Speech API del navegador (Chrome/Edge; Firefox no la
+tiene). Requisitos: la página debe servirse en **localhost o https** (por IP
+`http://192.168.x.x:5000` el navegador bloquea el micrófono), hace falta
+internet (el reconocimiento ocurre en los servidores de Google) y se pide
+permiso la primera vez. Diferencias con Android que ya están contempladas en
+`voice_search_bar.dart`: se fuerza el idioma `es-PE` (si no, usa el del
+navegador y no entiende español), no se usa `pauseFor` (en web no hay eventos
+de nivel de sonido y cortaba la escucha a los 3 s) y los errores del
+reconocedor se muestran en la hoja (`speechErrorText`).
+
+**Navegadores**: Chrome y Edge funcionan. **Brave bloquea el dictado por
+privacidad** (la API existe porque es Chromium, pero nunca devuelve audio):
+se activa en `brave://settings/privacy` → *Web Speech API* / servicios de
+Google, o se usa Chrome. Firefox no implementa la API. Cuando pasan 8 s sin
+audio ni error, la hoja lo avisa en vez de quedarse "Escuchando...".
+
 ### 3.5 Ficha de producto y comparación de ofertas
 
 `product_detail_page.dart`. `offers` = misma pieza (`part_code`) en otras

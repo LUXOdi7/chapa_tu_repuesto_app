@@ -297,7 +297,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                         ),
                         title: Text(item.productName,
                             maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text(item.partCode ?? ''),
+                        subtitle: Text(item.brandAndCode),
                         trailing: Text(soles(item.subtotal)),
                       ),
                   ],

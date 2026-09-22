@@ -16,13 +16,21 @@ class OrderItem {
     required this.quantity,
     required this.subtotal,
     this.partCode,
+    this.brand,
     this.imageUrl,
   });
 
   final int productId;
   final String productName;
   final String? partCode;
+
+  /// Marca del repuesto congelada al comprar (NGK, Brembo...).
+  final String? brand;
   final String? imageUrl;
+
+  /// "NGK · BJ-CR8EIX" (omite lo que falte).
+  String get brandAndCode =>
+      [brand, partCode].where((t) => t != null && t.isNotEmpty).join('  ·  ');
   final double unitPrice;
   final int quantity;
   final double subtotal;
@@ -31,6 +39,7 @@ class OrderItem {
     productId: json['product_id'] as int,
     productName: json['product_name'] as String? ?? '',
     partCode: json['part_code'] as String?,
+    brand: json['brand'] as String?,
     imageUrl: json['image_url'] as String?,
     unitPrice: asDouble(json['unit_price']) ?? 0,
     quantity: json['quantity'] as int? ?? 1,

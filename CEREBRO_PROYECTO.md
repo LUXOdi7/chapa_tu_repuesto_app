@@ -102,6 +102,20 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   `authenticationEvents`; web solo `clientId`, Android solo `serverClientId`.
   El client ID viaja en `GET /health` (`google_client_id`): la app ya no
   necesita `--dart-define` para Google.
+- 2026-09-22 · Buscador por voz: la palabra de categoría ahora **filtra**
+  (antes solo sumaba puntos, "muéstrame accesorios" daba 0), acepta singular
+  y plural (electrico/electricos) y se ignoran verbos de relleno
+  (tienes/hay/cuesta/cuánto…). Ejemplos probados en el README del backend.
+- 2026-09-22 · Dictado en web arreglado: `pauseFor` (3 s) cortaba la escucha
+  porque la Web Speech API no emite nivel de sonido; ahora `pauseFor` solo en
+  Android, idioma forzado `es-PE` y `onError`/`onStatus` conectados
+  (`speechErrorText`). Recordar: en web el micro exige localhost/https.
+- 2026-09-22 · Marca del repuesto visible junto al código en tarjetas del
+  buscador, carrito, pedido y constancia (`brandAndCode`); `order_items.brand`
+  congela la marca al comprar (**requiere `ctr reset`**). Brave bloquea el
+  dictado: aviso a los 8 s sin audio + texto explicando cómo activarlo.
+- 2026-09-22 · El backend ya migra columnas solo; correo de pedido limitado a
+  pagado/entregado/cancelado (la campana sigue recibiendo todo).
 - 2026-09-17 · `PENDIENTE.md` en la raíz: checklist de servicios/credenciales que
   faltan (Google, SMTP, MP, Niubiz, dominio, keystore, legales, FCM, Yape vía
   pasarela, RUC API, mapas, Sentry, SUNAT) con cómo conseguir cada clave.

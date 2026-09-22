@@ -5,6 +5,7 @@ import 'package:chapa_tu_repuesto_app/features/auth/domain/user.dart';
 import 'package:chapa_tu_repuesto_app/features/auth/presentation/session.dart';
 import 'package:chapa_tu_repuesto_app/features/cart/presentation/cart_store.dart';
 import 'package:chapa_tu_repuesto_app/features/catalog/domain/product.dart';
+import 'package:chapa_tu_repuesto_app/features/catalog/presentation/widgets/voice_search_bar.dart';
 import 'package:chapa_tu_repuesto_app/features/orders/domain/order.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -102,6 +103,26 @@ void main() {
   test('los null no viajan en el cuerpo (el backend tiene defaults y un null da 422)', () {
     expect(ApiClient.stripNulls({'a': 1, 'b': null, 'c': ''}), {'a': 1, 'c': ''});
     expect(ApiClient.stripNulls([1, null]), [1, null]); // solo mapas
+  });
+
+  test('las tarjetas muestran marca y codigo juntos', () {
+    expect(Product.fromJson(productJson).brandAndCode, 'NGK  ·  BJ-CR8EIX');
+    // Sin marca (pedidos viejos) no deja separadores sueltos
+    expect(Product.fromJson({...productJson, 'brand': null}).brandAndCode, 'BJ-CR8EIX');
+    final item = OrderItem.fromJson({
+      'product_id': 1, 'product_name': 'Bujia', 'part_code': 'BJ-CR8EIX',
+      'brand': 'NGK', 'unit_price': 40.0, 'quantity': 1, 'subtotal': 40.0,
+    });
+    expect(item.brandAndCode, 'NGK  ·  BJ-CR8EIX');
+  });
+
+  test('los fallos del microfono se explican al usuario, no se tragan', () {
+    // Codigos reales de la Web Speech API / Android.
+    expect(speechErrorText('not-allowed'), contains('bloqueó el micrófono'));
+    expect(speechErrorText('audio-capture'), contains('micrófono conectado'));
+    expect(speechErrorText('no-speech'), contains('No se escuchó nada'));
+    expect(speechErrorText('not supported'), contains('Chrome o Edge'));
+    expect(speechErrorText('raro-123'), contains('raro-123')); // nunca vacio
   });
 
   test('el chat muestra la fecha una vez por dia y la hora en la burbuja', () {

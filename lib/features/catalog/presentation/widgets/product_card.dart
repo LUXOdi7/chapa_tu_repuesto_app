@@ -75,9 +75,15 @@ class ProductCard extends StatelessWidget {
                           ?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
                     ),
                     const SizedBox(height: 2),
+                    // Marca + codigo: es lo que el mecanico compara entre tiendas.
                     Text(
-                      product.partCode,
-                      style: text.labelSmall?.copyWith(color: scheme.outline),
+                      product.brandAndCode,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.labelSmall?.copyWith(
+                        color: scheme.outline,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Spacer(),
                     if (store != null)

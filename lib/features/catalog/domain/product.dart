@@ -40,6 +40,10 @@ class Product {
   /// Marca del repuesto (NGK, Brembo...), no la marca de la moto.
   final String? brand;
 
+  /// "NGK · BJ-CR8EIX" para las tarjetas y el carrito.
+  String get brandAndCode =>
+      [brand, partCode].where((t) => t != null && t.isNotEmpty).join('  ·  ');
+
   /// Ruta relativa que devuelve el backend; usa `ApiConfig.imageUrl` para
   /// convertirla en URL absoluta. Puede ser null.
   final String? imageUrl;
