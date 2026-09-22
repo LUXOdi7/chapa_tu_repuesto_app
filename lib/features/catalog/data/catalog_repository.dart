@@ -29,18 +29,23 @@ class CatalogRepository {
     return r['key'] as String;
   }
 
-  Future<List<String>> motoBrands() async =>
-      (await _api.get('/catalog/moto-brands') as List).cast<String>();
+  /// Cascada tipo -> marca -> modelo -> año. `motoType` acota los tres
+  /// siguientes (una tolva no existe en la lineal).
+  Future<List<String>> motoBrands({String? motoType}) async =>
+      (await _api.get('/catalog/moto-brands', query: {'moto_type': motoType}) as List)
+          .cast<String>();
 
-  Future<List<String>> motoModels(String motoBrand) async =>
-      (await _api.get('/catalog/moto-models', query: {'moto_brand': motoBrand})
+  Future<List<String>> motoModels(String motoBrand, {String? motoType}) async =>
+      (await _api.get('/catalog/moto-models',
+                  query: {'moto_brand': motoBrand, 'moto_type': motoType})
               as List)
           .cast<String>();
 
-  Future<List<int>> motoYears(String motoBrand, String motoModel) async =>
+  Future<List<int>> motoYears(String motoBrand, String motoModel, {String? motoType}) async =>
       (await _api.get('/catalog/moto-years', query: {
         'moto_brand': motoBrand,
         'moto_model': motoModel,
+        'moto_type': motoType,
       }) as List)
           .cast<int>();
 
@@ -49,6 +54,7 @@ class CatalogRepository {
     String? category,
     String? brand,
     String? partCode,
+    String? motoType,
     String? motoBrand,
     String? motoModel,
     int? year,
@@ -66,6 +72,7 @@ class CatalogRepository {
       'category': category,
       'brand': brand,
       'part_code': partCode,
+      'moto_type': motoType,
       'moto_brand': motoBrand,
       'moto_model': motoModel,
       'year': year,

@@ -216,9 +216,9 @@ class _Detail extends StatelessWidget {
                         children: [
                           for (final c in detail.compatibilities)
                             Chip(
-                              avatar: const Icon(Icons.verified,
+                              avatar: Icon(motoTypeIcons[c.motoType] ?? Icons.verified,
                                   size: 16, color: Colors.green),
-                              label: Text(c.label),
+                              label: Text(c.fullLabel),
                               visualDensity: VisualDensity.compact,
                             ),
                         ],

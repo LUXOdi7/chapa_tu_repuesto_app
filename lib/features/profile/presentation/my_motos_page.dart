@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/app_scope.dart';
+import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/widgets/compatibility_filters.dart';
 
@@ -15,6 +16,7 @@ class MyMotosPage extends StatefulWidget {
 }
 
 class _MyMotosPageState extends State<MyMotosPage> {
+  String? _type;
   String? _brand;
   String? _model;
   int? _year;
@@ -24,7 +26,8 @@ class _MyMotosPageState extends State<MyMotosPage> {
     final scope = AppScope.of(context);
     setState(() => _busy = true);
     try {
-      await scope.auth.addMoto(brand: _brand!, model: _model!, year: _year!);
+      await scope.auth.addMoto(
+          type: _type!, brand: _brand!, model: _model!, year: _year!);
       await scope.session.refreshMotos();
       if (mounted) showInfo(context, 'Moto guardada');
     } catch (e) {
@@ -58,7 +61,8 @@ class _MyMotosPageState extends State<MyMotosPage> {
             const SizedBox(height: 12),
             CompatibilityFilters(
               repo: scope.catalog,
-              onChanged: (b, m, y) => setState(() {
+              onChanged: (t, b, m, y) => setState(() {
+                _type = t;
                 _brand = b;
                 _model = m;
                 _year = y;
@@ -66,7 +70,9 @@ class _MyMotosPageState extends State<MyMotosPage> {
             ),
             const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: _busy || _brand == null || _model == null || _year == null ? null : _add,
+              onPressed: _busy || _type == null || _brand == null || _model == null || _year == null
+                  ? null
+                  : _add,
               icon: const Icon(Icons.add),
               label: const Text('Agregar esta moto'),
             ),
@@ -75,8 +81,9 @@ class _MyMotosPageState extends State<MyMotosPage> {
               const Padding(padding: EdgeInsets.all(16), child: Text('Todavía no guardaste ninguna moto.')),
             for (final moto in scope.session.motos)
               ListTile(
-                leading: const Icon(Icons.two_wheeler),
+                leading: Icon(motoTypeIcons[moto.type] ?? Icons.two_wheeler),
                 title: Text(moto.label),
+                subtitle: Text(motoTypeLabel(moto.type)),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => _remove(moto.id),

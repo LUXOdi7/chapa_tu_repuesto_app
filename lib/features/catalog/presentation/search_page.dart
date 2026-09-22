@@ -25,6 +25,7 @@ class _SearchViewState extends State<SearchView> {
   final _filtersKey = GlobalKey<CompatibilityFiltersState>();
 
   String _query = '';
+  String? _motoType;
   String? _motoBrand;
   String? _motoModel;
   int? _year;
@@ -60,6 +61,7 @@ class _SearchViewState extends State<SearchView> {
 
   void _reset() {
     setState(() {
+      _motoType = null;
       _category = null;
       _onlyInStock = false;
       _orderBy = 'relevance';
@@ -67,18 +69,25 @@ class _SearchViewState extends State<SearchView> {
     _filtersKey.currentState?.clear();
   }
 
-  bool get _hasMoto => _motoBrand != null;
+  bool get _hasMoto => _motoType != null || _motoBrand != null;
 
-  String get _motoLabel =>
-      [_motoBrand, _motoModel, _year?.toString()].whereType<String>().join(' ');
+  String get _motoLabel => [
+        if (_motoType != null) motoTypeLabel(_motoType),
+        _motoBrand,
+        _motoModel,
+        _year?.toString(),
+      ].whereType<String>().join(' ');
 
   /// Si la moto activa es una de "Mis motos", el encabezado lo dice.
-  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any(
-      (m) => m.brand == _motoBrand && m.model == _motoModel && m.year == _year);
+  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any((m) =>
+      m.type == _motoType &&
+      m.brand == _motoBrand &&
+      m.model == _motoModel &&
+      m.year == _year);
 
   /// Cualquier cambio de esta cadena recarga el `AsyncView`.
   String get _searchKey =>
-      '$_query|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy';
+      '$_query|$_motoType|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy';
 
   List<Product> get _extraItems => _extraFor == _searchKey ? _extra : const [];
 
@@ -90,6 +99,7 @@ class _SearchViewState extends State<SearchView> {
       final page = await AppScope.catalogOf(context).products(
         q: _query.isEmpty ? null : _query,
         category: _category,
+        motoType: _motoType,
         motoBrand: _motoBrand,
         motoModel: _motoModel,
         year: _year,
@@ -129,7 +139,8 @@ class _SearchViewState extends State<SearchView> {
               CompatibilityFilters(
                 key: _filtersKey,
                 repo: scope.catalog,
-                onChanged: (brand, model, year) => setState(() {
+                onChanged: (type, brand, model, year) => setState(() {
+                  _motoType = type;
                   _motoBrand = brand;
                   _motoModel = model;
                   _year = year;
@@ -151,15 +162,17 @@ class _SearchViewState extends State<SearchView> {
                     children: [
                       for (final moto in scope.session.motos) ...[
                         ChoiceChip(
-                          avatar: const Icon(Icons.two_wheeler, size: 16),
+                          avatar: Icon(motoTypeIcons[moto.type] ?? Icons.two_wheeler, size: 16),
                           label: Text(moto.label),
-                          selected: _motoBrand == moto.brand &&
+                          tooltip: motoTypeLabel(moto.type),
+                          selected: _motoType == moto.type &&
+                              _motoBrand == moto.brand &&
                               _motoModel == moto.model &&
                               _year == moto.year,
                           visualDensity: VisualDensity.compact,
                           onSelected: (on) => on
                               ? _filtersKey.currentState
-                                  ?.select(moto.brand, moto.model, moto.year)
+                                  ?.select(moto.type, moto.brand, moto.model, moto.year)
                               : _filtersKey.currentState?.clear(),
                         ),
                         const SizedBox(width: 6),
@@ -182,6 +195,7 @@ class _SearchViewState extends State<SearchView> {
             load: () => scope.catalog.products(
               q: _query.isEmpty ? null : _query,
               category: _category,
+              motoType: _motoType,
               motoBrand: _motoBrand,
               motoModel: _motoModel,
               year: _year,

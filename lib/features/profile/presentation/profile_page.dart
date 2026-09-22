@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/app_theme.dart';
 import '../../../core/network/api_config.dart';
 import '../../../main.dart' show shopMode, themeMode;
 import '../../../shared/widgets/app_widgets.dart';
+import '../../../shared/widgets/map_picker_page.dart';
 import '../../auth/domain/user.dart';
 import 'alerts_page.dart';
 import 'my_motos_page.dart';
@@ -87,6 +89,82 @@ class _ProfilePageState extends State<ProfilePage> {
       final path = await scope.api.uploadImage(picked, folder: 'avatars');
       scope.session.updateUser(await scope.auth.updateProfile(avatarUrl: path));
       if (mounted) showInfo(context, 'Foto actualizada');
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Direccion de entrega guardada: se reusa en el checkout. El punto del
+  /// mapa es opcional (sirve para que la tienda sepa a donde ir).
+  Future<void> _editAddress(User user) async {
+    final scope = AppScope.of(context);
+    final address = TextEditingController(text: user.address);
+    var lat = user.latitude;
+    var lng = user.longitude;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => StatefulBuilder(
+        builder: (d, setLocal) => AlertDialog(
+          title: const Text('Mi dirección de entrega'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: address,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Dirección',
+                  hintText: 'Av. Los Mecánicos 320, Chiclayo',
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final point = await Navigator.push<LatLng>(
+                    d,
+                    MaterialPageRoute(
+                      builder: (_) => MapPickerPage(
+                        initial: lat != null && lng != null ? LatLng(lat!, lng!) : null,
+                      ),
+                    ),
+                  );
+                  if (point != null) {
+                    setLocal(() {
+                      lat = point.latitude;
+                      lng = point.longitude;
+                    });
+                  }
+                },
+                icon: const Icon(Icons.map_outlined),
+                label: Text(lat == null ? 'Marcar en el mapa' : 'Cambiar punto del mapa'),
+              ),
+              if (lat != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text('${lat!.toStringAsFixed(5)}, ${lng!.toStringAsFixed(5)}',
+                      style: Theme.of(context).textTheme.bodySmall),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Guardar')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      scope.session.updateUser(await scope.auth.updateProfile(
+        address: address.text.trim().isEmpty ? null : address.text.trim(),
+        latitude: lat,
+        longitude: lng,
+      ));
+      if (mounted) showInfo(context, 'Dirección guardada');
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
@@ -194,6 +272,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: _busy ? null : () => _editProfile(user),
               ),
               if (!user.isAdmin) ...[
+                ListTile(
+                  leading: const Icon(Icons.location_on_outlined),
+                  title: const Text('Mi dirección de entrega'),
+                  subtitle: Text(user.hasSavedAddress
+                      ? '${user.address}${user.latitude != null ? '  ·  📍 en el mapa' : ''}'
+                      : 'Guárdala y la eliges al pagar'),
+                  onTap: _busy ? null : () => _editAddress(user),
+                ),
                 ListenableBuilder(
                   listenable: session,
                   builder: (context, _) => ListTile(

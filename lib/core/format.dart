@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Formato de moneda (Soles) con separador de miles: "S/ 1,234.50".
 ///
 /// ponytail: son 3 lineas contra una dependencia entera (`intl`); cambiar a
@@ -50,6 +52,26 @@ String dayLabel(DateTime d, {DateTime? now}) {
 
 bool sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Tipos de moto del backend (`/catalog/moto-types`). Fijos: son tres y
+/// cambian solo si cambia el negocio.
+const motoTypeLabels = <String, String>{
+  'lineal': 'Moto lineal',
+  'carguero': 'Moto carguera',
+  'mototaxi': 'Mototaxi',
+};
+
+/// "Moto carguera" a partir de `carguero`; si llega otro, lo capitaliza.
+String motoTypeLabel(String? key) =>
+    motoTypeLabels[key] ??
+    (key == null || key.isEmpty ? '' : key[0].toUpperCase() + key.substring(1));
+
+/// Icono por tipo: 2 ruedas, carga y pasajeros.
+const motoTypeIcons = <String, IconData>{
+  'lineal': Icons.two_wheeler,
+  'carguero': Icons.local_shipping,
+  'mototaxi': Icons.airport_shuttle,
+};
 
 /// Categorias {key: etiqueta}. Arrancan con las base y se reemplazan con
 /// `GET /catalog/categories` al iniciar sesion (admin y tiendas crean nuevas).

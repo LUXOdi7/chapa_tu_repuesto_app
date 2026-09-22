@@ -131,6 +131,7 @@ class ProductPage {
     if (p == null) return const [];
     return [
       if (p['year'] != null) '${p['year']}',
+      if (p['moto_type'] != null) motoTypeLabel(p['moto_type'] as String),
       ...(p['moto'] as List? ?? const []).cast<String>(),
       ...(p['brands'] as List? ?? const []).cast<String>(),
       if (p['category'] != null) categoryLabel(p['category'] as String),

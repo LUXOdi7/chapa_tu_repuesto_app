@@ -38,7 +38,7 @@ sin gestor de estado: `AppScope` (InheritedWidget) reparte repositorios y dos
 | `assets/` | `ctr_logo.png` (logo completo, fondo transparente), `ctr_mark.png` (isotipo), `ctr_icon.png` (launcher; `dart run flutter_launcher_icons` regenera Android + web) |
 | `shared/widgets/map_picker_page.dart` | `MapPickerPage` (elegir lat/lng tocando OSM) y `StoreMap` (mapa fijo). `flutter_map`, sin API key |
 | `features/auth` | `User`/`UserRole`/`UserMoto`, `AuthRepository` (login form-urlencoded, register, google, forgot/reset, perfil, motos, notificaciones, feedback), `Session` (token en secure storage, `motos` cacheadas, `googleReady`, `signOut` notifica primero), `LoginPage` (Google: `authenticate()` Android / `attemptLightweightAuthentication()` web), `ForgotPasswordPage` |
-| `features/catalog` | `Product/ProductPage(parsed)`, `Store/StoreReview`, `Compatibility`; `CatalogRepository` (+alertas); `SearchView` (voz `speech_to_text`, cascada `CompatibilityFilters` con `select()`, chips de mis motos, chips "Entendí:"; **"Ver más" = última celda de la grilla que agrega páginas a `_extra` sin reiniciar el `AsyncView`**), `ProductDetailPage` (galería `_Gallery` con puntos si hay varias fotos, ofertas, "Compatible con tu…", campana de alerta), `StorePage`/`StoresView` (mapa, Cómo llegar por URL de Google Maps, Llamar) |
+| `features/catalog` | `Product/ProductPage(parsed)`, `Store/StoreReview`, `Compatibility`; `CatalogRepository` (+alertas); `SearchView` (voz `speech_to_text`, cascada `CompatibilityFilters` (**tipo de moto** → marca → modelo → año) con `select()`, chips de mis motos, chips "Entendí:"; **"Ver más" = última celda de la grilla que agrega páginas a `_extra` sin reiniciar el `AsyncView`**), `ProductDetailPage` (galería `_Gallery` con puntos si hay varias fotos, ofertas, "Compatible con tu…", campana de alerta), `StorePage`/`StoresView` (mapa, Cómo llegar por URL de Google Maps, Llamar) |
 | `features/cart` | `CartStore` persistido, agrupado por tienda; `CartView`, `CheckoutPage` |
 | `features/orders` | `Order` (events, buyer, messageCount, canReviewBuyer, storeHasGateway), `ChatMessage`; `OrderRepository` (checkout, list `asBuyer`, `startPayment`, pay manual, `receiptPdfUrl`, messages, reviewBuyer); `OrdersView`, `OrderTrackingPage` (stepper con fechas, pagar → abre `checkout_url` con `url_launcher`, PDF, chat, calificar), `ChatPage` (polling 4 s `after_id`, chip de fecha una vez por día, hora en burbuja), `ReceiptPage` |
 | `features/supplier` | `SupplierRepository`; `SupplierShell` (Tienda con KPIs/cobro/verificación + **"Ver mi perfil público"** (reusa `StorePage`: mapa, calificaciones, comentarios) · Pedidos · Repuestos **agrupados por categoría (`ExpansionTile`, alfabético dentro)**; botón "Comprar" → modo comprador), `StoreFormPage` (logo, mapa, lat/lng), `ProductFormPage` (galería hasta 5 fotos con `pickMultiImage`, tocar miniatura = portada; botón "+" crea categoría; compatibilidades; **al editar se carga el producto completo** para no perder compatibilidades), `PaymentConfigPage` |
@@ -116,6 +116,11 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   dictado: aviso a los 8 s sin audio + texto explicando cómo activarlo.
 - 2026-09-22 · El backend ya migra columnas solo; correo de pedido limitado a
   pagado/entregado/cancelado (la campana sigue recibiendo todo).
+- 2026-09-22 · Tres tipos de moto en toda la app: filtro de tipo en el buscador,
+  selector en el diálogo de compatibilidad del proveedor, tipo en "Mis motos" y
+  en los chips de la ficha (`motoTypeLabels/motoTypeIcons` en format.dart).
+  Perfil del comprador: dirección guardada con selector de mapa; checkout deja
+  elegir esa o una nueva para el pedido, ambas con punto en el mapa.
 - 2026-09-17 · `PENDIENTE.md` en la raíz: checklist de servicios/credenciales que
   faltan (Google, SMTP, MP, Niubiz, dominio, keystore, legales, FCM, Yape vía
   pasarela, RUC API, mapas, Sentry, SUNAT) con cómo conseguir cada clave.

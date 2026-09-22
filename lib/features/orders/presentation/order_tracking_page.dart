@@ -309,7 +309,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   if (order.paymentOpNumber != null)
                     _Fact(label: 'N° operación', value: order.paymentOpNumber!),
                   if (order.deliveryAddress != null)
-                    _Fact(label: 'Entrega', value: order.deliveryAddress!),
+                    _Fact(
+                        label: 'Entrega',
+                        value: order.deliveryAddress! +
+                            (order.hasDeliveryPoint ? '  ·  📍 en el mapa' : '')),
                   if (order.notes != null && order.notes!.isNotEmpty)
                     _Fact(label: 'Nota', value: order.notes!),
                   _Fact(label: 'Tienda', value: order.store.businessName),

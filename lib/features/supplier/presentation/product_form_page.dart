@@ -369,8 +369,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
               ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.two_wheeler),
+                leading: Icon(motoTypeIcons[_compatibilities[i].motoType] ?? Icons.two_wheeler),
                 title: Text(_compatibilities[i].label),
+                subtitle: Text(motoTypeLabel(_compatibilities[i].motoType)),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () =>
@@ -404,6 +405,7 @@ class _CompatibilityDialog extends StatefulWidget {
 }
 
 class _CompatibilityDialogState extends State<_CompatibilityDialog> {
+  String _type = 'lineal';
   final _brand = TextEditingController();
   final _model = TextEditingController();
   final _from = TextEditingController(text: '2015');
@@ -432,6 +434,7 @@ class _CompatibilityDialogState extends State<_CompatibilityDialog> {
     Navigator.pop(
       context,
       Compatibility(
+        motoType: _type,
         motoBrand: _brand.text.trim(),
         motoModel: _model.text.trim(),
         yearFrom: from,
@@ -446,6 +449,16 @@ class _CompatibilityDialogState extends State<_CompatibilityDialog> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // El tipo importa: una tolva o una cabina no existen en la lineal.
+            DropdownButtonFormField<String>(
+              initialValue: _type,
+              decoration: const InputDecoration(labelText: 'Tipo de moto'),
+              items: [
+                for (final key in motoTypeLabels.keys)
+                  DropdownMenuItem(value: key, child: Text(motoTypeLabel(key))),
+              ],
+              onChanged: (v) => setState(() => _type = v ?? _type),
+            ),
             TextField(
               controller: _brand,
               textCapitalization: TextCapitalization.words,

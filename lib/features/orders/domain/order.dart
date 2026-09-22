@@ -90,6 +90,8 @@ class Order {
     this.paymentProvider,
     this.paidAt,
     this.deliveryAddress,
+    this.deliveryLat,
+    this.deliveryLng,
     this.notes,
     this.updatedAt,
     this.buyerName,
@@ -131,6 +133,12 @@ class Order {
   String get buyerRatingLabel =>
       buyerRatingCount == 0 ? 'Comprador sin calificaciones' : '${buyerRatingAvg.toStringAsFixed(1)} ★ ($buyerRatingCount)';
   final String? deliveryAddress;
+
+  /// Punto exacto de entrega si el comprador lo marcó en el mapa.
+  final double? deliveryLat;
+  final double? deliveryLng;
+
+  bool get hasDeliveryPoint => deliveryLat != null && deliveryLng != null;
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -169,6 +177,8 @@ class Order {
     messageCount: json['message_count'] as int? ?? 0,
     canReviewBuyer: json['can_review_buyer'] as bool? ?? false,
     deliveryAddress: json['delivery_address'] as String?,
+    deliveryLat: asDouble(json['delivery_lat']),
+    deliveryLng: asDouble(json['delivery_lng']),
     notes: json['notes'] as String?,
     createdAt: parseServerDate(json['created_at'] as String),
     updatedAt: parseServerDateOrNull(json['updated_at'] as String?),
