@@ -92,7 +92,7 @@ class StorePage extends StatelessWidget {
               emptyMessage: 'Todavía no tiene calificaciones.',
               builder: (context, reviews) => Column(
                 children: [
-                  for (final r in reviews.take(5))
+                  for (final r in reviews)
                     ListTile(
                       dense: true,
                       leading: Text('${r.rating} ★', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),

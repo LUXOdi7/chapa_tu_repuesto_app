@@ -1,21 +1,32 @@
 {
-  "version": "0.2.0",
   "configurations": [
     {
-      "name": "App emulador",
+      "name": "App · emulador",
       "request": "launch",
       "type": "dart",
       "args": [
-        "--dart-define=API_BASE_URL=http://10.0.2.2:9000"
+        "--dart-define=API_BASE_URL=http://10.0.2.2:9000",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=517447522240-t5vs374u6tk3rimrufkpnomu3974h7gs.apps.googleusercontent.com"
       ]
     },
     {
-      "name": "App Chrome",
+      "name": "App · celular",
       "request": "launch",
       "type": "dart",
       "args": [
+        "--dart-define=API_BASE_URL=http://10.1.201.108:9000",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=517447522240-t5vs374u6tk3rimrufkpnomu3974h7gs.apps.googleusercontent.com"
+      ]
+    },
+    {
+      "name": "App · Chrome",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "args": [
         "--web-port=5000",
-        "--dart-define=API_BASE_URL=http://localhost:9000"
+        "--dart-define=API_BASE_URL=http://localhost:9000",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=517447522240-t5vs374u6tk3rimrufkpnomu3974h7gs.apps.googleusercontent.com"
       ]
     }
   ]

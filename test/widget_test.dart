@@ -15,5 +15,8 @@ void main() {
     await tester.pumpWidget(const ChapaTuRepuestoApp());
 
     expect(find.byType(MaterialApp), findsOneWidget);
+    // Al arrancar se consulta /health (client ID de Google): sin red queda un
+    // timer de timeout de dio pendiente; se agota aqui para que el test cierre.
+    await tester.pump(const Duration(seconds: 35));
   });
 }

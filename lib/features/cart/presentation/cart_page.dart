@@ -180,7 +180,9 @@ class _CartRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-                Text('${product.partCode}  ${soles(product.price)} c/u',
+                Text('${product.brandAndCode}  ·  ${soles(product.price)} c/u',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall),
               ],
             ),

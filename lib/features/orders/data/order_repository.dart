@@ -17,6 +17,8 @@ class OrderRepository {
     required String deliveryAddress,
     required PaymentMethod paymentMethod,
     String? notes,
+    double? deliveryLat,
+    double? deliveryLng,
   }) async {
     final data = await _api.post(
       '/orders/checkout',
@@ -26,6 +28,8 @@ class OrderRepository {
             {'product_id': item.product.id, 'quantity': item.quantity},
         ],
         'delivery_address': deliveryAddress,
+      'delivery_lat': deliveryLat,
+      'delivery_lng': deliveryLng,
         'payment_method': paymentMethod.key,
         'notes': notes,
       },

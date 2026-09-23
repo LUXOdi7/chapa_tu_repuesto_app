@@ -4,7 +4,9 @@ import 'package:chapa_tu_repuesto_app/features/auth/data/auth_repository.dart';
 import 'package:chapa_tu_repuesto_app/features/auth/domain/user.dart';
 import 'package:chapa_tu_repuesto_app/features/auth/presentation/session.dart';
 import 'package:chapa_tu_repuesto_app/features/cart/presentation/cart_store.dart';
+import 'package:chapa_tu_repuesto_app/features/catalog/domain/compatibility.dart';
 import 'package:chapa_tu_repuesto_app/features/catalog/domain/product.dart';
+import 'package:chapa_tu_repuesto_app/features/catalog/presentation/widgets/voice_search_bar.dart';
 import 'package:chapa_tu_repuesto_app/features/orders/domain/order.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -102,6 +104,56 @@ void main() {
   test('los null no viajan en el cuerpo (el backend tiene defaults y un null da 422)', () {
     expect(ApiClient.stripNulls({'a': 1, 'b': null, 'c': ''}), {'a': 1, 'c': ''});
     expect(ApiClient.stripNulls([1, null]), [1, null]); // solo mapas
+  });
+
+  test('los tres tipos de moto se etiquetan y viajan en el contrato', () {
+    expect(motoTypeLabel('lineal'), 'Moto lineal');
+    expect(motoTypeLabel('carguero'), 'Moto carguera');
+    expect(motoTypeLabel('mototaxi'), 'Mototaxi');
+    expect(motoTypeLabel(null), ''); // sin tipo no rompe la UI
+    final c = Compatibility.fromJson({
+      'moto_type': 'mototaxi', 'moto_brand': 'Bajaj', 'moto_model': 'RE 4S Torito',
+      'year_from': 2012, 'year_to': 2025,
+    });
+    expect(c.fullLabel, 'Mototaxi · Bajaj RE 4S Torito 2012-2025');
+    expect(c.toJson()['moto_type'], 'mototaxi');
+    // Compatibilidad vieja sin tipo: lineal por defecto
+    expect(Compatibility.fromJson({'moto_brand': 'Honda', 'moto_model': 'XR 150L'}).motoType, 'lineal');
+    final moto = UserMoto.fromJson({'id': 1, 'moto_type': 'carguero', 'moto_brand': 'Wanxin', 'moto_model': 'WX 200 Carga', 'year': 2021});
+    expect(moto.fullLabel, 'Moto carguera · Wanxin WX 200 Carga 2021');
+  });
+
+  test('la direccion guardada y el punto de entrega del pedido', () {
+    final user = User.fromJson({
+      'id': 1, 'name': 'Taller', 'email': 't@x.pe', 'role': 'buyer',
+      'address': 'Av. Grau 100', 'latitude': -6.77, 'longitude': -79.84,
+    });
+    expect(user.hasSavedAddress, isTrue);
+    expect(user.latitude, -6.77);
+    expect(User.fromJson({'id': 2, 'name': 'X', 'email': 'x@x.pe', 'role': 'buyer'}).hasSavedAddress, isFalse);
+    final order = Order.fromJson({...orderJson, 'delivery_lat': -6.78, 'delivery_lng': -79.85});
+    expect(order.hasDeliveryPoint, isTrue);
+    expect(Order.fromJson(orderJson).hasDeliveryPoint, isFalse);
+  });
+
+  test('las tarjetas muestran marca y codigo juntos', () {
+    expect(Product.fromJson(productJson).brandAndCode, 'NGK  ·  BJ-CR8EIX');
+    // Sin marca (pedidos viejos) no deja separadores sueltos
+    expect(Product.fromJson({...productJson, 'brand': null}).brandAndCode, 'BJ-CR8EIX');
+    final item = OrderItem.fromJson({
+      'product_id': 1, 'product_name': 'Bujia', 'part_code': 'BJ-CR8EIX',
+      'brand': 'NGK', 'unit_price': 40.0, 'quantity': 1, 'subtotal': 40.0,
+    });
+    expect(item.brandAndCode, 'NGK  ·  BJ-CR8EIX');
+  });
+
+  test('los fallos del microfono se explican al usuario, no se tragan', () {
+    // Codigos reales de la Web Speech API / Android.
+    expect(speechErrorText('not-allowed'), contains('bloqueó el micrófono'));
+    expect(speechErrorText('audio-capture'), contains('micrófono conectado'));
+    expect(speechErrorText('no-speech'), contains('No se escuchó nada'));
+    expect(speechErrorText('not supported'), contains('Chrome o Edge'));
+    expect(speechErrorText('raro-123'), contains('raro-123')); // nunca vacio
   });
 
   test('el chat muestra la fecha una vez por dia y la hora en la burbuja', () {

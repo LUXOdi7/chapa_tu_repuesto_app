@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_config.dart';
 import '../data/auth_repository.dart';
 import '../domain/user.dart';
 
@@ -37,6 +38,11 @@ class Session extends ChangeNotifier {
   /// Al abrir la app: si hay token guardado se valida contra `/auth/me`. Si el
   /// backend lo rechaza (o no responde), se borra y se pide login otra vez.
   Future<void> restore() async {
+    // Client ID de Google desde el backend (no bloquea el arranque).
+    unawaited(_api.get('/health').then((h) {
+      final id = (h as Map)['google_client_id'] as String? ?? '';
+      if (id.isNotEmpty) ApiConfig.googleClientIdFromServer = id;
+    }).catchError((Object _) {}));
     final token = await _storage.read(key: _tokenKey);
     if (token != null && token.isNotEmpty) {
       _api.token = token;
@@ -60,8 +66,17 @@ class Session extends ChangeNotifier {
     await refreshMotos();
   }
 
+  /// Lo llama main.dart para que categorias y motos esten listas al entrar.
+  Future<void> Function()? loadCategories;
+
   Future<void> refreshMotos() async {
-    if (_user == null || _user!.isAdmin) return;
+    try {
+      await loadCategories?.call();
+    } catch (_) {/* se queda el mapa base */}
+    if (_user == null || _user!.isAdmin) {
+      notifyListeners();
+      return;
+    }
     try {
       motos = await _auth.motos();
     } catch (_) {

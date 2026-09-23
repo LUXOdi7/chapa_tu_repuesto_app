@@ -3,6 +3,47 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_config.dart';
 
+/// Isotipo + titulo para las barras superiores.
+class BrandTitle extends StatelessWidget {
+  const BrandTitle(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+            child: Image.asset('assets/ctr_mark.png', height: 26, width: 26),
+          ),
+          const SizedBox(width: 10),
+          Flexible(child: Text(text, overflow: TextOverflow.ellipsis)),
+        ],
+      );
+}
+
+/// Logo completo (login, splash): version con fondo blanco dentro de una
+/// tarjeta redondeada, asi se ve igual de limpio en tema claro y oscuro.
+class BrandLogo extends StatelessWidget {
+  const BrandLogo({super.key, this.height = 150});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(8),
+            child: Image.asset('assets/ctr_logo_white.png', height: height, fit: BoxFit.contain),
+          ),
+        ),
+      );
+}
+
 /// Foto del repuesto con degradacion a icono: el backend devuelve rutas
 /// relativas (o null), y en el taller la conexion se cae. La grilla tiene que
 /// seguir siendo legible en los dos casos.

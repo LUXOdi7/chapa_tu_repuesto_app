@@ -1,3 +1,4 @@
+import '../../../core/format.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/product.dart';
 import '../domain/store.dart';
@@ -12,18 +13,39 @@ class CatalogRepository {
 
   final ApiClient _api;
 
-  Future<List<String>> motoBrands() async =>
-      (await _api.get('/catalog/moto-brands') as List).cast<String>();
+  /// Trae las categorias y actualiza el mapa global `categoryLabels`.
+  Future<void> loadCategories() async {
+    final rows = asMapList(await _api.get('/catalog/categories'));
+    if (rows.isEmpty) return;
+    categoryLabels
+      ..clear()
+      ..addEntries(rows.map((r) => MapEntry(r['key'] as String, r['label'] as String)));
+  }
 
-  Future<List<String>> motoModels(String motoBrand) async =>
-      (await _api.get('/catalog/moto-models', query: {'moto_brand': motoBrand})
+  /// Admin y tiendas. Devuelve la clave (si ya existia, la misma).
+  Future<String> createCategory(String label) async {
+    final r = asMap(await _api.post('/catalog/categories', body: {'label': label}));
+    categoryLabels[r['key'] as String] = r['label'] as String;
+    return r['key'] as String;
+  }
+
+  /// Cascada tipo -> marca -> modelo -> año. `motoType` acota los tres
+  /// siguientes (una tolva no existe en la lineal).
+  Future<List<String>> motoBrands({String? motoType}) async =>
+      (await _api.get('/catalog/moto-brands', query: {'moto_type': motoType}) as List)
+          .cast<String>();
+
+  Future<List<String>> motoModels(String motoBrand, {String? motoType}) async =>
+      (await _api.get('/catalog/moto-models',
+                  query: {'moto_brand': motoBrand, 'moto_type': motoType})
               as List)
           .cast<String>();
 
-  Future<List<int>> motoYears(String motoBrand, String motoModel) async =>
+  Future<List<int>> motoYears(String motoBrand, String motoModel, {String? motoType}) async =>
       (await _api.get('/catalog/moto-years', query: {
         'moto_brand': motoBrand,
         'moto_model': motoModel,
+        'moto_type': motoType,
       }) as List)
           .cast<int>();
 
@@ -32,6 +54,7 @@ class CatalogRepository {
     String? category,
     String? brand,
     String? partCode,
+    String? motoType,
     String? motoBrand,
     String? motoModel,
     int? year,
@@ -49,6 +72,7 @@ class CatalogRepository {
       'category': category,
       'brand': brand,
       'part_code': partCode,
+      'moto_type': motoType,
       'moto_brand': motoBrand,
       'moto_model': motoModel,
       'year': year,
