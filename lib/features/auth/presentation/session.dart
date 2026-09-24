@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_config.dart';
 import '../data/auth_repository.dart';
 import '../domain/user.dart';
 
@@ -39,6 +40,11 @@ class Session extends ChangeNotifier {
   /// Al abrir la app: si hay token guardado se valida contra `/auth/me`. Si el
   /// backend lo rechaza (o no responde), se borra y se pide login otra vez.
   Future<void> restore() async {
+    // Client ID de Google desde el backend (no bloquea el arranque).
+    unawaited(_api.get('/health').then((h) {
+      final id = (h as Map)['google_client_id'] as String? ?? '';
+      if (id.isNotEmpty) ApiConfig.googleClientIdFromServer = id;
+    }).catchError((Object _) {}));
     final token = await _storage.read(key: _tokenKey);
     if (token != null && token.isNotEmpty) {
       _api.token = token;
@@ -65,23 +71,32 @@ class Session extends ChangeNotifier {
   }
 
   Future<void> registerFcmToken() async {
-  if (kIsWeb || Firebase.apps.isEmpty || _user == null) return;
+    if (kIsWeb || Firebase.apps.isEmpty || _user == null) return;
 
-  try {
-    await FirebaseMessaging.instance.requestPermission();
+    try {
+      await FirebaseMessaging.instance.requestPermission();
 
-    final token = await FirebaseMessaging.instance.getToken();
+      final token = await FirebaseMessaging.instance.getToken();
 
-    if (token != null && token.isNotEmpty) {
-      await _auth.registerDeviceToken(token);
+      if (token != null && token.isNotEmpty) {
+        await _auth.registerDeviceToken(token);
+      }
+    } catch (_) {
+      // Las notificaciones no deben impedir el inicio de sesión.
     }
-  } catch (_) {
-    // Las notificaciones no deben impedir el inicio de sesión.
   }
-}
+
+  /// Lo llama main.dart para que categorias y motos esten listas al entrar.
+  Future<void> Function()? loadCategories;
 
   Future<void> refreshMotos() async {
-    if (_user == null || _user!.isAdmin) return;
+    try {
+      await loadCategories?.call();
+    } catch (_) {/* se queda el mapa base */}
+    if (_user == null || _user!.isAdmin) {
+      notifyListeners();
+      return;
+    }
     try {
       motos = await _auth.motos();
     } catch (_) {

@@ -25,6 +25,7 @@ import 'features/profile/presentation/profile_page.dart';
 import 'features/supplier/data/supplier_repository.dart';
 import 'features/supplier/presentation/supplier_shell.dart';
 import 'core/notifications/firebase_notifications.dart';
+import 'shared/widgets/app_widgets.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,7 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
   void initState() {
     super.initState();
     // Token guardado + carrito guardado: la app arranca donde se quedo.
+    _session.loadCategories = _catalog.loadCategories;
     _session.restore();
     _cart.restore();
   }
@@ -144,7 +146,7 @@ class _Root extends StatelessWidget {
       builder: (context, _) {
         if (session.restoring) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(child: BrandLogo(height: 180)),
           );
         }
         final user = session.user;
@@ -188,7 +190,7 @@ class _BuyerShellState extends State<BuyerShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_tab]),
+        title: BrandTitle(_titles[_tab]),
         actions: [
           if (widget.asSupplier)
             TextButton.icon(

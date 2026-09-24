@@ -101,7 +101,7 @@ class _Detail extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              PartImage(path: selected.imageUrl, height: 200),
+              _Gallery(images: selected.imageUrls.isEmpty ? detail.imageUrls : selected.imageUrls),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Column(
@@ -216,9 +216,9 @@ class _Detail extends StatelessWidget {
                         children: [
                           for (final c in detail.compatibilities)
                             Chip(
-                              avatar: const Icon(Icons.verified,
+                              avatar: Icon(motoTypeIcons[c.motoType] ?? Icons.verified,
                                   size: 16, color: Colors.green),
-                              label: Text(c.label),
+                              label: Text(c.fullLabel),
                               visualDensity: VisualDensity.compact,
                             ),
                         ],
@@ -331,6 +331,59 @@ class _OfferTile extends StatelessWidget {
                 color: cheapest ? Colors.green : scheme.onSurface,
               )),
           StockChip(stock: product.stock, dense: true),
+        ],
+      ),
+    );
+  }
+}
+
+/// Carrusel de fotos con puntos; una sola foto = imagen fija.
+class _Gallery extends StatefulWidget {
+  const _Gallery({required this.images});
+
+  final List<String> images;
+
+  @override
+  State<_Gallery> createState() => _GalleryState();
+}
+
+class _GalleryState extends State<_Gallery> {
+  int _page = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.images.length <= 1) {
+      return PartImage(path: widget.images.isEmpty ? null : widget.images.first, height: 220);
+    }
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        children: [
+          PageView.builder(
+            itemCount: widget.images.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => PartImage(path: widget.images[i], height: 220),
+          ),
+          Positioned(
+            bottom: 8,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < widget.images.length; i++)
+                  Container(
+                    width: i == _page ? 18 : 7,
+                    height: 7,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      color: i == _page ? Theme.of(context).colorScheme.secondary : Colors.white70,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );

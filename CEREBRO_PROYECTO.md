@@ -32,17 +32,18 @@ sin gestor de estado: `AppScope` (InheritedWidget) reparte repositorios y dos
 | `core/app_scope.dart` | DI: `api`, `session`, `auth`, `catalog`, `orders`, `suppliers`, `admin`, `cart` |
 | `core/network/api_client.dart` | `dio` con Bearer y 401→logout; `ApiException` con `detail` del backend; **`stripNulls`** (los null no viajan en el body: el backend tiene defaults y un null da 422); `uploadImage(XFile, folder)` por bytes; `asDouble` (números que llegan como texto) |
 | `core/network/api_config.dart` | `API_BASE_URL`, `GOOGLE_SERVER_CLIENT_ID`, `imageUrl(path)` para rutas relativas `/uploads/...` |
-| `core/app_theme.dart` | Azul `#1A365D` + ámbar `#F59E0B`. **`FilledButton` tiene ancho infinito por tema**: dentro de `Row`/`Wrap`/`trailing` usar `OutlinedButton`/`TextButton` o envolver en `Expanded` |
-| `core/format.dart` | `soles()`, `parseServerDate` (backend manda UTC sin zona), `shortDate/dateTimeLabel/timeLabel/dayLabel/sameDay`, `categoryLabel` |
-| `shared/widgets/app_widgets.dart` | `AsyncView` (loading/error/vacío con `refreshKey`), `PartImage`, `StockChip`, `SectionTitle`, `showError/showInfo` |
+| `core/app_theme.dart` | Azul `#1A365D` + naranja del logo `#F4731A` (`kBrandAmber`); superficies suaves, inputs/cards con borde, NavigationBar con indicador naranja. **`FilledButton` tiene ancho infinito por tema**: dentro de `Row`/`Wrap`/`trailing` usar `OutlinedButton`/`TextButton` o envolver en `Expanded` |
+| `core/format.dart` | `soles()`, `parseServerDate` (backend manda UTC sin zona), `shortDate/dateTimeLabel/timeLabel/dayLabel/sameDay`, **`categoryLabels` mapa global mutable** (lo llena `CatalogRepository.loadCategories()` vía `Session.refreshMotos`; `createCategory` lo actualiza), `categoryLabel/knownCategories` |
+| `shared/widgets/app_widgets.dart` | `AsyncView` (loading/error/vacío con `refreshKey`), `PartImage`, `StockChip`, `SectionTitle`, `BrandTitle` (isotipo + título en AppBars), `BrandLogo` (login/splash), `showError/showInfo` |
+| `assets/` | `ctr_logo.png` (logo completo, fondo transparente), `ctr_mark.png` (isotipo), `ctr_icon.png` (launcher; `dart run flutter_launcher_icons` regenera Android + web) |
 | `shared/widgets/map_picker_page.dart` | `MapPickerPage` (elegir lat/lng tocando OSM) y `StoreMap` (mapa fijo). `flutter_map`, sin API key |
 | `features/auth` | `User`/`UserRole`/`UserMoto`, `AuthRepository` (login form-urlencoded, register, google, forgot/reset, perfil, motos, notificaciones, feedback), `Session` (token en secure storage, `motos` cacheadas, `googleReady`, `signOut` notifica primero), `LoginPage` (Google: `authenticate()` Android / `attemptLightweightAuthentication()` web), `ForgotPasswordPage` |
-| `features/catalog` | `Product/ProductPage(parsed)`, `Store/StoreReview`, `Compatibility`; `CatalogRepository` (+alertas); `SearchView` (voz `speech_to_text`, cascada `CompatibilityFilters` con `select()`, chips de mis motos, chips "Entendí:"), `ProductDetailPage` (ofertas, "Compatible con tu…", campana de alerta), `StorePage`/`StoresView` (mapa, Cómo llegar por URL de Google Maps, Llamar) |
+| `features/catalog` | `Product/ProductPage(parsed)`, `Store/StoreReview`, `Compatibility`; `CatalogRepository` (+alertas); `SearchView` (voz `speech_to_text`, cascada `CompatibilityFilters` (**tipo de moto** → marca → modelo → año) con `select()`, chips de mis motos, chips "Entendí:"; **"Ver más" = última celda de la grilla que agrega páginas a `_extra` sin reiniciar el `AsyncView`**), `ProductDetailPage` (galería `_Gallery` con puntos si hay varias fotos, ofertas, "Compatible con tu…", campana de alerta), `StorePage`/`StoresView` (mapa, Cómo llegar por URL de Google Maps, Llamar) |
 | `features/cart` | `CartStore` persistido, agrupado por tienda; `CartView`, `CheckoutPage` |
 | `features/orders` | `Order` (events, buyer, messageCount, canReviewBuyer, storeHasGateway), `ChatMessage`; `OrderRepository` (checkout, list `asBuyer`, `startPayment`, pay manual, `receiptPdfUrl`, messages, reviewBuyer); `OrdersView`, `OrderTrackingPage` (stepper con fechas, pagar → abre `checkout_url` con `url_launcher`, PDF, chat, calificar), `ChatPage` (polling 4 s `after_id`, chip de fecha una vez por día, hora en burbuja), `ReceiptPage` |
-| `features/supplier` | `SupplierRepository`; `SupplierShell` (Tienda con KPIs/cobro/verificación · Pedidos · Repuestos; botón "Comprar" → modo comprador), `StoreFormPage` (logo, mapa, lat/lng), `ProductFormPage` (foto, compatibilidades; **al editar se carga el producto completo** para no perder compatibilidades), `PaymentConfigPage` |
+| `features/supplier` | `SupplierRepository`; `SupplierShell` (Tienda con KPIs/cobro/verificación + **"Ver mi perfil público"** (reusa `StorePage`: mapa, calificaciones, comentarios) · Pedidos · Repuestos **agrupados por categoría (`ExpansionTile`, alfabético dentro)**; botón "Comprar" → modo comprador), `StoreFormPage` (logo, mapa, lat/lng), `ProductFormPage` (galería hasta 5 fotos con `pickMultiImage`, tocar miniatura = portada; botón "+" crea categoría; compatibilidades; **al editar se carga el producto completo** para no perder compatibilidades), `PaymentConfigPage` |
 | `features/profile` | `ProfilePage` (avatar, editar datos, mis motos, alertas, modo comprador, tema, sugerencia, salir), `MyMotosPage`, `AlertsPage` + `showCreateAlertDialog`, `NotificationsPage` + `NotificationBell` (badge cada 30 s, recargar, marcar todas, tocar → pedido) |
-| `features/admin` | `AdminRepository`, `AdminShell` (Resumen · Usuarios · Tiendas · Pedidos · Ideas). El panel web admin es este mismo código con `flutter build web` |
+| `features/admin` | `AdminRepository`, `AdminShell` (Resumen con chips de categorías + "Nueva" · Usuarios · Tiendas · Pedidos · Ideas). El panel web admin es este mismo código con `flutter build web` |
 
 ## Contrato con el backend (lo que la app asume)
 
@@ -83,7 +84,43 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
 - 2026-09-15 · Mantener este archivo actualizado con cada indicación nueva.
 - 2026-09-15 · En la raíz `D:\ChapaTuRepuesto` (fuera de los repos): `INSTALACION.md`
   (manual desde cero: versiones, Docker, venv, ctr, Flutter, workspace VS Code)
-  y `Sugerencias.md` (ideas priorizadas A–F).
-- 2026-09-15 · `CONTEXTO-ACTUAL.md` en la raíz: explicación completa del
+  y `Sugerencias-A-IMPLEMENTAR.md` (ideas priorizadas A–F).
+- 2026-09-15 · `CONTEXTO-ACTUAL-PROYECTO.md` en la raíz: explicación completa del
   proyecto para el equipo (roles, BD, flujo de pedido, imágenes, voz,
   notificaciones, pruebas). Actualizarlo cuando cambie algo de fondo.
+- 2026-09-20 · Perfil público de la tienda desde su panel; hasta 5 fotos por
+  producto; categorías dinámicas (admin y tiendas; "Accesorios"); repuestos del
+  proveedor agrupados por categoría y alfabéticos; "Ver más" sin reiniciar la
+  grilla; tema con colores del logo `CTR_LOGO.png` (assets + launcher icons).
+  Google: client ID web ya en `.vscode/launch.json` (Cristian) y en `.env` del
+  backend. FCM: no existe (sin Firebase).
+- 2026-09-20 · Login con logo de fondo blanco (`ctr_logo_white.png`); tarjetas
+  del resumen admin compactas (grilla de alto fijo). `INSTALACION.md §4`: cómo
+  activar Google (SHA-1 por compañero, puerto 5000) y el correo de Lucía.
+- 2026-09-20 · Google en web: boton oficial `renderButton` (popup) via
+  `auth/presentation/google/` (import condicional web/stub) + stream
+  `authenticationEvents`; web solo `clientId`, Android solo `serverClientId`.
+  El client ID viaja en `GET /health` (`google_client_id`): la app ya no
+  necesita `--dart-define` para Google.
+- 2026-09-22 · Buscador por voz: la palabra de categoría ahora **filtra**
+  (antes solo sumaba puntos, "muéstrame accesorios" daba 0), acepta singular
+  y plural (electrico/electricos) y se ignoran verbos de relleno
+  (tienes/hay/cuesta/cuánto…). Ejemplos probados en el README del backend.
+- 2026-09-22 · Dictado en web arreglado: `pauseFor` (3 s) cortaba la escucha
+  porque la Web Speech API no emite nivel de sonido; ahora `pauseFor` solo en
+  Android, idioma forzado `es-PE` y `onError`/`onStatus` conectados
+  (`speechErrorText`). Recordar: en web el micro exige localhost/https.
+- 2026-09-22 · Marca del repuesto visible junto al código en tarjetas del
+  buscador, carrito, pedido y constancia (`brandAndCode`); `order_items.brand`
+  congela la marca al comprar (**requiere `ctr reset`**). Brave bloquea el
+  dictado: aviso a los 8 s sin audio + texto explicando cómo activarlo.
+- 2026-09-22 · El backend ya migra columnas solo; correo de pedido limitado a
+  pagado/entregado/cancelado (la campana sigue recibiendo todo).
+- 2026-09-22 · Tres tipos de moto en toda la app: filtro de tipo en el buscador,
+  selector en el diálogo de compatibilidad del proveedor, tipo en "Mis motos" y
+  en los chips de la ficha (`motoTypeLabels/motoTypeIcons` en format.dart).
+  Perfil del comprador: dirección guardada con selector de mapa; checkout deja
+  elegir esa o una nueva para el pedido, ambas con punto en el mapa.
+- 2026-09-17 · `PENDIENTE.md` en la raíz: checklist de servicios/credenciales que
+  faltan (Google, SMTP, MP, Niubiz, dominio, keystore, legales, FCM, Yape vía
+  pasarela, RUC API, mapas, Sentry, SUNAT) con cómo conseguir cada clave.

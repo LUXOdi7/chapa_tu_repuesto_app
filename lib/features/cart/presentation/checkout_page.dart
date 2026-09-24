@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
+import '../../../shared/widgets/map_picker_page.dart';
+import '../../auth/domain/user.dart';
 import '../../orders/domain/order.dart';
 import '../../orders/domain/payment_method.dart';
 import '../../orders/presentation/order_tracking_page.dart';
@@ -29,6 +32,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
   PaymentMethod _method = PaymentMethod.yape;
   bool _busy = false;
 
+  /// true = usar la direccion guardada del perfil; false = una para este pedido.
+  bool _useSaved = true;
+  double? _lat;
+  double? _lng;
+  bool _loaded = false;
+
   @override
   void dispose() {
     _address.dispose();
@@ -36,16 +45,51 @@ class _CheckoutPageState extends State<CheckoutPage> {
     super.dispose();
   }
 
+  /// Con direccion guardada arranca en "usar la mía"; si no, en "otra".
+  void _loadDefaults(User? user) {
+    if (_loaded) return;
+    _loaded = true;
+    _useSaved = user?.hasSavedAddress ?? false;
+    if (_useSaved) {
+      _lat = user!.latitude;
+      _lng = user.longitude;
+    }
+  }
+
+  Future<void> _pickOnMap() async {
+    final point = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerPage(
+          initial: _lat != null && _lng != null ? LatLng(_lat!, _lng!) : null,
+        ),
+      ),
+    );
+    if (point == null || !mounted) return;
+    setState(() {
+      _lat = point.latitude;
+      _lng = point.longitude;
+    });
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
     final scope = AppScope.of(context);
+    final saved = scope.session.user;
+    final address = _useSaved ? (saved?.address ?? '') : _address.text.trim();
+    if (!_useSaved && !_formKey.currentState!.validate()) return;
+    if (address.length < 6) {
+      showInfo(context, 'Escribe la dirección de entrega');
+      return;
+    }
     setState(() => _busy = true);
     try {
       final created = await scope.orders.checkout(
         items: scope.cart.items,
-        deliveryAddress: _address.text.trim(),
+        deliveryAddress: address,
         paymentMethod: _method,
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+        deliveryLat: _lat,
+        deliveryLng: _lng,
       );
       scope.cart.clear();
       if (!mounted) return;
@@ -71,6 +115,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget build(BuildContext context) {
     final cart = AppScope.cartOf(context);
     final groups = cart.groups;
+    final saved = AppScope.sessionOf(context).user;
+    _loadDefaults(saved);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -92,20 +138,64 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
 
             const SectionTitle('Entrega'),
+            // Direccion guardada del perfil o una para este pedido; en ambos
+            // casos se puede marcar el punto exacto en el mapa.
+            if (saved?.hasSavedAddress ?? false) ...[
+              RadioGroup<bool>(
+                groupValue: _useSaved,
+                onChanged: (v) => setState(() {
+                  _useSaved = v ?? true;
+                  _lat = _useSaved ? saved.latitude : null;
+                  _lng = _useSaved ? saved.longitude : null;
+                }),
+                child: Column(
+                  children: [
+                    RadioListTile<bool>(
+                      value: true,
+                      title: const Text('Usar mi dirección guardada'),
+                      subtitle: Text(saved!.address!),
+                    ),
+                    const RadioListTile<bool>(
+                      value: false,
+                      title: Text('Otra dirección para este pedido'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  TextFormField(
-                    controller: _address,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'Dirección de entrega',
-                      prefixIcon: Icon(Icons.location_on_outlined),
+                  if (!_useSaved)
+                    TextFormField(
+                      controller: _address,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        labelText: 'Dirección de entrega',
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                      ),
+                      validator: (v) => (v == null || v.trim().length < 6)
+                          ? 'Escribe la dirección del taller'
+                          : null,
                     ),
-                    validator: (v) => (v == null || v.trim().length < 6)
-                        ? 'Escribe la dirección del taller'
-                        : null,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _pickOnMap,
+                          icon: const Icon(Icons.map_outlined),
+                          label: Text(_lat == null
+                              ? 'Marcar punto en el mapa'
+                              : 'Cambiar punto del mapa'),
+                        ),
+                      ),
+                      if (_lat != null) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 12),
                   TextFormField(

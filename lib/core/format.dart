@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Formato de moneda (Soles) con separador de miles: "S/ 1,234.50".
 ///
 /// ponytail: son 3 lineas contra una dependencia entera (`intl`); cambiar a
@@ -51,9 +53,31 @@ String dayLabel(DateTime d, {DateTime? now}) {
 bool sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
-/// Las categorias llegan del backend en minuscula y en ingles/sin tildes
-/// (`frenos`, `electrico`, `transmision`): la UI nunca las muestra crudas.
-const _categoryLabels = <String, String>{
+/// Tipos de moto del backend (`/catalog/moto-types`). Fijos: son tres y
+/// cambian solo si cambia el negocio.
+const motoTypeLabels = <String, String>{
+  'lineal': 'Moto lineal',
+  'carguero': 'Moto carguera',
+  'mototaxi': 'Mototaxi',
+};
+
+/// "Moto carguera" a partir de `carguero`; si llega otro, lo capitaliza.
+String motoTypeLabel(String? key) =>
+    motoTypeLabels[key] ??
+    (key == null || key.isEmpty ? '' : key[0].toUpperCase() + key.substring(1));
+
+/// Icono por tipo: 2 ruedas, carga y pasajeros.
+const motoTypeIcons = <String, IconData>{
+  'lineal': Icons.two_wheeler,
+  'carguero': Icons.local_shipping,
+  'mototaxi': Icons.airport_shuttle,
+};
+
+/// Categorias {key: etiqueta}. Arrancan con las base y se reemplazan con
+/// `GET /catalog/categories` al iniciar sesion (admin y tiendas crean nuevas).
+/// ponytail: mapa global mutable en vez de un store; una sola fuente y se
+/// refresca en dos sitios (Session y al crear una categoria).
+final categoryLabels = <String, String>{
   'motor': 'Motor',
   'frenos': 'Frenos',
   'transmision': 'Transmisión',
@@ -61,12 +85,15 @@ const _categoryLabels = <String, String>{
   'carroceria': 'Carrocería',
   'llantas': 'Llantas',
   'lubricantes': 'Lubricantes',
+  'accesorios': 'Accesorios',
 };
 
-/// Traduce la categoria; si el backend agrega una nueva, la capitaliza en vez
+/// Traduce la categoria; si llega una que no conocemos, la capitaliza en vez
 /// de mostrar un hueco.
 String categoryLabel(String key) =>
-    _categoryLabels[key] ??
-    (key.isEmpty ? key : key[0].toUpperCase() + key.substring(1));
+    categoryLabels[key] ??
+    (key.isEmpty ? key : key[0].toUpperCase() + key.substring(1).replaceAll('-', ' '));
 
-List<String> get knownCategories => _categoryLabels.keys.toList();
+/// Ordenadas por etiqueta.
+List<String> get knownCategories =>
+    categoryLabels.keys.toList()..sort((a, b) => categoryLabel(a).compareTo(categoryLabel(b)));

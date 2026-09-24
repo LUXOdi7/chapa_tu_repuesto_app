@@ -20,6 +20,7 @@ class Product {
     required this.inStock,
     this.brand,
     this.imageUrl,
+    this.imageUrls = const [],
     this.warrantyMonths,
     this.store,
     this.description,
@@ -39,9 +40,16 @@ class Product {
   /// Marca del repuesto (NGK, Brembo...), no la marca de la moto.
   final String? brand;
 
+  /// "NGK · BJ-CR8EIX" para las tarjetas y el carrito.
+  String get brandAndCode =>
+      [brand, partCode].where((t) => t != null && t.isNotEmpty).join('  ·  ');
+
   /// Ruta relativa que devuelve el backend; usa `ApiConfig.imageUrl` para
   /// convertirla en URL absoluta. Puede ser null.
   final String? imageUrl;
+
+  /// Galeria (hasta 5). La primera es la portada (`imageUrl`).
+  final List<String> imageUrls;
   final double price;
   final int stock;
   final bool inStock;
@@ -59,6 +67,8 @@ class Product {
         partCode: json['part_code'] as String? ?? '',
         brand: json['brand'] as String?,
         imageUrl: json['image_url'] as String?,
+        imageUrls: (json['image_urls'] as List?)?.cast<String>() ??
+            [if (json['image_url'] != null) json['image_url'] as String],
         price: asDouble(json['price']) ?? 0,
         stock: json['stock'] as int? ?? 0,
         // El backend ya calcula `in_stock`; el fallback cubre las respuestas
@@ -121,6 +131,7 @@ class ProductPage {
     if (p == null) return const [];
     return [
       if (p['year'] != null) '${p['year']}',
+      if (p['moto_type'] != null) motoTypeLabel(p['moto_type'] as String),
       ...(p['moto'] as List? ?? const []).cast<String>(),
       ...(p['brands'] as List? ?? const []).cast<String>(),
       if (p['category'] != null) categoryLabel(p['category'] as String),

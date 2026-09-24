@@ -90,6 +90,7 @@ class ReceiptPage extends StatelessWidget {
     'business_name': 'Razón social',
     'product_name': 'Producto',
     'part_code': 'Código de parte',
+    'brand': 'Marca',
     'unit_price': 'Precio unitario',
     'quantity': 'Cantidad',
     'name': 'Nombre',

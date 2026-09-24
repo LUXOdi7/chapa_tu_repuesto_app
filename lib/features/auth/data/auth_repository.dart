@@ -65,20 +65,31 @@ class AuthRepository {
   Future<User> me() async => User.fromJson(asMap(await _api.get('/auth/me')));
 
   Future<void> registerDeviceToken(String? fcmToken) async {
-  await _api.put(
-    '/auth/me/device',
-    body: {
-      'fcm_token': fcmToken,
-    },
-  );
-}
+    await _api.put(
+      '/auth/me/device',
+      body: {
+        'fcm_token': fcmToken,
+      },
+    );
+  }
 
-  Future<User> updateProfile({String? name, String? phone, String? password, String? avatarUrl}) async =>
+  Future<User> updateProfile({
+    String? name,
+    String? phone,
+    String? password,
+    String? avatarUrl,
+    String? address,
+    double? latitude,
+    double? longitude,
+  }) async =>
       User.fromJson(asMap(await _api.patch('/auth/me', body: {
         'name': name,
         'phone': phone,
         'password': password,
         'avatar_url': avatarUrl,
+        'address': address,
+        'latitude': latitude,
+        'longitude': longitude,
       })));
 
   Future<void> sendFeedback({required String subject, required String message}) =>
@@ -88,8 +99,14 @@ class AuthRepository {
   Future<List<UserMoto>> motos() async =>
       asMapList(await _api.get('/auth/me/motos')).map(UserMoto.fromJson).toList();
 
-  Future<UserMoto> addMoto({required String brand, required String model, required int year}) async =>
+  Future<UserMoto> addMoto({
+    required String type,
+    required String brand,
+    required String model,
+    required int year,
+  }) async =>
       UserMoto.fromJson(asMap(await _api.post('/auth/me/motos', body: {
+        'moto_type': type,
         'moto_brand': brand,
         'moto_model': model,
         'year': year,

@@ -1,3 +1,5 @@
+import '../../../core/format.dart';
+
 /// Perfiles del marketplace, tal como los nombra el backend.
 /// - [buyer]    : mecánico independiente o motociclista final.
 /// - [supplier] : tienda de autopartes; publica repuestos y despacha pedidos.
@@ -37,6 +39,9 @@ class User {
     this.storeId,
     this.buyerRatingAvg = 0,
     this.buyerRatingCount = 0,
+    this.address,
+    this.latitude,
+    this.longitude,
   });
 
   final int id;
@@ -53,6 +58,14 @@ class User {
   /// Reputación como comprador (la tienda lo califica al entregar).
   final double buyerRatingAvg;
   final int buyerRatingCount;
+
+  /// Dirección de entrega guardada (se reusa en el checkout) y su punto en el
+  /// mapa; ambos opcionales.
+  final String? address;
+  final double? latitude;
+  final double? longitude;
+
+  bool get hasSavedAddress => address != null && address!.isNotEmpty;
 
   String get buyerRatingLabel => buyerRatingCount == 0
       ? 'Sin calificaciones como comprador'
@@ -72,22 +85,38 @@ class User {
         storeId: json['store_id'] as int?,
         buyerRatingAvg: (json['buyer_rating_avg'] as num?)?.toDouble() ?? 0,
         buyerRatingCount: json['buyer_rating_count'] as int? ?? 0,
+        address: json['address'] as String?,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
       );
 }
 
 /// Moto guardada por el comprador ("Mis motos").
 class UserMoto {
-  const UserMoto({required this.id, required this.brand, required this.model, required this.year});
+  const UserMoto({
+    required this.id,
+    required this.brand,
+    required this.model,
+    required this.year,
+    this.type = 'lineal',
+  });
 
   final int id;
+
+  /// lineal (2 ruedas) · carguero (tolva) · mototaxi (cabina).
+  final String type;
   final String brand;
   final String model;
   final int year;
 
   String get label => '$brand $model $year';
 
+  /// "Mototaxi · Bajaj RE 4S Torito 2019"
+  String get fullLabel => '${motoTypeLabel(type)} · $label';
+
   factory UserMoto.fromJson(Map<String, dynamic> json) => UserMoto(
         id: json['id'] as int,
+        type: json['moto_type'] as String? ?? 'lineal',
         brand: json['moto_brand'] as String? ?? '',
         model: json['moto_model'] as String? ?? '',
         year: json['year'] as int? ?? 0,

@@ -5,6 +5,7 @@ import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/domain/product.dart';
 import '../../catalog/domain/store.dart';
+import '../../catalog/presentation/store_page.dart';
 import '../../orders/domain/order.dart';
 import '../../orders/presentation/orders_page.dart';
 import '../../profile/presentation/notifications_page.dart';
@@ -49,7 +50,7 @@ class _SupplierShellState extends State<SupplierShell> {
           }
           return Scaffold(
             appBar: AppBar(
-              title: Text(_titles[_tab]),
+              title: BrandTitle(_titles[_tab]),
               actions: [
                 TextButton.icon(
                   onPressed: () => shopMode.value = true,
@@ -162,33 +163,53 @@ class _SupplierProductsState extends State<_SupplierProducts> {
         isEmpty: (products) => products.isEmpty,
         emptyIcon: Icons.inventory_2_outlined,
         emptyMessage: 'Todavía no publicaste repuestos.',
-        builder: (context, products) => ListView.separated(
-          itemCount: products.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, i) {
-            final product = products[i];
-            return ListTile(
-              leading: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: PartImage(path: product.imageUrl, height: 48),
+        builder: (context, products) {
+          // Agrupado por categoria; dentro, alfabetico. Tocar la categoria
+          // despliega sus repuestos.
+          final byCat = <String, List<Product>>{};
+          for (final p in products) {
+            byCat.putIfAbsent(p.category, () => []).add(p);
+          }
+          final cats = byCat.keys.toList()
+            ..sort((a, b) => categoryLabel(a).compareTo(categoryLabel(b)));
+          for (final list in byCat.values) {
+            list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          }
+          return ListView(
+            padding: const EdgeInsets.only(bottom: 88),
+            children: [
+              for (final cat in cats)
+                ExpansionTile(
+                  leading: const Icon(Icons.category_outlined),
+                  title: Text(categoryLabel(cat), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text('${byCat[cat]!.length} repuesto${byCat[cat]!.length == 1 ? '' : 's'}'),
+                  children: [
+                    for (final product in byCat[cat]!)
+                      ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: PartImage(path: product.imageUrl, height: 48),
+                          ),
+                        ),
+                        title: Text(product.name,
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text('${product.partCode}  ·  '
+                            '${soles(product.price)}  ·  stock ${product.stock}'
+                            '${product.isActive ? '' : '  ·  oculto'}'),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _delete(product),
+                        ),
+                        onTap: () => _open(product),
+                      ),
+                  ],
                 ),
-              ),
-              title: Text(product.name,
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text('${product.partCode}  ·  '
-                  '${soles(product.price)}  ·  stock ${product.stock}'
-                  '${product.isActive ? '' : '  ·  oculto'}'),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _delete(product),
-              ),
-              onTap: () => _open(product),
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _open,
@@ -285,6 +306,14 @@ class _StoreTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
+        // Perfil publico: lo que ve el comprador (mapa, calificaciones,
+        // comentarios, catalogo). Reusa la ficha del catalogo.
+        FilledButton.tonalIcon(
+          onPressed: () => Navigator.pushNamed(context, StorePage.route, arguments: store.id),
+          icon: const Icon(Icons.storefront_outlined),
+          label: Text('Ver mi perfil público  ·  ${store.ratingLabel}'),
+        ),
+        const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () async {
             final saved = await Navigator.push<bool>(

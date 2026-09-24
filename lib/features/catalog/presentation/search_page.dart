@@ -25,13 +25,22 @@ class _SearchViewState extends State<SearchView> {
   final _filtersKey = GlobalKey<CompatibilityFiltersState>();
 
   String _query = '';
+  String? _motoType;
   String? _motoBrand;
   String? _motoModel;
   int? _year;
   String? _category;
   bool _onlyInStock = false;
   String _orderBy = 'relevance';
-  int _limit = 20;
+
+  /// Paginas extra cargadas con "Ver mas". Se acumulan sin tocar el
+  /// `AsyncView` (que solo pide la primera pagina), asi la grilla no se
+  /// reconstruye ni pierde el scroll. `_extraFor` recuerda para que busqueda
+  /// valen: si cambia la busqueda, se descartan.
+  final List<Product> _extra = [];
+  String _extraFor = '';
+  bool _loadingMore = false;
+  static const _pageSize = 20;
 
   Timer? _debounce;
 
@@ -52,7 +61,7 @@ class _SearchViewState extends State<SearchView> {
 
   void _reset() {
     setState(() {
-      _limit = 20;
+      _motoType = null;
       _category = null;
       _onlyInStock = false;
       _orderBy = 'relevance';
@@ -60,18 +69,57 @@ class _SearchViewState extends State<SearchView> {
     _filtersKey.currentState?.clear();
   }
 
-  bool get _hasMoto => _motoBrand != null;
+  bool get _hasMoto => _motoType != null || _motoBrand != null;
 
-  String get _motoLabel =>
-      [_motoBrand, _motoModel, _year?.toString()].whereType<String>().join(' ');
+  String get _motoLabel => [
+        if (_motoType != null) motoTypeLabel(_motoType),
+        _motoBrand,
+        _motoModel,
+        _year?.toString(),
+      ].whereType<String>().join(' ');
 
   /// Si la moto activa es una de "Mis motos", el encabezado lo dice.
-  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any(
-      (m) => m.brand == _motoBrand && m.model == _motoModel && m.year == _year);
+  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any((m) =>
+      m.type == _motoType &&
+      m.brand == _motoBrand &&
+      m.model == _motoModel &&
+      m.year == _year);
 
   /// Cualquier cambio de esta cadena recarga el `AsyncView`.
   String get _searchKey =>
-      '$_query|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy|$_limit';
+      '$_query|$_motoType|$_motoBrand|$_motoModel|$_year|$_category|$_onlyInStock|$_orderBy';
+
+  List<Product> get _extraItems => _extraFor == _searchKey ? _extra : const [];
+
+  Future<void> _loadMore(int offset) async {
+    if (_loadingMore) return;
+    final key = _searchKey;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await AppScope.catalogOf(context).products(
+        q: _query.isEmpty ? null : _query,
+        category: _category,
+        motoType: _motoType,
+        motoBrand: _motoBrand,
+        motoModel: _motoModel,
+        year: _year,
+        onlyInStock: _onlyInStock ? true : null,
+        orderBy: _orderBy,
+        limit: _pageSize,
+        offset: offset,
+      );
+      if (!mounted || key != _searchKey) return;
+      setState(() {
+        if (_extraFor != key) _extra.clear();
+        _extraFor = key;
+        _extra.addAll(page.items);
+      });
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,11 +139,11 @@ class _SearchViewState extends State<SearchView> {
               CompatibilityFilters(
                 key: _filtersKey,
                 repo: scope.catalog,
-                onChanged: (brand, model, year) => setState(() {
+                onChanged: (type, brand, model, year) => setState(() {
+                  _motoType = type;
                   _motoBrand = brand;
                   _motoModel = model;
                   _year = year;
-                  _limit = 20;
                 }),
               ),
             ],
@@ -114,15 +162,17 @@ class _SearchViewState extends State<SearchView> {
                     children: [
                       for (final moto in scope.session.motos) ...[
                         ChoiceChip(
-                          avatar: const Icon(Icons.two_wheeler, size: 16),
+                          avatar: Icon(motoTypeIcons[moto.type] ?? Icons.two_wheeler, size: 16),
                           label: Text(moto.label),
-                          selected: _motoBrand == moto.brand &&
+                          tooltip: motoTypeLabel(moto.type),
+                          selected: _motoType == moto.type &&
+                              _motoBrand == moto.brand &&
                               _motoModel == moto.model &&
                               _year == moto.year,
                           visualDensity: VisualDensity.compact,
                           onSelected: (on) => on
                               ? _filtersKey.currentState
-                                  ?.select(moto.brand, moto.model, moto.year)
+                                  ?.select(moto.type, moto.brand, moto.model, moto.year)
                               : _filtersKey.currentState?.clear(),
                         ),
                         const SizedBox(width: 6),
@@ -135,18 +185,9 @@ class _SearchViewState extends State<SearchView> {
           category: _category,
           onlyInStock: _onlyInStock,
           orderBy: _orderBy,
-          onCategory: (c) => setState(() {
-            _category = c;
-            _limit = 20;
-          }),
-          onStock: (v) => setState(() {
-            _onlyInStock = v;
-            _limit = 20;
-          }),
-          onOrder: (o) => setState(() {
-            _orderBy = o;
-            _limit = 20;
-          }),
+          onCategory: (c) => setState(() => _category = c),
+          onStock: (v) => setState(() => _onlyInStock = v),
+          onOrder: (o) => setState(() => _orderBy = o),
         ),
         Expanded(
           child: AsyncView<ProductPage>(
@@ -154,12 +195,13 @@ class _SearchViewState extends State<SearchView> {
             load: () => scope.catalog.products(
               q: _query.isEmpty ? null : _query,
               category: _category,
+              motoType: _motoType,
               motoBrand: _motoBrand,
               motoModel: _motoModel,
               year: _year,
               onlyInStock: _onlyInStock ? true : null,
               orderBy: _orderBy,
-              limit: _limit,
+              limit: _pageSize,
             ),
             isEmpty: (page) => page.items.isEmpty,
             emptyIcon: Icons.search_off,
@@ -168,7 +210,10 @@ class _SearchViewState extends State<SearchView> {
                     'Prueba quitando el año o el modelo.'
                 : 'No encontramos repuestos para esa búsqueda.\n'
                     'Prueba con el código de parte.',
-            builder: (context, page) => Column(
+            builder: (context, page) {
+              final items = [...page.items, ..._extraItems];
+              final remaining = page.total - items.length;
+              return Column(
               children: [
                 _ResultsHeader(
                   count: page.total,
@@ -216,9 +261,25 @@ class _SearchViewState extends State<SearchView> {
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
                             ),
-                            itemCount: page.items.length,
+                            // Ultima celda: boton "Ver mas" (no se reinicia la
+                            // grilla; los nuevos se agregan debajo).
+                            itemCount: items.length + (remaining > 0 ? 1 : 0),
                             itemBuilder: (context, i) {
-                              final product = page.items[i];
+                              if (i == items.length) {
+                                return Center(
+                                  child: _loadingMore
+                                      ? const CircularProgressIndicator()
+                                      : FilledButton.tonalIcon(
+                                          onPressed: () => _loadMore(items.length),
+                                          icon: const Icon(Icons.expand_more),
+                                          label: Text('Ver más\n($remaining restantes)',
+                                              textAlign: TextAlign.center),
+                                          style: FilledButton.styleFrom(
+                                              minimumSize: const Size(0, 48)),
+                                        ),
+                                );
+                              }
+                              final product = items[i];
                               return ProductCard(
                                 product: product,
                                 compatibilityConfirmed: _hasMoto,
@@ -236,18 +297,9 @@ class _SearchViewState extends State<SearchView> {
                           ),
                   ),
                 ),
-                if (page.hasMore)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => _limit += 20),
-                      icon: const Icon(Icons.expand_more),
-                      label: Text('Ver más (${page.total - page.items.length} '
-                          'restantes)'),
-                    ),
-                  ),
               ],
-            ),
+            );
+            },
           ),
         ),
       ],
