@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
@@ -49,6 +51,7 @@ class Session extends ChangeNotifier {
       try {
         _user = await _auth.me();
         await refreshMotos();
+        await registerFcmToken();
       } catch (_) {
         _api.token = null;
         await _storage.delete(key: _tokenKey);
@@ -64,6 +67,23 @@ class Session extends ChangeNotifier {
     await _storage.write(key: _tokenKey, value: result.token);
     notifyListeners();
     await refreshMotos();
+    await registerFcmToken();
+  }
+
+  Future<void> registerFcmToken() async {
+    if (kIsWeb || Firebase.apps.isEmpty || _user == null) return;
+
+    try {
+      await FirebaseMessaging.instance.requestPermission();
+
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token != null && token.isNotEmpty) {
+        await _auth.registerDeviceToken(token);
+      }
+    } catch (_) {
+      // Las notificaciones no deben impedir el inicio de sesión.
+    }
   }
 
   /// Lo llama main.dart para que categorias y motos esten listas al entrar.

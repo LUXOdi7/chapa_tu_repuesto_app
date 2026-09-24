@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'core/app_scope.dart';
 import 'core/app_theme.dart';
 import 'core/network/api_client.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'features/admin/data/admin_repository.dart';
 import 'features/admin/presentation/admin_shell.dart';
 import 'features/auth/data/auth_repository.dart';
@@ -23,9 +24,18 @@ import 'features/profile/presentation/notifications_page.dart';
 import 'features/profile/presentation/profile_page.dart';
 import 'features/supplier/data/supplier_repository.dart';
 import 'features/supplier/presentation/supplier_shell.dart';
+import 'core/notifications/firebase_notifications.dart';
 import 'shared/widgets/app_widgets.dart';
 
-void main() => runApp(const ChapaTuRepuestoApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+  await FirebaseNotifications.initialize();
+
+  runApp(const ChapaTuRepuestoApp());
+}
+
 
 /// Tema claro/oscuro conmutable. Un `ValueNotifier` global evita montar un
 /// gestor de estado entero para un unico switch de UI.
