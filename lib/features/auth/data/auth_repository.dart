@@ -64,6 +64,15 @@ class AuthRepository {
 
   Future<User> me() async => User.fromJson(asMap(await _api.get('/auth/me')));
 
+  Future<void> registerDeviceToken(String? fcmToken) async {
+  await _api.put(
+    '/auth/me/device',
+    body: {
+      'fcm_token': fcmToken,
+    },
+  );
+}
+
   Future<User> updateProfile({String? name, String? phone, String? password, String? avatarUrl}) async =>
       User.fromJson(asMap(await _api.patch('/auth/me', body: {
         'name': name,
