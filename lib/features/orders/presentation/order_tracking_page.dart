@@ -60,11 +60,17 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         final start = await repo.startPayment(order.id);
         final url = start.checkoutUrl;
         if (url == null) return; // ya quedo aprobado (simulado)
-        if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+        if (!await launchUrl(
+          Uri.parse(url),
+          mode: LaunchMode.externalApplication,
+        )) {
           throw Exception('No se pudo abrir el checkout de ${start.provider}.');
         }
         if (mounted) {
-          showInfo(context, 'Cuando termines de pagar, vuelve y toca actualizar.');
+          showInfo(
+            context,
+            'Cuando termines de pagar, vuelve y toca actualizar.',
+          );
         }
       });
       return;
@@ -116,11 +122,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
     if (confirmed != true) return;
     final number = controller.text.trim();
-    await _run(() => repo.pay(
-          order.id,
-          method: method,
-          operationNumber: number.isEmpty ? null : number,
-        ));
+    await _run(
+      () => repo.pay(
+        order.id,
+        method: method,
+        operationNumber: number.isEmpty ? null : number,
+      ),
+    );
   }
 
   Future<void> _review(Order order) async {
@@ -173,11 +181,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     );
 
     if (confirmed != true) return;
-    await _run(() => repo.review(
-          order.id,
-          rating: rating,
-          comment: comment.text.trim().isEmpty ? null : comment.text.trim(),
-        ));
+    await _run(
+      () => repo.review(
+        order.id,
+        rating: rating,
+        comment: comment.text.trim().isEmpty ? null : comment.text.trim(),
+      ),
+    );
   }
 
   /// Abre el PDF en el navegador/visor (Android y web) con un enlace firmado.
@@ -185,7 +195,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     final repo = AppScope.ordersOf(context);
     await _run(() async {
       final url = await repo.receiptPdfUrl(order.id);
-      if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+      if (!await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      )) {
         throw Exception('No se pudo abrir el PDF.');
       }
     });
@@ -211,27 +224,43 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   for (var i = 1; i <= 5; i++)
                     IconButton(
                       onPressed: () => setLocal(() => rating = i),
-                      icon: Icon(i <= rating ? Icons.star : Icons.star_border, color: Colors.amber),
+                      icon: Icon(
+                        i <= rating ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                      ),
                     ),
                 ],
               ),
               TextField(
                 controller: comment,
                 maxLines: 2,
-                decoration: const InputDecoration(labelText: 'Comentario (opcional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Comentario (opcional)',
+                ),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Ahora no')),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Enviar')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Ahora no'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Enviar'),
+            ),
           ],
         ),
       ),
     );
     if (confirmed != true) return;
-    await _run(() => repo.reviewBuyer(order.id,
-        rating: rating, comment: comment.text.trim().isEmpty ? null : comment.text.trim()));
+    await _run(
+      () => repo.reviewBuyer(
+        order.id,
+        rating: rating,
+        comment: comment.text.trim().isEmpty ? null : comment.text.trim(),
+      ),
+    );
   }
 
   Future<void> _changeStatus(Order order, String status) async {
@@ -242,7 +271,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         builder: (dialogContext) => AlertDialog(
           title: const Text('¿Cancelar el pedido?'),
           content: const Text(
-              'Se devuelve el stock a la tienda. Esta acción no se deshace.'),
+            'Se devuelve el stock a la tienda. Esta acción no se deshace.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
@@ -292,11 +322,16 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                         dense: true,
                         leading: CircleAvatar(
                           radius: 14,
-                          child: Text('${item.quantity}',
-                              style: const TextStyle(fontSize: 12)),
+                          child: Text(
+                            '${item.quantity}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ),
-                        title: Text(item.productName,
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        title: Text(
+                          item.productName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         subtitle: Text(item.brandAndCode),
                         trailing: Text(soles(item.subtotal)),
                       ),
@@ -310,9 +345,11 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     _Fact(label: 'N° operación', value: order.paymentOpNumber!),
                   if (order.deliveryAddress != null)
                     _Fact(
-                        label: 'Entrega',
-                        value: order.deliveryAddress! +
-                            (order.hasDeliveryPoint ? '  ·  📍 en el mapa' : '')),
+                      label: 'Entrega',
+                      value:
+                          order.deliveryAddress! +
+                          (order.hasDeliveryPoint ? '  ·  📍 en el mapa' : ''),
+                    ),
                   if (order.notes != null && order.notes!.isNotEmpty)
                     _Fact(label: 'Nota', value: order.notes!),
                   _Fact(label: 'Tienda', value: order.store.businessName),
@@ -320,8 +357,10 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     _Fact(label: 'Teléfono', value: order.store.phone!),
                   if (order.buyerName != null)
                     _Fact(
-                        label: 'Comprador',
-                        value: '${order.buyerName!}  ·  ${order.buyerRatingLabel}'),
+                      label: 'Comprador',
+                      value:
+                          '${order.buyerName!}  ·  ${order.buyerRatingLabel}',
+                    ),
                   if (order.buyerPhone != null)
                     _Fact(label: 'Tel. comprador', value: order.buyerPhone!),
                   const SizedBox(height: 12),
@@ -335,18 +374,27 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                         // dentro de un Wrap eso revienta el layout.
                         OutlinedButton.icon(
                           onPressed: () async {
-                            await Navigator.push(context,
-                                MaterialPageRoute<void>(builder: (_) => ChatPage(order: order)));
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => ChatPage(order: order),
+                              ),
+                            );
                             if (mounted) _refresh();
                           },
                           icon: const Icon(Icons.chat_bubble_outline),
-                          label: Text(order.messageCount == 0
-                              ? 'Consultar'
-                              : 'Mensajes (${order.messageCount})'),
+                          label: Text(
+                            order.messageCount == 0
+                                ? 'Consultar'
+                                : 'Mensajes (${order.messageCount})',
+                          ),
                         ),
                         OutlinedButton.icon(
                           onPressed: () => Navigator.pushNamed(
-                              context, StorePage.route, arguments: order.store.id),
+                            context,
+                            StorePage.route,
+                            arguments: order.store.id,
+                          ),
                           icon: const Icon(Icons.storefront_outlined),
                           label: const Text('Ver tienda'),
                         ),
@@ -424,31 +472,40 @@ class _Actions extends StatelessWidget {
       // El paso a payment_verified no es un cambio de estado suelto: pasa por
       // /orders/{id}/payment, que registra el numero de operacion.
       if (status == 'payment_verified') {
-        buttons.add(FilledButton.icon(
-          onPressed: busy ? null : onPay,
-          icon: const Icon(Icons.payments_outlined),
-          label: Text('Pagar ${soles(order.total)}'),
-        ));
+        buttons.add(
+          FilledButton.icon(
+            onPressed: busy ? null : onPay,
+            icon: const Icon(Icons.payments_outlined),
+            label: Text('Pagar ${soles(order.total)}'),
+          ),
+        );
       } else if (status == 'closed') {
-        buttons.add(FilledButton.icon(
-          onPressed: busy ? null : onReview,
-          icon: const Icon(Icons.star_outline),
-          label: const Text('Calificar y cerrar'),
-        ));
+        buttons.add(
+          FilledButton.icon(
+            onPressed: busy ? null : onReview,
+            icon: const Icon(Icons.star_outline),
+            label: const Text('Calificar y cerrar'),
+          ),
+        );
       } else if (status == 'cancelled') {
-        buttons.add(TextButton.icon(
-          onPressed: busy ? null : () => onStatus(status),
-          icon: const Icon(Icons.cancel_outlined),
-          label: const Text('Cancelar pedido'),
-          style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error),
-        ));
+        buttons.add(
+          TextButton.icon(
+            onPressed: busy ? null : () => onStatus(status),
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Cancelar pedido'),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        );
       } else {
-        buttons.add(FilledButton.icon(
-          onPressed: busy ? null : () => onStatus(status),
-          icon: Icon(orderStatusIcon(status)),
-          label: Text(orderActionLabel(status)),
-        ));
+        buttons.add(
+          FilledButton.icon(
+            onPressed: busy ? null : () => onStatus(status),
+            icon: Icon(orderStatusIcon(status)),
+            label: Text(orderActionLabel(status)),
+          ),
+        );
       }
     }
 
@@ -504,9 +561,11 @@ class _Timeline extends StatelessWidget {
       steps: [
         for (var i = 0; i < orderTimeline.length; i++)
           Step(
-            title: Text(i == current
-                ? order.statusLabel
-                : orderStatusLabel(orderTimeline[i])),
+            title: Text(
+              i == current
+                  ? order.statusLabel
+                  : orderStatusLabel(orderTimeline[i]),
+            ),
             subtitle: when(orderTimeline[i]) != null
                 ? Text(dateTimeLabel(when(orderTimeline[i])!))
                 : (i == current ? const Text('Estado actual') : null),
@@ -548,35 +607,51 @@ class _OrderHeader extends StatelessWidget {
               Icon(orderStatusIcon(order.status), color: onHeader),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(order.statusLabel,
-                    style: TextStyle(
-                      color: onHeader,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    )),
-              ),
-              Text(order.code,
+                child: Text(
+                  order.statusLabel,
                   style: TextStyle(
-                      color: onHeader.withValues(alpha: 0.75), fontSize: 13)),
+                    color: onHeader,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              Text(
+                order.code,
+                style: TextStyle(
+                  color: onHeader.withValues(alpha: 0.75),
+                  fontSize: 13,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(order.store.businessName,
-              style: TextStyle(
-                  color: onHeader.withValues(alpha: 0.75), fontSize: 13)),
+          Text(
+            order.store.businessName,
+            style: TextStyle(
+              color: onHeader.withValues(alpha: 0.75),
+              fontSize: 13,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(dateTimeLabel(order.createdAt),
-                  style: TextStyle(
-                      color: onHeader.withValues(alpha: 0.75), fontSize: 13)),
-              Text(soles(order.total),
-                  style: TextStyle(
-                    color: onHeader,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  )),
+              Text(
+                dateTimeLabel(order.createdAt),
+                style: TextStyle(
+                  color: onHeader.withValues(alpha: 0.75),
+                  fontSize: 13,
+                ),
+              ),
+              Text(
+                soles(order.total),
+                style: TextStyle(
+                  color: onHeader,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
             ],
           ),
         ],
@@ -594,26 +669,28 @@ class _Fact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: Text(label,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.outline)),
-            ),
-            Expanded(
-              flex: 3,
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                    fontWeight: bold ? FontWeight.bold : FontWeight.w500),
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(color: Theme.of(context).colorScheme.outline),
+          ),
         ),
-      );
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

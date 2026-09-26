@@ -72,18 +72,20 @@ class _SearchViewState extends State<SearchView> {
   bool get _hasMoto => _motoType != null || _motoBrand != null;
 
   String get _motoLabel => [
-        if (_motoType != null) motoTypeLabel(_motoType),
-        _motoBrand,
-        _motoModel,
-        _year?.toString(),
-      ].whereType<String>().join(' ');
+    if (_motoType != null) motoTypeLabel(_motoType),
+    _motoBrand,
+    _motoModel,
+    _year?.toString(),
+  ].whereType<String>().join(' ');
 
   /// Si la moto activa es una de "Mis motos", el encabezado lo dice.
-  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any((m) =>
-      m.type == _motoType &&
-      m.brand == _motoBrand &&
-      m.model == _motoModel &&
-      m.year == _year);
+  bool _isMyMoto(BuildContext context) => AppScope.sessionOf(context).motos.any(
+    (m) =>
+        m.type == _motoType &&
+        m.brand == _motoBrand &&
+        m.model == _motoModel &&
+        m.year == _year,
+  );
 
   /// Cualquier cambio de esta cadena recarga el `AsyncView`.
   String get _searchKey =>
@@ -162,17 +164,25 @@ class _SearchViewState extends State<SearchView> {
                     children: [
                       for (final moto in scope.session.motos) ...[
                         ChoiceChip(
-                          avatar: Icon(motoTypeIcons[moto.type] ?? Icons.two_wheeler, size: 16),
+                          avatar: Icon(
+                            motoTypeIcons[moto.type] ?? Icons.two_wheeler,
+                            size: 16,
+                          ),
                           label: Text(moto.label),
                           tooltip: motoTypeLabel(moto.type),
-                          selected: _motoType == moto.type &&
+                          selected:
+                              _motoType == moto.type &&
                               _motoBrand == moto.brand &&
                               _motoModel == moto.model &&
                               _year == moto.year,
                           visualDensity: VisualDensity.compact,
                           onSelected: (on) => on
-                              ? _filtersKey.currentState
-                                  ?.select(moto.type, moto.brand, moto.model, moto.year)
+                              ? _filtersKey.currentState?.select(
+                                  moto.type,
+                                  moto.brand,
+                                  moto.model,
+                                  moto.year,
+                                )
                               : _filtersKey.currentState?.clear(),
                         ),
                         const SizedBox(width: 6),
@@ -207,98 +217,106 @@ class _SearchViewState extends State<SearchView> {
             emptyIcon: Icons.search_off,
             emptyMessage: _hasMoto
                 ? 'No encontramos repuestos para esa moto.\n'
-                    'Prueba quitando el año o el modelo.'
+                      'Prueba quitando el año o el modelo.'
                 : 'No encontramos repuestos para esa búsqueda.\n'
-                    'Prueba con el código de parte.',
+                      'Prueba con el código de parte.',
             builder: (context, page) {
               final items = [...page.items, ..._extraItems];
               final remaining = page.total - items.length;
               return Column(
-              children: [
-                _ResultsHeader(
-                  count: page.total,
-                  moto: _hasMoto
-                      ? (_isMyMoto(context) ? 'tu $_motoLabel' : _motoLabel)
-                      : null,
-                  onClear: _hasMoto || _category != null || _onlyInStock
-                      ? _reset
-                      : null,
-                ),
-                // Lo que se entendio de la oracion dictada/escrita.
-                if (page.parsedChips.isNotEmpty)
-                  SizedBox(
-                    height: 36,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        const Center(child: Text('Entendí: ')),
-                        for (final chip in page.parsedChips) ...[
-                          Chip(
-                            label: Text(chip),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                          ),
-                          const SizedBox(width: 6),
+                children: [
+                  _ResultsHeader(
+                    count: page.total,
+                    moto: _hasMoto
+                        ? (_isMyMoto(context) ? 'tu $_motoLabel' : _motoLabel)
+                        : null,
+                    onClear: _hasMoto || _category != null || _onlyInStock
+                        ? _reset
+                        : null,
+                  ),
+                  // Lo que se entendio de la oracion dictada/escrita.
+                  if (page.parsedChips.isNotEmpty)
+                    SizedBox(
+                      height: 36,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          const Center(child: Text('Entendí: ')),
+                          for (final chip in page.parsedChips) ...[
+                            Chip(
+                              label: Text(chip),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                         ],
-                      ],
+                      ),
+                    ),
+                  Expanded(
+                    // Android entrega un primer frame de ancho 0 al arrancar en
+                    // frio y `SliverGridDelegateWithMaxCrossAxisExtent` asserta
+                    // con crossAxisExtent == 0 (pantalla negra). Saltamos ese
+                    // frame.
+                    child: LayoutBuilder(
+                      builder: (context, constraints) =>
+                          constraints.maxWidth <= 0
+                          ? const SizedBox.shrink()
+                          : GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              gridDelegate:
+                                  const SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 220,
+                                    mainAxisExtent: 250,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                  ),
+                              // Ultima celda: boton "Ver mas" (no se reinicia la
+                              // grilla; los nuevos se agregan debajo).
+                              itemCount: items.length + (remaining > 0 ? 1 : 0),
+                              itemBuilder: (context, i) {
+                                if (i == items.length) {
+                                  return Center(
+                                    child: _loadingMore
+                                        ? const CircularProgressIndicator()
+                                        : FilledButton.tonalIcon(
+                                            onPressed: () =>
+                                                _loadMore(items.length),
+                                            icon: const Icon(Icons.expand_more),
+                                            label: Text(
+                                              'Ver más\n($remaining restantes)',
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            style: FilledButton.styleFrom(
+                                              minimumSize: const Size(0, 48),
+                                            ),
+                                          ),
+                                  );
+                                }
+                                final product = items[i];
+                                return ProductCard(
+                                  product: product,
+                                  compatibilityConfirmed: _hasMoto,
+                                  onTap: () => Navigator.pushNamed(
+                                    context,
+                                    ProductDetailPage.route,
+                                    arguments: product.id,
+                                  ),
+                                  onAdd: () {
+                                    scope.cart.add(product);
+                                    showInfo(
+                                      context,
+                                      '${product.name} agregado',
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                     ),
                   ),
-                Expanded(
-                  // Android entrega un primer frame de ancho 0 al arrancar en
-                  // frio y `SliverGridDelegateWithMaxCrossAxisExtent` asserta
-                  // con crossAxisExtent == 0 (pantalla negra). Saltamos ese
-                  // frame.
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => constraints.maxWidth <= 0
-                        ? const SizedBox.shrink()
-                        : GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            gridDelegate:
-                                const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 220,
-                              mainAxisExtent: 250,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
-                            // Ultima celda: boton "Ver mas" (no se reinicia la
-                            // grilla; los nuevos se agregan debajo).
-                            itemCount: items.length + (remaining > 0 ? 1 : 0),
-                            itemBuilder: (context, i) {
-                              if (i == items.length) {
-                                return Center(
-                                  child: _loadingMore
-                                      ? const CircularProgressIndicator()
-                                      : FilledButton.tonalIcon(
-                                          onPressed: () => _loadMore(items.length),
-                                          icon: const Icon(Icons.expand_more),
-                                          label: Text('Ver más\n($remaining restantes)',
-                                              textAlign: TextAlign.center),
-                                          style: FilledButton.styleFrom(
-                                              minimumSize: const Size(0, 48)),
-                                        ),
-                                );
-                              }
-                              final product = items[i];
-                              return ProductCard(
-                                product: product,
-                                compatibilityConfirmed: _hasMoto,
-                                onTap: () => Navigator.pushNamed(
-                                  context,
-                                  ProductDetailPage.route,
-                                  arguments: product.id,
-                                ),
-                                onAdd: () {
-                                  scope.cart.add(product);
-                                  showInfo(context, '${product.name} agregado');
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ),
-              ],
-            );
+                ],
+              );
             },
           ),
         ),
@@ -333,44 +351,44 @@ class _FilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 46,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          children: [
-            FilterChip(
-              label: const Text('Con stock'),
-              selected: onlyInStock,
-              onSelected: onStock,
-              visualDensity: VisualDensity.compact,
-            ),
-            const SizedBox(width: 8),
-            PopupMenuButton<String>(
-              initialValue: orderBy,
-              onSelected: onOrder,
-              itemBuilder: (_) => [
-                for (final entry in _orders.entries)
-                  PopupMenuItem(value: entry.key, child: Text(entry.value)),
-              ],
-              child: Chip(
-                avatar: const Icon(Icons.sort, size: 16),
-                label: Text(_orders[orderBy] ?? 'Orden'),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-            const SizedBox(width: 8),
-            for (final key in knownCategories) ...[
-              FilterChip(
-                label: Text(categoryLabel(key)),
-                selected: category == key,
-                onSelected: (on) => onCategory(on ? key : null),
-                visualDensity: VisualDensity.compact,
-              ),
-              const SizedBox(width: 8),
-            ],
-          ],
+    height: 46,
+    child: ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      children: [
+        FilterChip(
+          label: const Text('Con stock'),
+          selected: onlyInStock,
+          onSelected: onStock,
+          visualDensity: VisualDensity.compact,
         ),
-      );
+        const SizedBox(width: 8),
+        PopupMenuButton<String>(
+          initialValue: orderBy,
+          onSelected: onOrder,
+          itemBuilder: (_) => [
+            for (final entry in _orders.entries)
+              PopupMenuItem(value: entry.key, child: Text(entry.value)),
+          ],
+          child: Chip(
+            avatar: const Icon(Icons.sort, size: 16),
+            label: Text(_orders[orderBy] ?? 'Orden'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const SizedBox(width: 8),
+        for (final key in knownCategories) ...[
+          FilterChip(
+            label: Text(categoryLabel(key)),
+            selected: category == key,
+            onSelected: (on) => onCategory(on ? key : null),
+            visualDensity: VisualDensity.compact,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ],
+    ),
+  );
 }
 
 class _ResultsHeader extends StatelessWidget {
@@ -396,9 +414,7 @@ class _ResultsHeader extends StatelessWidget {
               moto != null
                   ? '$count repuestos compatibles con $moto'
                   : '$count repuestos encontrados',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
+              style: Theme.of(context).textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),

@@ -16,9 +16,14 @@ import 'widgets/product_card.dart';
 /// el mapa embebido cuando haga falta ver varias tiendas a la vez.
 Future<void> openDirections(BuildContext context, Store store) async {
   final uri = store.hasLocation
-      ? Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}')
-      : Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${store.address ?? ''} ${store.district ?? ''}')}');
-  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
+      ? Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}',
+        )
+      : Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${store.address ?? ''} ${store.district ?? ''}')}',
+        );
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+      context.mounted) {
     showInfo(context, 'No se pudo abrir el mapa.');
   }
 }
@@ -53,7 +58,9 @@ class StorePage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: StoreMap(point: LatLng(store.latitude!, store.longitude!)),
+                  child: StoreMap(
+                    point: LatLng(store.latitude!, store.longitude!),
+                  ),
                 ),
               ),
             const SizedBox(height: 12),
@@ -82,7 +89,10 @@ class StorePage extends StatelessWidget {
             ),
             if (store.description != null && store.description!.isNotEmpty) ...[
               const SectionTitle('Sobre la tienda'),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text(store.description!)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(store.description!),
+              ),
             ],
             const SectionTitle('Calificaciones'),
             AsyncView<List<StoreReview>>(
@@ -95,8 +105,16 @@ class StorePage extends StatelessWidget {
                   for (final r in reviews)
                     ListTile(
                       dense: true,
-                      leading: Text('${r.rating} ★', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                      title: Text(r.comment.isEmpty ? 'Sin comentario' : r.comment),
+                      leading: Text(
+                        '${r.rating} ★',
+                        style: const TextStyle(
+                          color: Colors.amber,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      title: Text(
+                        r.comment.isEmpty ? 'Sin comentario' : r.comment,
+                      ),
                       subtitle: Text(r.buyerName),
                     ),
                 ],
@@ -123,7 +141,11 @@ class StorePage extends StatelessWidget {
                   return ProductCard(
                     product: product,
                     compatibilityConfirmed: false,
-                    onTap: () => Navigator.pushNamed(context, ProductDetailPage.route, arguments: product.id),
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      ProductDetailPage.route,
+                      arguments: product.id,
+                    ),
                     onAdd: () {
                       scope.cart.add(product);
                       showInfo(context, '${product.name} agregado');
@@ -167,21 +189,44 @@ class _Header extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(store.businessName,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: scheme.onPrimaryContainer)),
+                      child: Text(
+                        store.businessName,
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(color: scheme.onPrimaryContainer),
+                      ),
                     ),
                     if (store.verified) ...[
                       const SizedBox(width: 6),
-                      const Icon(Icons.verified_user, size: 18, color: Colors.blue),
+                      const Icon(
+                        Icons.verified_user,
+                        size: 18,
+                        color: Colors.blue,
+                      ),
                     ],
                   ],
                 ),
-                Text(store.ratingLabel, style: TextStyle(color: scheme.onPrimaryContainer)),
-                Text([store.address, store.district].whereType<String>().join(', '),
-                    style: TextStyle(color: scheme.onPrimaryContainer.withValues(alpha: 0.8), fontSize: 13)),
+                Text(
+                  store.ratingLabel,
+                  style: TextStyle(color: scheme.onPrimaryContainer),
+                ),
+                Text(
+                  [
+                    store.address,
+                    store.district,
+                  ].whereType<String>().join(', '),
+                  style: TextStyle(
+                    color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                    fontSize: 13,
+                  ),
+                ),
                 if (store.openingHours != null)
-                  Text(store.openingHours!,
-                      style: TextStyle(color: scheme.onPrimaryContainer.withValues(alpha: 0.8), fontSize: 13)),
+                  Text(
+                    store.openingHours!,
+                    style: TextStyle(
+                      color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
+                      fontSize: 13,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -211,7 +256,10 @@ class _StoresViewState extends State<StoresView> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: TextField(
-            decoration: const InputDecoration(hintText: 'Buscar tienda', prefixIcon: Icon(Icons.search)),
+            decoration: const InputDecoration(
+              hintText: 'Buscar tienda',
+              prefixIcon: Icon(Icons.search),
+            ),
             onSubmitted: (v) => setState(() => _q = v.trim()),
           ),
         ),
@@ -224,7 +272,10 @@ class _StoresViewState extends State<StoresView> {
         Expanded(
           child: AsyncView<List<Store>>(
             refreshKey: '$_q|$_onlyVerified',
-            load: () => scope.catalog.stores(q: _q.isEmpty ? null : _q, onlyVerified: _onlyVerified),
+            load: () => scope.catalog.stores(
+              q: _q.isEmpty ? null : _q,
+              onlyVerified: _onlyVerified,
+            ),
             isEmpty: (s) => s.isEmpty,
             emptyIcon: Icons.storefront_outlined,
             emptyMessage: 'No encontramos tiendas.',
@@ -237,23 +288,38 @@ class _StoresViewState extends State<StoresView> {
                   leading: const CircleAvatar(child: Icon(Icons.storefront)),
                   title: Row(
                     children: [
-                      Flexible(child: Text(s.businessName, overflow: TextOverflow.ellipsis)),
+                      Flexible(
+                        child: Text(
+                          s.businessName,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       if (s.verified) ...[
                         const SizedBox(width: 4),
-                        const Icon(Icons.verified_user, size: 14, color: Colors.blue),
+                        const Icon(
+                          Icons.verified_user,
+                          size: 14,
+                          color: Colors.blue,
+                        ),
                       ],
                     ],
                   ),
-                  subtitle: Text([s.district, s.distanceLabel, s.ratingLabel]
-                      .whereType<String>()
-                      .where((t) => t.isNotEmpty)
-                      .join('  ·  ')),
+                  subtitle: Text(
+                    [s.district, s.distanceLabel, s.ratingLabel]
+                        .whereType<String>()
+                        .where((t) => t.isNotEmpty)
+                        .join('  ·  '),
+                  ),
                   trailing: IconButton(
                     tooltip: 'Cómo llegar',
                     icon: const Icon(Icons.directions),
                     onPressed: () => openDirections(context, s),
                   ),
-                  onTap: () => Navigator.pushNamed(context, StorePage.route, arguments: s.id),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    StorePage.route,
+                    arguments: s.id,
+                  ),
                 );
               },
             ),

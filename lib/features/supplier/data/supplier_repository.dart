@@ -36,32 +36,47 @@ class SupplierRepository {
     double? latitude,
     double? longitude,
   }) async {
-    final data = await _api.post('/suppliers/store', body: {
-      'business_name': businessName,
-      'ruc': ruc,
-      'description': description,
-      'address': address,
-      'district': district,
-      'latitude': latitude,
-      'longitude': longitude,
-      'phone': phone,
-      'opening_hours': openingHours,
-      'logo_url': logoUrl,
-      'distance_km': distanceKm,
-    });
+    final data = await _api.post(
+      '/suppliers/store',
+      body: {
+        'business_name': businessName,
+        'ruc': ruc,
+        'description': description,
+        'address': address,
+        'district': district,
+        'latitude': latitude,
+        'longitude': longitude,
+        'phone': phone,
+        'opening_hours': openingHours,
+        'logo_url': logoUrl,
+        'distance_km': distanceKm,
+      },
+    );
     return Store.fromJson(asMap(data));
   }
 
   /// Afiliacion a la pasarela. `account`: token de Mercado Pago o
   /// "merchantId|usuario|clave" de Niubiz; null para modo simulado.
-  Future<Store> configurePayment({required String provider, String? account}) async =>
-      Store.fromJson(asMap(await _api.put('/suppliers/store/payment', body: {
-        'payment_provider': provider,
-        'payment_account': account,
-      })));
+  Future<Store> configurePayment({
+    required String provider,
+    String? account,
+  }) async => Store.fromJson(
+    asMap(
+      await _api.put(
+        '/suppliers/store/payment',
+        body: {'payment_provider': provider, 'payment_account': account},
+      ),
+    ),
+  );
 
   /// Resumen para la portada del panel (productos, pedidos por estado, ventas).
-  Future<Map<String, dynamic>> dashboard() async => asMap(await _api.get('/suppliers/dashboard'));
+  Future<Map<String, dynamic>> dashboard() async =>
+      asMap(await _api.get('/suppliers/dashboard'));
+
+  /// Estadisticas y series para las graficas. `days` entre 7 y 180; el backend
+  /// devuelve la serie diaria ya rellenada con los dias sin ventas.
+  Future<Map<String, dynamic>> stats({int days = 30}) async =>
+      asMap(await _api.get('/suppliers/stats', query: {'days': days}));
 
   Future<List<Product>> myProducts() async =>
       asMapList(await _api.get('/suppliers/products'))
@@ -69,12 +84,15 @@ class SupplierRepository {
           .toList();
 
   Future<Product> createProduct(Map<String, dynamic> body) async =>
-      Product.fromJson(asMap(await _api.post('/suppliers/products', body: body)));
+      Product.fromJson(
+        asMap(await _api.post('/suppliers/products', body: body)),
+      );
 
   /// El PUT reemplaza tambien las compatibilidades: hay que mandarlas todas.
   Future<Product> updateProduct(int id, Map<String, dynamic> body) async =>
       Product.fromJson(
-          asMap(await _api.put('/suppliers/products/$id', body: body)));
+        asMap(await _api.put('/suppliers/products/$id', body: body)),
+      );
 
   /// Baja logica.
   Future<void> deleteProduct(int id) => _api.delete('/suppliers/products/$id');
@@ -101,19 +119,18 @@ class SupplierRepository {
     int? warrantyMonths,
     bool isActive = true,
     List<Compatibility> compatibilities = const [],
-  }) =>
-      {
-        'name': name,
-        'category': category,
-        'part_code': partCode,
-        'brand': brand,
-        'description': description,
-        'image_url': imageUrl,
-        'image_urls': imageUrls,
-        'price': price,
-        'stock': stock,
-        'warranty_months': warrantyMonths,
-        'is_active': isActive,
-        'compatibilities': [for (final c in compatibilities) c.toJson()],
-      };
+  }) => {
+    'name': name,
+    'category': category,
+    'part_code': partCode,
+    'brand': brand,
+    'description': description,
+    'image_url': imageUrl,
+    'image_urls': imageUrls,
+    'price': price,
+    'stock': stock,
+    'warranty_months': warrantyMonths,
+    'is_active': isActive,
+    'compatibilities': [for (final c in compatibilities) c.toJson()],
+  };
 }

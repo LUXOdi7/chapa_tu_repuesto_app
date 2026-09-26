@@ -48,7 +48,8 @@ class CartView extends StatelessWidget {
               subtotal: cart.subtotal,
               shipping: cart.shipping,
               total: cart.total,
-              onCheckout: () => Navigator.pushNamed(context, CheckoutPage.route),
+              onCheckout: () =>
+                  Navigator.pushNamed(context, CheckoutPage.route),
             ),
           ],
         );
@@ -82,12 +83,16 @@ class _StoreGroup extends StatelessWidget {
               backgroundColor: scheme.secondaryContainer,
               child: const Icon(Icons.storefront, size: 20),
             ),
-            title: Text(store.businessName,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text([store.district, store.distanceLabel]
-                .whereType<String>()
-                .where((s) => s.isNotEmpty)
-                .join('  ·  ')),
+            title: Text(
+              store.businessName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              [
+                store.district,
+                store.distanceLabel,
+              ].whereType<String>().where((s) => s.isNotEmpty).join('  ·  '),
+            ),
             trailing: const Chip(
               label: Text('1 pedido'),
               visualDensity: VisualDensity.compact,
@@ -107,9 +112,7 @@ class _StoreGroup extends StatelessWidget {
                 _Line(label: 'Subtotal', value: soles(group.subtotal)),
                 _Line(
                   label: 'Envío',
-                  value: group.shipping == 0
-                      ? 'Gratis'
-                      : soles(group.shipping),
+                  value: group.shipping == 0 ? 'Gratis' : soles(group.shipping),
                   hint: group.shipping == 0
                       ? null
                       : 'Gratis desde ${soles(kFreeShippingFrom)}',
@@ -132,20 +135,20 @@ class _Line extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                hint == null ? label : '$label  ($hint)',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            hint == null ? label : '$label  ($hint)',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ),
-      );
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ],
+    ),
+  );
 }
 
 class _CartRow extends StatelessWidget {
@@ -179,11 +182,17 @@ class _CartRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-                Text('${product.brandAndCode}  ·  ${soles(product.price)} c/u',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall),
+                Text(
+                  product.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${product.brandAndCode}  ·  ${soles(product.price)} c/u',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
               ],
             ),
           ),
@@ -216,22 +225,22 @@ class _QuantityStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.remove_circle_outline, size: 20),
-            onPressed: () => onChanged(quantity - 1),
-          ),
-          Text('$quantity', style: const TextStyle(fontWeight: FontWeight.bold)),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.add_circle_outline, size: 20),
-            // Tope duro en el stock que reporto el backend.
-            onPressed: quantity >= max ? null : () => onChanged(quantity + 1),
-          ),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.remove_circle_outline, size: 20),
+        onPressed: () => onChanged(quantity - 1),
+      ),
+      Text('$quantity', style: const TextStyle(fontWeight: FontWeight.bold)),
+      IconButton(
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.add_circle_outline, size: 20),
+        // Tope duro en el stock que reporto el backend.
+        onPressed: quantity >= max ? null : () => onChanged(quantity + 1),
+      ),
+    ],
+  );
 }
 
 class _CartSummary extends StatelessWidget {
@@ -271,11 +280,11 @@ class _CartSummary extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
-                  Text(soles(total),
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    soles(total),
+                    style: Theme.of(context).textTheme.headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
               Align(

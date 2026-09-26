@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_config.dart';
 
@@ -11,17 +12,20 @@ class BrandTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-            child: Image.asset('assets/ctr_mark.png', height: 26, width: 26),
-          ),
-          const SizedBox(width: 10),
-          Flexible(child: Text(text, overflow: TextOverflow.ellipsis)),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Image.asset('assets/ctr_mark.png', height: 26, width: 26),
+      ),
+      const SizedBox(width: 10),
+      Flexible(child: Text(text, overflow: TextOverflow.ellipsis)),
+    ],
+  );
 }
 
 /// Logo completo (login, splash): version con fondo blanco dentro de una
@@ -33,15 +37,19 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(8),
-            child: Image.asset('assets/ctr_logo_white.png', height: height, fit: BoxFit.contain),
-          ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(8),
+        child: Image.asset(
+          'assets/ctr_logo_white.png',
+          height: height,
+          fit: BoxFit.contain,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// Foto del repuesto con degradacion a icono: el backend devuelve rutas
@@ -127,20 +135,20 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(text,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-            ),
-            ?trailing,
-          ],
+    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
         ),
-      );
+        ?trailing,
+      ],
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -186,30 +194,28 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
   }
 
   void _retry() {
-    final future = widget.load(); // fuera del setState: la arrow devolvia la Future
+    final future = widget
+        .load(); // fuera del setState: la arrow devolvia la Future
     setState(() => _future = future);
   }
 
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return ErrorRetry(error: snapshot.error!, onRetry: _retry);
-          }
-          final data = snapshot.data as T;
-          if (widget.isEmpty?.call(data) ?? false) {
-            return EmptyState(
-              message: widget.emptyMessage,
-              icon: widget.emptyIcon,
-            );
-          }
-          return widget.builder(context, data);
-        },
-      );
+    future: _future,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return const BrandLoader();
+      }
+      if (snapshot.hasError) {
+        return ErrorRetry(error: snapshot.error!, onRetry: _retry);
+      }
+      final data = snapshot.data as T;
+      if (widget.isEmpty?.call(data) ?? false) {
+        return EmptyState(message: widget.emptyMessage, icon: widget.emptyIcon);
+      }
+      return widget.builder(context, data);
+    },
+  );
 }
 
 class ErrorRetry extends StatelessWidget {
@@ -220,29 +226,32 @@ class ErrorRetry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off,
-                  size: 52, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 12),
-              Text(
-                errorMessage(error),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.cloud_off,
+            size: 52,
+            color: Theme.of(context).colorScheme.error,
           ),
-        ),
-      );
+          const SizedBox(height: 12),
+          Text(
+            errorMessage(error),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class EmptyState extends StatelessWidget {
@@ -259,19 +268,23 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 56, color: Theme.of(context).colorScheme.outline),
-              const SizedBox(height: 12),
-              Text(message, textAlign: TextAlign.center),
-              if (action != null) ...[const SizedBox(height: 16), action!],
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _EmptyArt(icon: icon),
+          const SizedBox(height: 14),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-        ),
-      );
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
+    ),
+  );
 }
 
 /// El backend ya manda el mensaje redactado en español dentro de `detail`; solo
@@ -283,14 +296,193 @@ String errorMessage(Object error) =>
 void showError(BuildContext context, Object error) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text(errorMessage(error)),
-      backgroundColor: Theme.of(context).colorScheme.error,
-    ));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(errorMessage(error)),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
 }
 
 void showInfo(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Ilustracion de estado vacio: todo en gris menos un engranaje naranja, para
+/// que la pantalla no parezca un error. design.md 5.
+class _EmptyArt extends StatelessWidget {
+  const _EmptyArt({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 84,
+    height: 76,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 60,
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: const BoxDecoration(
+              color: kBrandOrange,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.settings, size: 15, color: Colors.white),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Spinner de marca: el isotipo CTR girando sobre un aro naranja. design.md 5
+/// pide dejar el `CircularProgressIndicator` generico.
+class BrandLoader extends StatefulWidget {
+  const BrandLoader({super.key, this.size = 46});
+
+  final double size;
+
+  @override
+  State<BrandLoader> createState() => _BrandLoaderState();
+}
+
+class _BrandLoaderState extends State<BrandLoader>
+    with SingleTickerProviderStateMixin {
+  late final _spin = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          RotationTransition(
+            turns: _spin,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: const AlwaysStoppedAnimation(kBrandOrange),
+              backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Image.asset(
+              'assets/ctr_mark.png',
+              width: widget.size * 0.46,
+              height: widget.size * 0.46,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Navegacion adaptable de design.md 4: barra inferior en movil (< 600 px) y
+/// riel lateral azul desde tablet, extendido en escritorio (>= 900 px). Un solo
+/// juego de destinos para las tres pantallas raiz (comprador, tienda, admin).
+class AdaptiveScaffold extends StatelessWidget {
+  const AdaptiveScaffold({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.destinations,
+    required this.body,
+    this.appBar,
+    this.floatingActionButton,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final List<NavigationDestination> destinations;
+  final Widget body;
+  final PreferredSizeWidget? appBar;
+  final Widget? floatingActionButton;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isWide(context)) {
+      return Scaffold(
+        appBar: appBar,
+        body: body,
+        floatingActionButton: floatingActionButton,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onSelected,
+          destinations: destinations,
+        ),
+      );
+    }
+    return Scaffold(
+      appBar: appBar,
+      floatingActionButton: floatingActionButton,
+      body: Row(
+        children: [
+          NavigationRail(
+            extended: isDesktop(context),
+            minExtendedWidth: 190,
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onSelected,
+            labelType: isDesktop(context)
+                ? NavigationRailLabelType.none
+                : NavigationRailLabelType.all,
+            destinations: [
+              for (final d in destinations)
+                NavigationRailDestination(
+                  icon: d.icon,
+                  selectedIcon: d.selectedIcon ?? d.icon,
+                  label: Text(d.label),
+                ),
+            ],
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(child: body),
+        ],
+      ),
+    );
+  }
+}
+
+/// Formulario centrado y con ancho maximo. En un monitor de taller un input de
+/// 1400 px no se lee; design.md 4 lo limita a 600. En movil no cambia nada.
+class FormBox extends StatelessWidget {
+  const FormBox({super.key, required this.child, this.maxWidth = kFormWidth});
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: child,
+    ),
+  );
 }

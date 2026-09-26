@@ -19,35 +19,45 @@ class CatalogRepository {
     if (rows.isEmpty) return;
     categoryLabels
       ..clear()
-      ..addEntries(rows.map((r) => MapEntry(r['key'] as String, r['label'] as String)));
+      ..addEntries(
+        rows.map((r) => MapEntry(r['key'] as String, r['label'] as String)),
+      );
   }
 
   /// Admin y tiendas. Devuelve la clave (si ya existia, la misma).
   Future<String> createCategory(String label) async {
-    final r = asMap(await _api.post('/catalog/categories', body: {'label': label}));
+    final r = asMap(
+      await _api.post('/catalog/categories', body: {'label': label}),
+    );
     categoryLabels[r['key'] as String] = r['label'] as String;
     return r['key'] as String;
   }
 
   /// Cascada tipo -> marca -> modelo -> año. `motoType` acota los tres
   /// siguientes (una tolva no existe en la lineal).
-  Future<List<String>> motoBrands({String? motoType}) async =>
-      (await _api.get('/catalog/moto-brands', query: {'moto_type': motoType}) as List)
-          .cast<String>();
+  Future<List<String>> motoBrands({String? motoType}) async => (await _api.get(
+    '/catalog/moto-brands',
+    query: {'moto_type': motoType},
+  ) as List).cast<String>();
 
   Future<List<String>> motoModels(String motoBrand, {String? motoType}) async =>
-      (await _api.get('/catalog/moto-models',
-                  query: {'moto_brand': motoBrand, 'moto_type': motoType})
-              as List)
-          .cast<String>();
+      (await _api.get(
+        '/catalog/moto-models',
+        query: {'moto_brand': motoBrand, 'moto_type': motoType},
+      ) as List).cast<String>();
 
-  Future<List<int>> motoYears(String motoBrand, String motoModel, {String? motoType}) async =>
-      (await _api.get('/catalog/moto-years', query: {
-        'moto_brand': motoBrand,
-        'moto_model': motoModel,
-        'moto_type': motoType,
-      }) as List)
-          .cast<int>();
+  Future<List<int>> motoYears(
+    String motoBrand,
+    String motoModel, {
+    String? motoType,
+  }) async => (await _api.get(
+    '/catalog/moto-years',
+    query: {
+      'moto_brand': motoBrand,
+      'moto_model': motoModel,
+      'moto_type': motoType,
+    },
+  ) as List).cast<int>();
 
   Future<ProductPage> products({
     String? q,
@@ -67,24 +77,27 @@ class CatalogRepository {
     int limit = 20,
     int offset = 0,
   }) async {
-    final data = await _api.get('/catalog/products', query: {
-      'q': q,
-      'category': category,
-      'brand': brand,
-      'part_code': partCode,
-      'moto_type': motoType,
-      'moto_brand': motoBrand,
-      'moto_model': motoModel,
-      'year': year,
-      'store_id': storeId,
-      'only_in_stock': onlyInStock,
-      'only_verified': onlyVerified,
-      'min_price': minPrice,
-      'max_price': maxPrice,
-      'order_by': orderBy,
-      'limit': limit,
-      'offset': offset,
-    });
+    final data = await _api.get(
+      '/catalog/products',
+      query: {
+        'q': q,
+        'category': category,
+        'brand': brand,
+        'part_code': partCode,
+        'moto_type': motoType,
+        'moto_brand': motoBrand,
+        'moto_model': motoModel,
+        'year': year,
+        'store_id': storeId,
+        'only_in_stock': onlyInStock,
+        'only_verified': onlyVerified,
+        'min_price': minPrice,
+        'max_price': maxPrice,
+        'order_by': orderBy,
+        'limit': limit,
+        'offset': offset,
+      },
+    );
     return ProductPage.fromJson(asMap(data));
   }
 
@@ -94,23 +107,45 @@ class CatalogRepository {
       Product.fromJson(asMap(await _api.get('/catalog/products/$id')));
 
   /// Tiendas (para el directorio y el mapa). `withLocation` = solo con lat/lng.
-  Future<List<Store>> stores({String? q, bool withLocation = false, bool onlyVerified = false}) async =>
-      asMapList(await _api.get('/catalog/stores', query: {
+  Future<List<Store>> stores({
+    String? q,
+    bool withLocation = false,
+    bool onlyVerified = false,
+  }) async => asMapList(
+    await _api.get(
+      '/catalog/stores',
+      query: {
         'q': q,
         'with_location': withLocation ? true : null,
         'only_verified': onlyVerified ? true : null,
-      })).map(Store.fromJson).toList();
+      },
+    ),
+  ).map(Store.fromJson).toList();
 
-  Future<Store> store(int id) async => Store.fromJson(asMap(await _api.get('/catalog/stores/$id')));
+  Future<Store> store(int id) async =>
+      Store.fromJson(asMap(await _api.get('/catalog/stores/$id')));
 
   // ---- Alertas de stock / precio ----
-  Future<List<Map<String, dynamic>>> alerts() async => asMapList(await _api.get('/alerts'));
+  Future<List<Map<String, dynamic>>> alerts() async =>
+      asMapList(await _api.get('/alerts'));
 
-  Future<void> createAlert({required String partCode, double? maxPrice, bool notifyStock = true}) =>
-      _api.post('/alerts', body: {'part_code': partCode, 'max_price': maxPrice, 'notify_stock': notifyStock});
+  Future<void> createAlert({
+    required String partCode,
+    double? maxPrice,
+    bool notifyStock = true,
+  }) => _api.post(
+    '/alerts',
+    body: {
+      'part_code': partCode,
+      'max_price': maxPrice,
+      'notify_stock': notifyStock,
+    },
+  );
 
   Future<void> deleteAlert(int id) => _api.delete('/alerts/$id');
 
   Future<List<StoreReview>> storeReviews(int id) async =>
-      asMapList(await _api.get('/catalog/stores/$id/reviews')).map(StoreReview.fromJson).toList();
+      asMapList(await _api.get('/catalog/stores/$id/reviews'))
+          .map(StoreReview.fromJson)
+          .toList();
 }

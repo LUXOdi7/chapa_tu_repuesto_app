@@ -21,11 +21,19 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   int _tab = 0;
 
-  static const _titles = ['Resumen', 'Usuarios', 'Tiendas', 'Pedidos', 'Sugerencias'];
+  static const _titles = [
+    'Resumen',
+    'Usuarios',
+    'Tiendas',
+    'Pedidos',
+    'Sugerencias',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AdaptiveScaffold(
+      selectedIndex: _tab,
+      onSelected: (i) => setState(() => _tab = i),
       appBar: AppBar(
         title: BrandTitle('Admin · ${_titles[_tab]}'),
         actions: [
@@ -38,19 +46,36 @@ class _AdminShellState extends State<AdminShell> {
       ),
       body: IndexedStack(
         index: _tab,
-        children: const [_StatsTab(), _UsersTab(), _StoresTab(), _OrdersTab(), _FeedbackTab()],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Resumen'),
-          NavigationDestination(icon: Icon(Icons.people_outline), label: 'Usuarios'),
-          NavigationDestination(icon: Icon(Icons.storefront_outlined), label: 'Tiendas'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Pedidos'),
-          NavigationDestination(icon: Icon(Icons.feedback_outlined), label: 'Ideas'),
+        children: const [
+          _StatsTab(),
+          _UsersTab(),
+          _StoresTab(),
+          _OrdersTab(),
+          _FeedbackTab(),
         ],
       ),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          label: 'Resumen',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.people_outline),
+          label: 'Usuarios',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.storefront_outlined),
+          label: 'Tiendas',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.receipt_long_outlined),
+          label: 'Pedidos',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.feedback_outlined),
+          label: 'Ideas',
+        ),
+      ],
     );
   }
 }
@@ -82,22 +107,42 @@ class _StatsTabState extends State<_StatsTab> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _StatGrid(items: [
-                ('Compradores', '${users['buyer']}', Icons.person_outline),
-                ('Proveedores', '${users['supplier']}', Icons.store_outlined),
-                ('Tiendas', '${s['stores']}', Icons.storefront),
-                ('Por verificar', '${s['stores_pending_verification']}', Icons.pending_actions),
-                ('Repuestos', '${s['products']}', Icons.inventory_2_outlined),
-                ('Ventas pagadas', soles((s['gmv'] as num?) ?? 0), Icons.payments_outlined),
-                ('Sugerencias', '${s['feedback_open']}', Icons.feedback_outlined),
-              ]),
+              _StatGrid(
+                items: [
+                  ('Compradores', '${users['buyer']}', Icons.person_outline),
+                  ('Proveedores', '${users['supplier']}', Icons.store_outlined),
+                  ('Tiendas', '${s['stores']}', Icons.storefront),
+                  (
+                    'Por verificar',
+                    '${s['stores_pending_verification']}',
+                    Icons.pending_actions,
+                  ),
+                  ('Repuestos', '${s['products']}', Icons.inventory_2_outlined),
+                  (
+                    'Ventas pagadas',
+                    soles((s['gmv'] as num?) ?? 0),
+                    Icons.payments_outlined,
+                  ),
+                  (
+                    'Sugerencias',
+                    '${s['feedback_open']}',
+                    Icons.feedback_outlined,
+                  ),
+                ],
+              ),
               const SectionTitle('Pedidos por estado'),
               for (final e in orders.entries)
                 ListTile(
                   dense: true,
-                  leading: Icon(orderStatusIcon(e.key), color: orderStatusColor(e.key)),
+                  leading: Icon(
+                    orderStatusIcon(e.key),
+                    color: orderStatusColor(e.key),
+                  ),
                   title: Text(orderStatusLabel(e.key)),
-                  trailing: Text('${e.value}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  trailing: Text(
+                    '${e.value}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               SectionTitle(
                 'Categorías de repuesto',
@@ -117,7 +162,10 @@ class _StatsTabState extends State<_StatsTab> {
                   runSpacing: 4,
                   children: [
                     for (final key in knownCategories)
-                      Chip(label: Text(categoryLabel(key)), visualDensity: VisualDensity.compact),
+                      Chip(
+                        label: Text(categoryLabel(key)),
+                        visualDensity: VisualDensity.compact,
+                      ),
                   ],
                 ),
               ),
@@ -145,8 +193,14 @@ Future<void> _newCategory(BuildContext context) async {
         decoration: const InputDecoration(labelText: 'Nombre'),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
-        FilledButton(onPressed: () => Navigator.pop(d, ctrl.text.trim()), child: const Text('Crear')),
+        TextButton(
+          onPressed: () => Navigator.pop(d),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(d, ctrl.text.trim()),
+          child: const Text('Crear'),
+        ),
       ],
     ),
   );
@@ -168,45 +222,54 @@ class _StatGrid extends StatelessWidget {
   // Tarjetas compactas de alto fijo: en web/tablet entran 4-6 por fila en
   // vez de estirarse a media pantalla.
   Widget build(BuildContext context) => GridView(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 200,
-          mainAxisExtent: 64,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-        ),
-        children: [
-          for (final (label, value, icon) in items)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: Row(
-                  children: [
-                    Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(value,
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                          Text(label,
-                              style: Theme.of(context).textTheme.labelSmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                    ),
-                  ],
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: 200,
+      mainAxisExtent: 64,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+    ),
+    children: [
+      for (final (label, value, icon) in items)
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        value,
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-        ],
-      );
+          ),
+        ),
+    ],
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -233,12 +296,19 @@ class _UsersTabState extends State<_UsersTab> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(title: Text(user.name), subtitle: Text('${user.email}  ·  ${user.role.label}')),
+            ListTile(
+              title: Text(user.name),
+              subtitle: Text('${user.email}  ·  ${user.role.label}'),
+            ),
             const Divider(height: 1),
             if (user.id != me?.id)
               ListTile(
-                leading: Icon(user.isActive ? Icons.block : Icons.check_circle_outline),
-                title: Text(user.isActive ? 'Bloquear cuenta' : 'Reactivar cuenta'),
+                leading: Icon(
+                  user.isActive ? Icons.block : Icons.check_circle_outline,
+                ),
+                title: Text(
+                  user.isActive ? 'Bloquear cuenta' : 'Reactivar cuenta',
+                ),
                 onTap: () => Navigator.pop(sheet, 'toggle'),
               ),
             for (final role in UserRole.values)
@@ -257,7 +327,10 @@ class _UsersTabState extends State<_UsersTab> {
       if (action == 'toggle') {
         await admin.updateUser(user.id, isActive: !user.isActive);
       } else {
-        await admin.updateUser(user.id, role: UserRole.parse(action.substring(5)));
+        await admin.updateUser(
+          user.id,
+          role: UserRole.parse(action.substring(5)),
+        );
       }
       if (mounted) setState(() => _reload++);
     } catch (e) {
@@ -273,7 +346,10 @@ class _UsersTabState extends State<_UsersTab> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: TextField(
-            decoration: const InputDecoration(hintText: 'Nombre o correo', prefixIcon: Icon(Icons.search)),
+            decoration: const InputDecoration(
+              hintText: 'Nombre o correo',
+              prefixIcon: Icon(Icons.search),
+            ),
             onSubmitted: (v) => setState(() => _q = v.trim()),
           ),
         ),
@@ -314,7 +390,9 @@ class _UsersTabState extends State<_UsersTab> {
                 final u = users[i];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: u.isActive ? null : Colors.red.withValues(alpha: 0.2),
+                    backgroundColor: u.isActive
+                        ? null
+                        : Colors.red.withValues(alpha: 0.2),
                     child: Icon(switch (u.role) {
                       UserRole.admin => Icons.admin_panel_settings,
                       UserRole.supplier => Icons.storefront,
@@ -322,7 +400,9 @@ class _UsersTabState extends State<_UsersTab> {
                     }),
                   ),
                   title: Text(u.name),
-                  subtitle: Text('${u.email}  ·  ${u.role.label}${u.isActive ? '' : '  ·  BLOQUEADO'}'),
+                  subtitle: Text(
+                    '${u.email}  ·  ${u.role.label}${u.isActive ? '' : '  ·  BLOQUEADO'}',
+                  ),
                   trailing: const Icon(Icons.more_vert),
                   onTap: () => _edit(u),
                 );
@@ -372,10 +452,14 @@ class _StoresTabState extends State<_StoresTab> {
               itemBuilder: (context, i) {
                 final s = stores[i];
                 return ListTile(
-                  leading: Icon(s.verified ? Icons.verified_user : Icons.pending,
-                      color: s.verified ? Colors.blue : Colors.orange),
+                  leading: Icon(
+                    s.verified ? Icons.verified_user : Icons.pending,
+                    color: s.verified ? Colors.blue : Colors.orange,
+                  ),
                   title: Text(s.businessName),
-                  subtitle: Text('RUC ${s.ruc}  ·  ${s.district}\n${s.address}'),
+                  subtitle: Text(
+                    'RUC ${s.ruc}  ·  ${s.district}\n${s.address}',
+                  ),
                   isThreeLine: true,
                   // TextButton, no FilledButton: el tema le da a FilledButton ancho
                   // infinito (CTA a pantalla completa) y como `trailing` revienta el layout.
@@ -419,11 +503,20 @@ class _OrdersTab extends StatelessWidget {
         itemBuilder: (context, i) {
           final o = orders[i];
           return ListTile(
-            leading: Icon(orderStatusIcon(o.status), color: orderStatusColor(o.status)),
+            leading: Icon(
+              orderStatusIcon(o.status),
+              color: orderStatusColor(o.status),
+            ),
             title: Text('${o.code}  ·  ${soles(o.total)}'),
-            subtitle: Text('${o.buyerName ?? ''} → ${o.store.businessName}\n${o.statusLabel}  ·  ${shortDate(o.createdAt)}'),
+            subtitle: Text(
+              '${o.buyerName ?? ''} → ${o.store.businessName}\n${o.statusLabel}  ·  ${shortDate(o.createdAt)}',
+            ),
             isThreeLine: true,
-            onTap: () => Navigator.pushNamed(context, OrderTrackingPage.route, arguments: o.id),
+            onTap: () => Navigator.pushNamed(
+              context,
+              OrderTrackingPage.route,
+              arguments: o.id,
+            ),
           );
         },
       ),
@@ -462,7 +555,9 @@ class _FeedbackTabState extends State<_FeedbackTab> {
           return Card(
             child: ListTile(
               title: Text(f['subject'] as String? ?? ''),
-              subtitle: Text('${f['message']}\n— ${user['name']} (${user['email']})'),
+              subtitle: Text(
+                '${f['message']}\n— ${user['name']} (${user['email']})',
+              ),
               isThreeLine: true,
               trailing: IconButton(
                 tooltip: 'Marcar resuelta',

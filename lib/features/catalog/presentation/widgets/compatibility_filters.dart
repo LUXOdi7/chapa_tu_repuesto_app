@@ -20,8 +20,13 @@ class CompatibilityFilters extends StatefulWidget {
   final CatalogRepository repo;
 
   /// Devuelve la seleccion completa ya normalizada (nulls incluidos).
-  final void Function(String? motoType, String? motoBrand, String? motoModel, int? year)
-      onChanged;
+  final void Function(
+    String? motoType,
+    String? motoBrand,
+    String? motoModel,
+    int? year,
+  )
+  onChanged;
 
   @override
   State<CompatibilityFilters> createState() => CompatibilityFiltersState();
@@ -81,7 +86,9 @@ class CompatibilityFiltersState extends State<CompatibilityFilters> {
     try {
       final models = await widget.repo.motoModels(brand, motoType: _type);
       if (mounted && _brand == brand) setState(() => _models = models);
-    } catch (_) {/* silencioso a proposito */}
+    } catch (_) {
+      /* silencioso a proposito */
+    }
   }
 
   Future<void> _pickModel(String? model) async {
@@ -93,9 +100,15 @@ class CompatibilityFiltersState extends State<CompatibilityFilters> {
     widget.onChanged(_type, _brand, _model, null);
     if (model == null || _brand == null) return;
     try {
-      final years = await widget.repo.motoYears(_brand!, model, motoType: _type);
+      final years = await widget.repo.motoYears(
+        _brand!,
+        model,
+        motoType: _type,
+      );
       if (mounted && _model == model) setState(() => _years = years);
-    } catch (_) {/* silencioso a proposito */}
+    } catch (_) {
+      /* silencioso a proposito */
+    }
   }
 
   void _pickYear(int? year) {
@@ -118,11 +131,11 @@ class CompatibilityFiltersState extends State<CompatibilityFilters> {
   bool get hasMoto => _type != null || _brand != null;
 
   String get motoLabel => [
-        if (_type != null) motoTypeLabel(_type),
-        _brand,
-        _model,
-        _year?.toString(),
-      ].whereType<String>().join(' ');
+    if (_type != null) motoTypeLabel(_type),
+    _brand,
+    _model,
+    _year?.toString(),
+  ].whereType<String>().join(' ');
 
   @override
   Widget build(BuildContext context) => Column(
@@ -198,7 +211,10 @@ class _Dropdown<T> extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
       ),
       hint: Text(label, overflow: TextOverflow.ellipsis),
       // Sin items el desplegable queda inerte: asi se ve la cascada.
@@ -206,13 +222,18 @@ class _Dropdown<T> extends StatelessWidget {
       items: [
         DropdownMenuItem<T>(
           value: null,
-          child: Text('Todas',
-              style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+          child: Text(
+            'Todas',
+            style: TextStyle(color: Theme.of(context).colorScheme.outline),
+          ),
         ),
         for (final item in items)
           DropdownMenuItem<T>(
             value: item,
-            child: Text(itemLabel?.call(item) ?? '$item', overflow: TextOverflow.ellipsis),
+            child: Text(
+              itemLabel?.call(item) ?? '$item',
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
       ],
     );

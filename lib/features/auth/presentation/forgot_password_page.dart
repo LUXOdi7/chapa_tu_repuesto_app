@@ -40,7 +40,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         await scope.auth.forgot(_email.text.trim());
         if (mounted) {
           setState(() => _sent = true);
-          showInfo(context, 'Si el correo existe, te enviamos un código de 6 dígitos.');
+          showInfo(
+            context,
+            'Si el correo existe, te enviamos un código de 6 dígitos.',
+          );
         }
       } else {
         final result = await scope.auth.reset(
@@ -77,8 +80,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               controller: _email,
               enabled: !_sent,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Correo', prefixIcon: Icon(Icons.mail_outline)),
-              validator: (v) => (v == null || !v.contains('@')) ? 'Correo no válido' : null,
+              decoration: const InputDecoration(
+                labelText: 'Correo',
+                prefixIcon: Icon(Icons.mail_outline),
+              ),
+              validator: (v) =>
+                  (v == null || !v.contains('@')) ? 'Correo no válido' : null,
             ),
             if (_sent) ...[
               const SizedBox(height: 12),
@@ -91,7 +98,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   prefixIcon: Icon(Icons.pin_outlined),
                   counterText: '',
                 ),
-                validator: (v) => RegExp(r'^\d{6}$').hasMatch(v?.trim() ?? '') ? null : 'Son 6 dígitos',
+                validator: (v) => RegExp(r'^\d{6}$').hasMatch(v?.trim() ?? '')
+                    ? null
+                    : 'Son 6 dígitos',
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -101,14 +110,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   labelText: 'Nueva contraseña',
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
-                validator: (v) => (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
+                validator: (v) =>
+                    (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
               ),
             ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _busy ? null : _submit,
               child: _busy
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Text(_sent ? 'Cambiar contraseña' : 'Enviar código'),
             ),
             if (_sent)

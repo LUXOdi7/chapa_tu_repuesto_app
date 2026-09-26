@@ -41,10 +41,15 @@ class Session extends ChangeNotifier {
   /// backend lo rechaza (o no responde), se borra y se pide login otra vez.
   Future<void> restore() async {
     // Client ID de Google desde el backend (no bloquea el arranque).
-    unawaited(_api.get('/health').then((h) {
-      final id = (h as Map)['google_client_id'] as String? ?? '';
-      if (id.isNotEmpty) ApiConfig.googleClientIdFromServer = id;
-    }).catchError((Object _) {}));
+    unawaited(
+      _api
+          .get('/health')
+          .then((h) {
+            final id = (h as Map)['google_client_id'] as String? ?? '';
+            if (id.isNotEmpty) ApiConfig.googleClientIdFromServer = id;
+          })
+          .catchError((Object _) {}),
+    );
     final token = await _storage.read(key: _tokenKey);
     if (token != null && token.isNotEmpty) {
       _api.token = token;
@@ -92,7 +97,9 @@ class Session extends ChangeNotifier {
   Future<void> refreshMotos() async {
     try {
       await loadCategories?.call();
-    } catch (_) {/* se queda el mapa base */}
+    } catch (_) {
+      /* se queda el mapa base */
+    }
     if (_user == null || _user!.isAdmin) {
       notifyListeners();
       return;
@@ -122,11 +129,15 @@ class Session extends ChangeNotifier {
     notifyListeners(); // primero la UI: la limpieza de abajo es best-effort
     try {
       await _storage.delete(key: _tokenKey);
-    } catch (_) {/* sin almacenamiento (tests) */}
+    } catch (_) {
+      /* sin almacenamiento (tests) */
+    }
     if (googleReady) {
       try {
         await GoogleSignIn.instance.signOut(); // para poder elegir otra cuenta
-      } catch (_) {/* nada que cerrar */}
+      } catch (_) {
+        /* nada que cerrar */
+      }
     }
   }
 }

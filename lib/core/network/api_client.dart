@@ -21,14 +21,15 @@ class ApiException implements Exception {
     final response = e.response;
 
     if (response == null) {
-      final timeout = e.type == DioExceptionType.connectionTimeout ||
+      final timeout =
+          e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout;
       return ApiException(
         timeout
             ? 'El servidor no respondio a tiempo (${ApiConfig.baseUrl}).'
             : 'No se pudo conectar con ${ApiConfig.baseUrl}.\n'
-                'Revisa que el backend este encendido y que estes en la misma red.',
+                  'Revisa que el backend este encendido y que estes en la misma red.',
       );
     }
 
@@ -42,18 +43,18 @@ class ApiException implements Exception {
       return ApiException(detail, statusCode: code);
     }
     if (code == 422) {
-      return ApiException('Los datos enviados no son validos.', statusCode: code);
+      return ApiException(
+        'Los datos enviados no son validos.',
+        statusCode: code,
+      );
     }
-    return ApiException(
-      switch (code) {
-        401 => 'Tu sesion vencio, vuelve a iniciar sesion.',
-        403 => 'No tienes permiso para hacer esto.',
-        404 => 'No encontramos lo que buscabas.',
-        501 => 'Esa funcion todavia no esta disponible.',
-        _ => 'Error del servidor ($code).',
-      },
-      statusCode: code,
-    );
+    return ApiException(switch (code) {
+      401 => 'Tu sesion vencio, vuelve a iniciar sesion.',
+      403 => 'No tienes permiso para hacer esto.',
+      404 => 'No encontramos lo que buscabas.',
+      501 => 'Esa funcion todavia no esta disponible.',
+      _ => 'Error del servidor ($code).',
+    }, statusCode: code);
   }
 
   @override
@@ -109,12 +110,12 @@ class ApiClient {
   /// `/auth/login` es el UNICO endpoint que recibe form-urlencoded. Mandarlo
   /// como JSON devuelve 422, no 401.
   Future<dynamic> postForm(String path, Map<String, dynamic> fields) => _send(
-        () => _dio.post<dynamic>(
-          path,
-          data: fields,
-          options: Options(contentType: Headers.formUrlEncodedContentType),
-        ),
-      );
+    () => _dio.post<dynamic>(
+      path,
+      data: fields,
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    ),
+  );
 
   Future<dynamic> put(String path, {Object? body}) =>
       _send(() => _dio.put<dynamic>(path, data: stripNulls(body)));
@@ -127,15 +128,25 @@ class ApiClient {
   /// bytes: en web no hay ruta de archivo.
   Future<String> uploadImage(XFile file, {String folder = 'products'}) async {
     final form = FormData.fromMap({
-      'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.name),
+      'file': MultipartFile.fromBytes(
+        await file.readAsBytes(),
+        filename: file.name,
+      ),
     });
-    final data = asMap(await _send(() => _dio.post<dynamic>('/uploads/image', data: form, queryParameters: {'folder': folder})));
+    final data = asMap(
+      await _send(
+        () => _dio.post<dynamic>(
+          '/uploads/image',
+          data: form,
+          queryParameters: {'folder': folder},
+        ),
+      ),
+    );
     return data['path'] as String;
   }
 
   Future<dynamic> delete(String path) =>
       _send(() => _dio.delete<dynamic>(path));
-
 
   Future<dynamic> _send(Future<Response<dynamic>> Function() call) async {
     try {
@@ -149,7 +160,10 @@ class ApiClient {
   /// Los campos en null no se mandan en el cuerpo: el backend tiene defaults
   /// (`opening_hours`, `distance_km`...) y un `null` explicito da 422.
   static Object? stripNulls(Object? body) => body is Map
-      ? {for (final e in body.entries) if (e.value != null) e.key: e.value}
+      ? {
+          for (final e in body.entries)
+            if (e.value != null) e.key: e.value,
+        }
       : body;
 
   /// Los filtros vacios no se mandan: `?category=` filtraria por cadena vacia.
@@ -164,7 +178,8 @@ class ApiClient {
 }
 
 /// Azucar para las respuestas del backend, que siempre son objetos o listas.
-Map<String, dynamic> asMap(dynamic data) => (data as Map).cast<String, dynamic>();
+Map<String, dynamic> asMap(dynamic data) =>
+    (data as Map).cast<String, dynamic>();
 
 List<Map<String, dynamic>> asMapList(dynamic data) =>
     (data as List).map((e) => (e as Map).cast<String, dynamic>()).toList();
@@ -172,7 +187,7 @@ List<Map<String, dynamic>> asMapList(dynamic data) =>
 /// Los importes pueden llegar como numero o como texto ("28.38") segun el
 /// endpoint serialice dicts o modelos; aqui se normaliza una sola vez.
 double? asDouble(dynamic v) => switch (v) {
-      num n => n.toDouble(),
-      String s => double.tryParse(s),
-      _ => null,
-    };
+  num n => n.toDouble(),
+  String s => double.tryParse(s),
+  _ => null,
+};

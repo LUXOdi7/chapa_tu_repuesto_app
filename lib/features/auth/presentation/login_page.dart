@@ -57,7 +57,9 @@ class _LoginPageState extends State<LoginPage> {
         await GoogleSignIn.instance.initialize(clientId: clientId);
         Session.googleReady = true;
       }
-      _googleEvents = GoogleSignIn.instance.authenticationEvents.listen((event) async {
+      _googleEvents = GoogleSignIn.instance.authenticationEvents.listen((
+        event,
+      ) async {
         if (event is! GoogleSignInAuthenticationEventSignIn || !mounted) return;
         final idToken = event.user.authentication.idToken;
         if (idToken == null) {
@@ -67,7 +69,9 @@ class _LoginPageState extends State<LoginPage> {
         final scope = AppScope.of(context);
         setState(() => _busy = true);
         try {
-          await scope.session.start(await scope.auth.google(idToken, role: _role));
+          await scope.session.start(
+            await scope.auth.google(idToken, role: _role),
+          );
         } catch (e) {
           if (mounted) showError(context, e);
         } finally {
@@ -126,9 +130,11 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _google() async {
     final clientId = ApiConfig.googleClientId;
     if (clientId.isEmpty) {
-      showInfo(context,
-          'Google no está configurado: pon GOOGLE_CLIENT_ID en el .env del backend '
-          '(o compila con --dart-define=GOOGLE_SERVER_CLIENT_ID). Ver INSTALACION.md §4.');
+      showInfo(
+        context,
+        'Google no está configurado: pon GOOGLE_CLIENT_ID en el .env del backend '
+        '(o compila con --dart-define=GOOGLE_SERVER_CLIENT_ID). Ver INSTALACION.md §4.',
+      );
       return;
     }
     final scope = AppScope.of(context);
@@ -152,8 +158,11 @@ class _LoginPageState extends State<LoginPage> {
         // veces (Google lo silencia un rato) o si no hay sesion de Google en
         // el navegador.
         if (mounted && kIsWeb) {
-          showInfo(context, 'Google no mostró el inicio de sesión. Revisa la consola del '
-              'navegador (F12) y que http://localhost:5000 esté en "Orígenes autorizados".');
+          showInfo(
+            context,
+            'Google no mostró el inicio de sesión. Revisa la consola del '
+            'navegador (F12) y que http://localhost:5000 esté en "Orígenes autorizados".',
+          );
         }
         return;
       }
@@ -250,9 +259,11 @@ class _LoginPageState extends State<LoginPage> {
                         labelText: 'Contraseña',
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined),
+                          icon: Icon(
+                            _obscure
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
@@ -300,27 +311,34 @@ class _LoginPageState extends State<LoginPage> {
                       OutlinedButton.icon(
                         onPressed: _busy ? null : _google,
                         icon: const Icon(Icons.g_mobiledata, size: 28),
-                        label: Text(kIsWeb ? 'Cargando Google...' : 'Continuar con Google'),
+                        label: Text(
+                          kIsWeb
+                              ? 'Cargando Google...'
+                              : 'Continuar con Google',
+                        ),
                       ),
                     TextButton(
                       onPressed: _busy
                           ? null
                           : () => setState(() => _registering = !_registering),
-                      child: Text(_registering
-                          ? 'Ya tengo cuenta, ingresar'
-                          : 'No tengo cuenta, registrarme'),
+                      child: Text(
+                        _registering
+                            ? 'Ya tengo cuenta, ingresar'
+                            : 'No tengo cuenta, registrarme',
+                      ),
                     ),
                     if (!_registering)
                       TextButton(
                         onPressed: _busy
                             ? null
                             : () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => ForgotPasswordPage(
-                                        email: _email.text.trim()),
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ForgotPasswordPage(
+                                    email: _email.text.trim(),
                                   ),
                                 ),
+                              ),
                         child: const Text('Olvidé mi contraseña'),
                       ),
                   ],

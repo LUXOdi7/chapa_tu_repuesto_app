@@ -32,8 +32,11 @@ class ReceiptPage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
             Center(
-              child: Icon(Icons.receipt_long,
-                  size: 48, color: Theme.of(context).colorScheme.primary),
+              child: Icon(
+                Icons.receipt_long,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 16),
             ..._entries(context, receipt),
@@ -50,17 +53,19 @@ class ReceiptPage extends StatelessWidget {
       if (value is List) {
         widgets.add(SectionTitle(_label(key)));
         for (final element in value) {
-          widgets.add(Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: element is Map
-                    ? _entries(context, element.cast<String, dynamic>())
-                    : [_Row(label: '', value: '$element')],
+          widgets.add(
+            Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: element is Map
+                      ? _entries(context, element.cast<String, dynamic>())
+                      : [_Row(label: '', value: '$element')],
+                ),
               ),
             ),
-          ));
+          );
         }
       } else if (value is Map) {
         widgets.add(SectionTitle(_label(key)));
@@ -116,23 +121,26 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: Text(label,
-                  style:
-                      TextStyle(color: Theme.of(context).colorScheme.outline)),
-            ),
-            Expanded(
-              flex: 3,
-              child: Text(value,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(fontWeight: FontWeight.w500)),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(color: Theme.of(context).colorScheme.outline),
+          ),
         ),
-      );
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    ),
+  );
 }

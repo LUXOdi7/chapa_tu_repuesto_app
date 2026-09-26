@@ -124,3 +124,55 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
 - 2026-09-17 · `PENDIENTE.md` en la raíz: checklist de servicios/credenciales que
   faltan (Google, SMTP, MP, Niubiz, dominio, keystore, legales, FCM, Yape vía
   pasarela, RUC API, mapas, Sentry, SUNAT) con cómo conseguir cada clave.
+- 2026-09-25 · Merge de CRISTIAN (FCM): firebase_core/firebase_messaging/
+  flutter_local_notifications, `google-services.json`, plugin gms 4.5.0 y
+  `lib/core/notifications/firebase_notifications.dart` (canal
+  `chapaturepuesto_notifications`). `Session.registerFcmToken()` sube el token a
+  `PUT /auth/me/device` al entrar y al restaurar sesión. **Arreglado:** su
+  `main()` llamaba `Firebase.initializeApp()` sin opciones y en web reventaba
+  antes de `runApp` (pantalla en blanco, "Null check operator used on a null
+  value"); ahora va dentro de `if (!kIsWeb) { try { ... } }`, así que web
+  arranca y Android sobrevive sin `google-services.json`. Push = solo Android;
+  en web la campana cubre lo mismo. Ojo: `flutter build web` compila igual con
+  ese bug, hay que **abrir** la web para detectarlo. Guía en la raíz:
+  `VERIFICAR-CAMBIOS-CRISTIAN.md`.
+- 2026-09-25 · **Pestaña "Estadísticas" en el panel de la tienda**
+  (`stats_page.dart`): KPIs, barras de venta y de pedidos por día, rankings de
+  repuestos / categorías / clientes, dona de estados y aviso de stock bajo.
+  Gráficas propias en `shared/widgets/charts.dart` (`DailyBars`, `RankingBars`,
+  `DonutChart`, `StatTile`) — widgets + un CustomPainter, **sin sumar fl_chart**.
+  Test con la respuesta REAL del backend en celular y escritorio
+  (`supplier_stats_test.dart`); encontró dos desbordes que ya están corregidos.
+- 2026-09-25 · **design.md aplicado** (`/ui-ux-pro-max:brand`): `app_theme.dart`
+  usa los tokens exactos (claro #F8FAFC/#FFFFFF/#0F172A/#64748B/#E2E8F0, oscuro
+  #0B1120/#1E293B/#F8FAFC/#94A3B8/#334155), naranja #F4731A como color de
+  interacción, botones radio 10, inputs con relleno #F1F5F9 y foco naranja 2px,
+  cards planas con borde y sombra 0.05. Nuevo `AdaptiveScaffold`: NavigationBar
+  en móvil y **NavigationRail azul** desde 600 px (extendido desde 900) en las
+  tres pantallas raíz. `FormBox` limita los formularios a 600 px en escritorio.
+  `BrandLoader` (isotipo girando) reemplaza al CircularProgressIndicator y el
+  estado vacío lleva un engranaje naranja.
+- 2026-09-25 · `GUIA_WEB_CEL.md` en la raíz: cómo correr Chrome y el celular a
+  la vez. **`flutter run -d all` NO sirve** (ignora web y escritorio, probado):
+  son dos terminales. Alternativa de una sola terminal:
+  `-d web-server --web-hostname 0.0.0.0`, pero por IP el navegador no da
+  micrófono ni GPS. Ojo: la IP de la PC cambió de 192.168.1.18 a 192.168.1.92.
+- 2026-09-25 · **Bug en Android al dictar** (pantalla roja
+  `navigator.dart:5949 '!_debugLocked'`, que es el assert de
+  `NavigatorState.build`): la hoja de dictado tenía TRES salidas —botón
+  "Usar lo dictado", `onResult` final y el estado `done`/`notListening`— y en
+  Android llegan casi juntas, así que se hacía un segundo `Navigator.pop`
+  sobre la ruta que ya se estaba cerrando y el Navigator se reconstruía
+  bloqueado. Arreglo: un único `_close(heard)` con cerrojo `_closed` en
+  `voice_search_bar.dart`. De paso, la hoja ahora va en
+  `SingleChildScrollView` (con el aviso de error se desbordaba 19 px y tapaba
+  los botones). Test `voice_search_test.dart`: simula la carrera por el canal
+  `plugin.csdcorp.com/speech_to_text` con el buscador en una ruta empujada;
+  **verificado que falla si se quita el cerrojo**.
+- 2026-09-25 · **Mensaje duplicado en el chat del pedido** (solo lo veía quien
+  escribía): el refresco de 4 s sale con el `after_id` de antes; si respondía
+  después del envío, traía de vuelta el mensaje que `_send` ya había agregado.
+  Arreglo en `chat_page.dart`: un único `_merge(news)` **deduplicado por id**
+  por el que pasan el envío, el poll y el botón de recargar (también cubre dos
+  refrescos solapados). Test `chat_page_test.dart`, verificado en los dos
+  sentidos: sin el dedupe salen 2 burbujas, con él 1.

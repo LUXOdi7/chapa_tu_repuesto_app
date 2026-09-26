@@ -11,11 +11,13 @@ class CartItem {
   CartItem copyWith({int? quantity}) =>
       CartItem(product: product, quantity: quantity ?? this.quantity);
 
-  Map<String, dynamic> toJson() =>
-      {'product': product.toJson(), 'quantity': quantity};
+  Map<String, dynamic> toJson() => {
+    'product': product.toJson(),
+    'quantity': quantity,
+  };
 
   factory CartItem.fromJson(Map<String, dynamic> json) => CartItem(
-        product: Product.fromJson((json['product'] as Map).cast<String, dynamic>()),
-        quantity: json['quantity'] as int? ?? 1,
-      );
+    product: Product.fromJson((json['product'] as Map).cast<String, dynamic>()),
+    quantity: json['quantity'] as int? ?? 1,
+  );
 }

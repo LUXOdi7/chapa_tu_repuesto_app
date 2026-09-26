@@ -130,8 +130,9 @@ class Order {
   /// Solo la tienda, con el pedido entregado/cerrado y sin haber calificado.
   final bool canReviewBuyer;
 
-  String get buyerRatingLabel =>
-      buyerRatingCount == 0 ? 'Comprador sin calificaciones' : '${buyerRatingAvg.toStringAsFixed(1)} ★ ($buyerRatingCount)';
+  String get buyerRatingLabel => buyerRatingCount == 0
+      ? 'Comprador sin calificaciones'
+      : '${buyerRatingAvg.toStringAsFixed(1)} ★ ($buyerRatingCount)';
   final String? deliveryAddress;
 
   /// Punto exacto de entrega si el comprador lo marcó en el mapa.
@@ -258,7 +259,13 @@ Color orderStatusColor(String status) => switch (status) {
 
 /// Mensaje del chat comprador <-> tienda dentro del pedido.
 class ChatMessage {
-  const ChatMessage({required this.id, required this.senderId, required this.senderName, required this.body, required this.at});
+  const ChatMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderName,
+    required this.body,
+    required this.at,
+  });
 
   final int id;
   final int senderId;
@@ -267,10 +274,10 @@ class ChatMessage {
   final DateTime at;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
-        id: json['id'] as int,
-        senderId: json['sender_id'] as int,
-        senderName: json['sender_name'] as String? ?? '',
-        body: json['body'] as String? ?? '',
-        at: parseServerDate(json['created_at'] as String),
-      );
+    id: json['id'] as int,
+    senderId: json['sender_id'] as int,
+    senderName: json['sender_name'] as String? ?? '',
+    body: json['body'] as String? ?? '',
+    at: parseServerDate(json['created_at'] as String),
+  );
 }

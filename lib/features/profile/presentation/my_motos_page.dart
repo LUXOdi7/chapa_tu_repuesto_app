@@ -27,7 +27,11 @@ class _MyMotosPageState extends State<MyMotosPage> {
     setState(() => _busy = true);
     try {
       await scope.auth.addMoto(
-          type: _type!, brand: _brand!, model: _model!, year: _year!);
+        type: _type!,
+        brand: _brand!,
+        model: _model!,
+        year: _year!,
+      );
       await scope.session.refreshMotos();
       if (mounted) showInfo(context, 'Moto guardada');
     } catch (e) {
@@ -57,7 +61,9 @@ class _MyMotosPageState extends State<MyMotosPage> {
         builder: (context, _) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text('Guarda tus motos y el buscador te mostrará solo repuestos compatibles.'),
+            const Text(
+              'Guarda tus motos y el buscador te mostrará solo repuestos compatibles.',
+            ),
             const SizedBox(height: 12),
             CompatibilityFilters(
               repo: scope.catalog,
@@ -70,7 +76,12 @@ class _MyMotosPageState extends State<MyMotosPage> {
             ),
             const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: _busy || _type == null || _brand == null || _model == null || _year == null
+              onPressed:
+                  _busy ||
+                      _type == null ||
+                      _brand == null ||
+                      _model == null ||
+                      _year == null
                   ? null
                   : _add,
               icon: const Icon(Icons.add),
@@ -78,7 +89,10 @@ class _MyMotosPageState extends State<MyMotosPage> {
             ),
             const SectionTitle('Guardadas'),
             if (scope.session.motos.isEmpty)
-              const Padding(padding: EdgeInsets.all(16), child: Text('Todavía no guardaste ninguna moto.')),
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Todavía no guardaste ninguna moto.'),
+              ),
             for (final moto in scope.session.motos)
               ListTile(
                 leading: Icon(motoTypeIcons[moto.type] ?? Icons.two_wheeler),

@@ -37,22 +37,27 @@ class _NotificationBellState extends State<NotificationBell> {
     try {
       final n = await AppScope.of(context).auth.unreadNotifications();
       if (mounted) setState(() => _unread = n);
-    } catch (_) {/* sin red: se queda el ultimo valor */}
+    } catch (_) {
+      /* sin red: se queda el ultimo valor */
+    }
   }
 
   @override
   Widget build(BuildContext context) => IconButton(
-        tooltip: 'Notificaciones',
-        icon: Badge.count(
-          count: _unread,
-          isLabelVisible: _unread > 0,
-          child: const Icon(Icons.notifications_outlined),
-        ),
-        onPressed: () async {
-          await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const NotificationsPage()));
-          if (mounted) _load();
-        },
+    tooltip: 'Notificaciones',
+    icon: Badge.count(
+      count: _unread,
+      isLabelVisible: _unread > 0,
+      child: const Icon(Icons.notifications_outlined),
+    ),
+    onPressed: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute<void>(builder: (_) => const NotificationsPage()),
       );
+      if (mounted) _load();
+    },
+  );
 }
 
 /// Bandeja: estados de pedido, mensajes del chat, alertas, cambios de
@@ -68,13 +73,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
   int _reload = 0;
 
   static IconData _icon(String kind) => switch (kind) {
-        'order' => Icons.local_shipping_outlined,
-        'message' => Icons.chat_bubble_outline,
-        'alert' => Icons.notifications_active_outlined,
-        'product' => Icons.edit_note,
-        'review' => Icons.star_outline,
-        _ => Icons.info_outline,
-      };
+    'order' => Icons.local_shipping_outlined,
+    'message' => Icons.chat_bubble_outline,
+    'alert' => Icons.notifications_active_outlined,
+    'product' => Icons.edit_note,
+    'review' => Icons.star_outline,
+    _ => Icons.info_outline,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -118,21 +123,40 @@ class _NotificationsPageState extends State<NotificationsPage> {
               final unread = n['read_at'] == null;
               final orderId = n['order_id'] as int?;
               return ListTile(
-                tileColor: unread ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.06) : null,
-                leading: Icon(_icon(n['kind'] as String? ?? ''),
-                    color: unread ? Theme.of(context).colorScheme.primary : null),
-                title: Text(n['title'] as String? ?? '',
-                    style: TextStyle(fontWeight: unread ? FontWeight.bold : FontWeight.normal)),
-                subtitle: Text('${n['body']}\n${dateTimeLabel(parseServerDate(n['created_at'] as String))}'),
+                tileColor: unread
+                    ? Theme.of(context).colorScheme.primary
+                          .withValues(alpha: 0.06)
+                    : null,
+                leading: Icon(
+                  _icon(n['kind'] as String? ?? ''),
+                  color: unread ? Theme.of(context).colorScheme.primary : null,
+                ),
+                title: Text(
+                  n['title'] as String? ?? '',
+                  style: TextStyle(
+                    fontWeight: unread ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                subtitle: Text(
+                  '${n['body']}\n${dateTimeLabel(parseServerDate(n['created_at'] as String))}',
+                ),
                 isThreeLine: true,
-                trailing: orderId != null ? const Icon(Icons.chevron_right) : null,
+                trailing: orderId != null
+                    ? const Icon(Icons.chevron_right)
+                    : null,
                 onTap: () async {
                   try {
                     if (unread) await auth.markNotificationRead(n['id'] as int);
-                  } catch (_) {/* se reintenta al recargar */}
+                  } catch (_) {
+                    /* se reintenta al recargar */
+                  }
                   if (!context.mounted) return;
                   if (orderId != null) {
-                    await Navigator.pushNamed(context, OrderTrackingPage.route, arguments: orderId);
+                    await Navigator.pushNamed(
+                      context,
+                      OrderTrackingPage.route,
+                      arguments: orderId,
+                    );
                   }
                   if (context.mounted) setState(() => _reload++);
                 },

@@ -120,134 +120,150 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          children: [
-            const SectionTitle('Resumen por tienda'),
-            for (final group in groups)
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.storefront),
-                title: Text(group.store.businessName),
-                subtitle: Text('${group.items.length} '
+      body: FormBox(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              const SectionTitle('Resumen por tienda'),
+              for (final group in groups)
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.storefront),
+                  title: Text(group.store.businessName),
+                  subtitle: Text(
+                    '${group.items.length} '
                     '${group.items.length == 1 ? "producto" : "productos"}  ·  '
-                    'envío ${group.shipping == 0 ? "gratis" : soles(group.shipping)}'),
-                trailing: Text(soles(group.total),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
+                    'envío ${group.shipping == 0 ? "gratis" : soles(group.shipping)}',
+                  ),
+                  trailing: Text(
+                    soles(group.total),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
 
-            const SectionTitle('Entrega'),
-            // Direccion guardada del perfil o una para este pedido; en ambos
-            // casos se puede marcar el punto exacto en el mapa.
-            if (saved?.hasSavedAddress ?? false) ...[
-              RadioGroup<bool>(
-                groupValue: _useSaved,
-                onChanged: (v) => setState(() {
-                  _useSaved = v ?? true;
-                  _lat = _useSaved ? saved.latitude : null;
-                  _lng = _useSaved ? saved.longitude : null;
-                }),
+              const SectionTitle('Entrega'),
+              // Direccion guardada del perfil o una para este pedido; en ambos
+              // casos se puede marcar el punto exacto en el mapa.
+              if (saved?.hasSavedAddress ?? false) ...[
+                RadioGroup<bool>(
+                  groupValue: _useSaved,
+                  onChanged: (v) => setState(() {
+                    _useSaved = v ?? true;
+                    _lat = _useSaved ? saved.latitude : null;
+                    _lng = _useSaved ? saved.longitude : null;
+                  }),
+                  child: Column(
+                    children: [
+                      RadioListTile<bool>(
+                        value: true,
+                        title: const Text('Usar mi dirección guardada'),
+                        subtitle: Text(saved!.address!),
+                      ),
+                      const RadioListTile<bool>(
+                        value: false,
+                        title: Text('Otra dirección para este pedido'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    RadioListTile<bool>(
-                      value: true,
-                      title: const Text('Usar mi dirección guardada'),
-                      subtitle: Text(saved!.address!),
+                    if (!_useSaved)
+                      TextFormField(
+                        controller: _address,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'Dirección de entrega',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        validator: (v) => (v == null || v.trim().length < 6)
+                            ? 'Escribe la dirección del taller'
+                            : null,
+                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickOnMap,
+                            icon: const Icon(Icons.map_outlined),
+                            label: Text(
+                              _lat == null
+                                  ? 'Marcar punto en el mapa'
+                                  : 'Cambiar punto del mapa',
+                            ),
+                          ),
+                        ),
+                        if (_lat != null) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                        ],
+                      ],
                     ),
-                    const RadioListTile<bool>(
-                      value: false,
-                      title: Text('Otra dirección para este pedido'),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _notes,
+                      decoration: const InputDecoration(
+                        labelText: 'Nota para el proveedor (opcional)',
+                        prefixIcon: Icon(Icons.sticky_note_2_outlined),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  if (!_useSaved)
-                    TextFormField(
-                      controller: _address,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección de entrega',
-                        prefixIcon: Icon(Icons.location_on_outlined),
-                      ),
-                      validator: (v) => (v == null || v.trim().length < 6)
-                          ? 'Escribe la dirección del taller'
-                          : null,
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _pickOnMap,
-                          icon: const Icon(Icons.map_outlined),
-                          label: Text(_lat == null
-                              ? 'Marcar punto en el mapa'
-                              : 'Cambiar punto del mapa'),
-                        ),
-                      ),
-                      if (_lat != null) ...[
-                        const SizedBox(width: 8),
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _notes,
-                    decoration: const InputDecoration(
-                      labelText: 'Nota para el proveedor (opcional)',
-                      prefixIcon: Icon(Icons.sticky_note_2_outlined),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SectionTitle('Método de pago'),
-            for (final method in PaymentMethod.values)
-              ListTile(
-                onTap: () => setState(() => _method = method),
-                selected: _method == method,
-                selectedTileColor:
-                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                leading: Icon(method.icon),
-                title: Text(method.label),
-                subtitle: Text(method.hint),
-                trailing: Icon(
-                  _method == method ? Icons.check_circle : Icons.circle_outlined,
-                  color: _method == method
-                      ? Theme.of(context).colorScheme.secondary
-                      : Theme.of(context).colorScheme.outline,
+              const SectionTitle('Método de pago'),
+              for (final method in PaymentMethod.values)
+                ListTile(
+                  onTap: () => setState(() => _method = method),
+                  selected: _method == method,
+                  selectedTileColor: Theme.of(context).colorScheme.primary
+                      .withValues(alpha: 0.08),
+                  leading: Icon(method.icon),
+                  title: Text(method.label),
+                  subtitle: Text(method.hint),
+                  trailing: Icon(
+                    _method == method
+                        ? Icons.check_circle
+                        : Icons.circle_outlined,
+                    color: _method == method
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.outline,
+                  ),
                 ),
-              ),
 
-            const SectionTitle('Total'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _TotalRow(label: 'Productos', value: soles(cart.subtotal)),
-                  _TotalRow(
-                    label: 'Envío (${groups.length} '
-                        '${groups.length == 1 ? "tienda" : "tiendas"})',
-                    value: soles(cart.shipping),
-                  ),
-                  const Divider(),
-                  _TotalRow(
+              const SectionTitle('Total'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    _TotalRow(label: 'Productos', value: soles(cart.subtotal)),
+                    _TotalRow(
+                      label:
+                          'Envío (${groups.length} '
+                          '${groups.length == 1 ? "tienda" : "tiendas"})',
+                      value: soles(cart.shipping),
+                    ),
+                    const Divider(),
+                    _TotalRow(
                       label: 'Total a pagar',
                       value: soles(cart.total),
-                      bold: true),
-                ],
+                      bold: true,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: SafeArea(
@@ -278,45 +294,51 @@ class _CreatedDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        icon: const Icon(Icons.check_circle, color: Colors.green, size: 40),
-        title: Text(orders.length == 1
-            ? 'Pedido creado'
-            : '${orders.length} pedidos creados'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (orders.length > 1)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Tu carrito tenía productos de varias tiendas, así que se '
-                  'generó un pedido por cada una.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            for (final order in orders)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.receipt_long),
-                title: Text(order.code,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(order.store.businessName),
-                trailing: Text(soles(order.total)),
-              ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Ir a pagar'),
+    icon: const Icon(Icons.check_circle, color: Colors.green, size: 40),
+    title: Text(
+      orders.length == 1 ? 'Pedido creado' : '${orders.length} pedidos creados',
+    ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (orders.length > 1)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Tu carrito tenía productos de varias tiendas, así que se '
+              'generó un pedido por cada una.',
+              textAlign: TextAlign.center,
+            ),
           ),
-        ],
-      );
+        for (final order in orders)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.receipt_long),
+            title: Text(
+              order.code,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(order.store.businessName),
+            trailing: Text(soles(order.total)),
+          ),
+      ],
+    ),
+    actions: [
+      FilledButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Ir a pagar'),
+      ),
+    ],
+  );
 }
 
 class _TotalRow extends StatelessWidget {
-  const _TotalRow({required this.label, required this.value, this.bold = false});
+  const _TotalRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+  });
 
   final String label;
   final String value;
@@ -325,16 +347,17 @@ class _TotalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = bold
-        ? Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.bold)
+        ? Theme.of(context).textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold)
         : Theme.of(context).textTheme.bodyMedium;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Text(label, style: style), Text(value, style: style)],
+        children: [
+          Text(label, style: style),
+          Text(value, style: style),
+        ],
       ),
     );
   }

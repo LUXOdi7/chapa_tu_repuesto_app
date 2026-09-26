@@ -6,8 +6,7 @@ class FirebaseNotifications {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel _channel =
-      AndroidNotificationChannel(
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'chapaturepuesto_notifications',
     'Notificaciones de ChapaTuRepuesto',
     description: 'Notificaciones de pedidos y alertas.',
@@ -19,17 +18,14 @@ class FirebaseNotifications {
       '@mipmap/ic_launcher',
     );
 
-    const settings = InitializationSettings(
-      android: androidSettings,
-    );
+    const settings = InitializationSettings(android: androidSettings);
 
-    await _localNotifications.initialize(
-  settings: settings,
-);
+    await _localNotifications.initialize(settings: settings);
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(_channel);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
@@ -43,10 +39,10 @@ class FirebaseNotifications {
 
       if (notification != null) {
         await _localNotifications.show(
-  id: notification.hashCode,
-  title: notification.title ?? 'ChapaTuRepuesto',
-  body: notification.body ?? '',
-  notificationDetails: const NotificationDetails(
+          id: notification.hashCode,
+          title: notification.title ?? 'ChapaTuRepuesto',
+          body: notification.body ?? '',
+          notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'chapaturepuesto_notifications',
               'Notificaciones de ChapaTuRepuesto',
@@ -60,9 +56,7 @@ class FirebaseNotifications {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint(
-        'Notificación FCM abierta: ${message.notification?.title}',
-      );
+      debugPrint('Notificación FCM abierta: ${message.notification?.title}');
     });
   }
 }

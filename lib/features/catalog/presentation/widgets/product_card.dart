@@ -54,8 +54,11 @@ class ProductCard extends StatelessWidget {
                       child: CircleAvatar(
                         radius: 11,
                         backgroundColor: Colors.green,
-                        child: const Icon(Icons.verified,
-                            size: 14, color: Colors.white),
+                        child: const Icon(
+                          Icons.verified,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -71,8 +74,10 @@ class ProductCard extends StatelessWidget {
                       product.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: text.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600, height: 1.15),
+                      style: text.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     // Marca + codigo: es lo que el mecanico compara entre tiendas.
@@ -89,15 +94,20 @@ class ProductCard extends StatelessWidget {
                     if (store != null)
                       Row(
                         children: [
-                          Icon(Icons.storefront, size: 12, color: scheme.outline),
+                          Icon(
+                            Icons.storefront,
+                            size: 12,
+                            color: scheme.outline,
+                          ),
                           const SizedBox(width: 3),
                           Expanded(
                             child: Text(
                               '${store.businessName}  ${store.distanceLabel}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: text.labelSmall
-                                  ?.copyWith(color: scheme.outline),
+                              style: text.labelSmall?.copyWith(
+                                color: scheme.outline,
+                              ),
                             ),
                           ),
                         ],

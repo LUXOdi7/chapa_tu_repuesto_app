@@ -61,45 +61,46 @@ class Product {
   final bool isActive;
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
-        id: json['id'] as int,
-        name: json['name'] as String? ?? '',
-        category: json['category'] as String? ?? '',
-        partCode: json['part_code'] as String? ?? '',
-        brand: json['brand'] as String?,
-        imageUrl: json['image_url'] as String?,
-        imageUrls: (json['image_urls'] as List?)?.cast<String>() ??
-            [if (json['image_url'] != null) json['image_url'] as String],
-        price: asDouble(json['price']) ?? 0,
-        stock: json['stock'] as int? ?? 0,
-        // El backend ya calcula `in_stock`; el fallback cubre las respuestas
-        // del panel del proveedor, que no lo incluyen.
-        inStock: json['in_stock'] as bool? ?? ((json['stock'] as int? ?? 0) > 0),
-        warrantyMonths: json['warranty_months'] as int?,
-        store: json['store'] == null
-            ? null
-            : Store.fromJson((json['store'] as Map).cast<String, dynamic>()),
-        description: json['description'] as String?,
-        compatibilities: _list(json['compatibilities'])
-            .map(Compatibility.fromJson)
-            .toList(),
-        offers: _list(json['offers']).map(Product.fromJson).toList(),
-        isActive: json['is_active'] as bool? ?? true,
-      );
+    id: json['id'] as int,
+    name: json['name'] as String? ?? '',
+    category: json['category'] as String? ?? '',
+    partCode: json['part_code'] as String? ?? '',
+    brand: json['brand'] as String?,
+    imageUrl: json['image_url'] as String?,
+    imageUrls:
+        (json['image_urls'] as List?)?.cast<String>() ??
+        [if (json['image_url'] != null) json['image_url'] as String],
+    price: asDouble(json['price']) ?? 0,
+    stock: json['stock'] as int? ?? 0,
+    // El backend ya calcula `in_stock`; el fallback cubre las respuestas
+    // del panel del proveedor, que no lo incluyen.
+    inStock: json['in_stock'] as bool? ?? ((json['stock'] as int? ?? 0) > 0),
+    warrantyMonths: json['warranty_months'] as int?,
+    store: json['store'] == null
+        ? null
+        : Store.fromJson((json['store'] as Map).cast<String, dynamic>()),
+    description: json['description'] as String?,
+    compatibilities: _list(json['compatibilities'])
+        .map(Compatibility.fromJson)
+        .toList(),
+    offers: _list(json['offers']).map(Product.fromJson).toList(),
+    isActive: json['is_active'] as bool? ?? true,
+  );
 
   /// Solo lo que el carrito necesita conservar entre sesiones.
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'category': category,
-        'part_code': partCode,
-        'brand': brand,
-        'image_url': imageUrl,
-        'price': price,
-        'stock': stock,
-        'in_stock': inStock,
-        'warranty_months': warrantyMonths,
-        'store': store?.toJson(),
-      };
+    'id': id,
+    'name': name,
+    'category': category,
+    'part_code': partCode,
+    'brand': brand,
+    'image_url': imageUrl,
+    'price': price,
+    'stock': stock,
+    'in_stock': inStock,
+    'warranty_months': warrantyMonths,
+    'store': store?.toJson(),
+  };
 
   static List<Map<String, dynamic>> _list(dynamic raw) => raw is List
       ? raw.map((e) => (e as Map).cast<String, dynamic>()).toList()
@@ -142,10 +143,10 @@ class ProductPage {
   bool get hasMore => offset + items.length < total;
 
   factory ProductPage.fromJson(Map<String, dynamic> json) => ProductPage(
-        total: json['total'] as int? ?? 0,
-        limit: json['limit'] as int? ?? 20,
-        offset: json['offset'] as int? ?? 0,
-        parsed: (json['parsed'] as Map?)?.cast<String, dynamic>(),
-        items: Product._list(json['items']).map(Product.fromJson).toList(),
-      );
+    total: json['total'] as int? ?? 0,
+    limit: json['limit'] as int? ?? 20,
+    offset: json['offset'] as int? ?? 0,
+    parsed: (json['parsed'] as Map?)?.cast<String, dynamic>(),
+    items: Product._list(json['items']).map(Product.fromJson).toList(),
+  );
 }

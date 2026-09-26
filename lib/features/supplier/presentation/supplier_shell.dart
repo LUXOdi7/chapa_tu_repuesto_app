@@ -13,6 +13,7 @@ import '../../profile/presentation/profile_page.dart';
 import '../../../main.dart' show shopMode;
 import 'payment_config_page.dart';
 import 'product_form_page.dart';
+import 'stats_page.dart';
 import 'store_form_page.dart';
 
 /// Panel del proveedor: bandeja de pedidos de su tienda, sus repuestos y los
@@ -31,7 +32,12 @@ class _SupplierShellState extends State<SupplierShell> {
   int _tab = 0;
   int _reload = 0;
 
-  static const _titles = ['Mi tienda', 'Pedidos de mi tienda', 'Mis repuestos'];
+  static const _titles = [
+    'Mi tienda',
+    'Estadísticas',
+    'Pedidos de mi tienda',
+    'Mis repuestos',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -44,24 +50,31 @@ class _SupplierShellState extends State<SupplierShell> {
         builder: (context, store) {
           if (store == null) {
             // Sin tienda no puede publicar ni recibir pedidos: primero el alta.
-            return StoreFormPage(
-              onSaved: () => setState(() => _reload++),
-            );
+            return StoreFormPage(onSaved: () => setState(() => _reload++));
           }
-          return Scaffold(
+          return AdaptiveScaffold(
+            selectedIndex: _tab,
+            onSelected: (i) => setState(() => _tab = i),
             appBar: AppBar(
               title: BrandTitle(_titles[_tab]),
               actions: [
                 TextButton.icon(
                   onPressed: () => shopMode.value = true,
-                  icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
-                  label: const Text('Comprar', style: TextStyle(color: Colors.white)),
+                  icon: const Icon(
+                    Icons.shopping_bag_outlined,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Comprar',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 const NotificationBell(),
                 IconButton(
                   tooltip: 'Mi cuenta',
                   icon: const Icon(Icons.account_circle_outlined),
-                  onPressed: () => Navigator.pushNamed(context, ProfilePage.route),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, ProfilePage.route),
                 ),
               ],
             ),
@@ -72,22 +85,30 @@ class _SupplierShellState extends State<SupplierShell> {
                   store: store,
                   onEdited: () => setState(() => _reload++),
                 ),
+                const SupplierStatsView(),
                 const OrdersView(),
                 const _SupplierProducts(),
               ],
             ),
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: _tab,
-              onDestinationSelected: (i) => setState(() => _tab = i),
-              destinations: const [
-                NavigationDestination(
-                    icon: Icon(Icons.storefront), label: 'Tienda'),
-                NavigationDestination(
-                    icon: Icon(Icons.inbox_outlined), label: 'Pedidos'),
-                NavigationDestination(
-                    icon: Icon(Icons.inventory_2_outlined), label: 'Repuestos'),
-              ],
-            ),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.storefront),
+                label: 'Tienda',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.insights_outlined),
+                selectedIcon: Icon(Icons.insights),
+                label: 'Estadísticas',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.inbox_outlined),
+                label: 'Pedidos',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.inventory_2_outlined),
+                label: 'Repuestos',
+              ),
+            ],
           );
         },
       ),
@@ -173,7 +194,9 @@ class _SupplierProductsState extends State<_SupplierProducts> {
           final cats = byCat.keys.toList()
             ..sort((a, b) => categoryLabel(a).compareTo(categoryLabel(b)));
           for (final list in byCat.values) {
-            list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+            list.sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
           }
           return ListView(
             padding: const EdgeInsets.only(bottom: 88),
@@ -181,8 +204,13 @@ class _SupplierProductsState extends State<_SupplierProducts> {
               for (final cat in cats)
                 ExpansionTile(
                   leading: const Icon(Icons.category_outlined),
-                  title: Text(categoryLabel(cat), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text('${byCat[cat]!.length} repuesto${byCat[cat]!.length == 1 ? '' : 's'}'),
+                  title: Text(
+                    categoryLabel(cat),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '${byCat[cat]!.length} repuesto${byCat[cat]!.length == 1 ? '' : 's'}',
+                  ),
                   children: [
                     for (final product in byCat[cat]!)
                       ListTile(
@@ -191,14 +219,22 @@ class _SupplierProductsState extends State<_SupplierProducts> {
                           child: SizedBox(
                             width: 48,
                             height: 48,
-                            child: PartImage(path: product.imageUrl, height: 48),
+                            child: PartImage(
+                              path: product.imageUrl,
+                              height: 48,
+                            ),
                           ),
                         ),
-                        title: Text(product.name,
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text('${product.partCode}  ·  '
-                            '${soles(product.price)}  ·  stock ${product.stock}'
-                            '${product.isActive ? '' : '  ·  oculto'}'),
+                        title: Text(
+                          product.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${product.partCode}  ·  '
+                          '${soles(product.price)}  ·  stock ${product.stock}'
+                          '${product.isActive ? '' : '  ·  oculto'}',
+                        ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () => _delete(product),
@@ -239,8 +275,10 @@ class _StoreTab extends StatelessWidget {
             child: const ListTile(
               leading: Icon(Icons.pending_actions, color: Colors.orange),
               title: Text('Tienda pendiente de verificación'),
-              subtitle: Text('El administrador revisa tu RUC. Ya puedes publicar; '
-                  'la insignia de verificada aparece cuando lo apruebe.'),
+              subtitle: Text(
+                'El administrador revisa tu RUC. Ya puedes publicar; '
+                'la insignia de verificada aparece cuando lo apruebe.',
+              ),
             ),
           ),
         // Resumen del negocio
@@ -248,17 +286,38 @@ class _StoreTab extends StatelessWidget {
           refreshKey: store.id,
           load: scope.suppliers.dashboard,
           builder: (context, d) {
-            final byStatus = (d['orders_by_status'] as Map).cast<String, dynamic>();
+            final byStatus = (d['orders_by_status'] as Map)
+                .cast<String, dynamic>();
             return Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    _Kpi(label: 'Por despachar', value: '${d['pending_to_ship']}', icon: Icons.local_shipping_outlined),
-                    _Kpi(label: 'Repuestos', value: '${d['products']}', icon: Icons.inventory_2_outlined),
-                    _Kpi(label: 'Sin stock', value: '${d['out_of_stock']}', icon: Icons.remove_shopping_cart_outlined),
-                    _Kpi(label: 'Vendido', value: soles((d['total_sold'] as num?) ?? 0), icon: Icons.payments_outlined),
-                    _Kpi(label: 'Cerrados', value: '${byStatus['closed'] ?? 0}', icon: Icons.task_alt),
+                    _Kpi(
+                      label: 'Por despachar',
+                      value: '${d['pending_to_ship']}',
+                      icon: Icons.local_shipping_outlined,
+                    ),
+                    _Kpi(
+                      label: 'Repuestos',
+                      value: '${d['products']}',
+                      icon: Icons.inventory_2_outlined,
+                    ),
+                    _Kpi(
+                      label: 'Sin stock',
+                      value: '${d['out_of_stock']}',
+                      icon: Icons.remove_shopping_cart_outlined,
+                    ),
+                    _Kpi(
+                      label: 'Vendido',
+                      value: soles((d['total_sold'] as num?) ?? 0),
+                      icon: Icons.payments_outlined,
+                    ),
+                    _Kpi(
+                      label: 'Cerrados',
+                      value: '${byStatus['closed'] ?? 0}',
+                      icon: Icons.task_alt,
+                    ),
                   ].map((k) => Expanded(child: k)).toList(),
                 ),
               ),
@@ -275,8 +334,10 @@ class _StoreTab extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(store.businessName,
-                          style: Theme.of(context).textTheme.titleLarge),
+                      child: Text(
+                        store.businessName,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
                     if (store.verified)
                       const Icon(Icons.verified_user, color: Colors.blue),
@@ -285,22 +346,31 @@ class _StoreTab extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(store.ratingLabel),
                 const Divider(height: 24),
-                _Line(icon: Icons.badge_outlined, text: 'RUC ${store.ruc ?? '-'}'),
                 _Line(
-                    icon: Icons.location_on_outlined,
-                    text: [store.address, store.district]
-                        .whereType<String>()
-                        .join(', ')),
+                  icon: Icons.badge_outlined,
+                  text: 'RUC ${store.ruc ?? '-'}',
+                ),
                 _Line(
-                    icon: Icons.map_outlined,
-                    text: store.hasLocation
-                        ? 'Ubicación: ${store.latitude}, ${store.longitude}'
-                        : 'Sin ubicación en el mapa'),
+                  icon: Icons.location_on_outlined,
+                  text: [
+                    store.address,
+                    store.district,
+                  ].whereType<String>().join(', '),
+                ),
                 _Line(
-                    icon: Icons.phone_outlined, text: store.phone ?? 'Sin teléfono'),
+                  icon: Icons.map_outlined,
+                  text: store.hasLocation
+                      ? 'Ubicación: ${store.latitude}, ${store.longitude}'
+                      : 'Sin ubicación en el mapa',
+                ),
                 _Line(
-                    icon: Icons.schedule,
-                    text: store.openingHours ?? 'Horario no indicado'),
+                  icon: Icons.phone_outlined,
+                  text: store.phone ?? 'Sin teléfono',
+                ),
+                _Line(
+                  icon: Icons.schedule,
+                  text: store.openingHours ?? 'Horario no indicado',
+                ),
               ],
             ),
           ),
@@ -309,7 +379,11 @@ class _StoreTab extends StatelessWidget {
         // Perfil publico: lo que ve el comprador (mapa, calificaciones,
         // comentarios, catalogo). Reusa la ficha del catalogo.
         FilledButton.tonalIcon(
-          onPressed: () => Navigator.pushNamed(context, StorePage.route, arguments: store.id),
+          onPressed: () => Navigator.pushNamed(
+            context,
+            StorePage.route,
+            arguments: store.id,
+          ),
           icon: const Icon(Icons.storefront_outlined),
           label: Text('Ver mi perfil público  ·  ${store.ratingLabel}'),
         ),
@@ -330,7 +404,9 @@ class _StoreTab extends StatelessWidget {
         Card(
           child: ListTile(
             leading: Icon(
-              store.paymentConfigured ? Icons.credit_score : Icons.credit_card_off_outlined,
+              store.paymentConfigured
+                  ? Icons.credit_score
+                  : Icons.credit_card_off_outlined,
               color: store.paymentConfigured ? Colors.green : Colors.orange,
             ),
             title: const Text('Medio de cobro'),
@@ -343,21 +419,29 @@ class _StoreTab extends StatelessWidget {
             onTap: () async {
               final saved = await Navigator.push<bool>(
                 context,
-                MaterialPageRoute(builder: (_) => PaymentConfigPage(store: store)),
+                MaterialPageRoute(
+                  builder: (_) => PaymentConfigPage(store: store),
+                ),
               );
               if (saved == true) onEdited();
             },
           ),
         ),
         const SizedBox(height: 24),
-        Text('Estados del pedido', style: Theme.of(context).textTheme.labelLarge),
+        Text(
+          'Estados del pedido',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
         const SizedBox(height: 4),
         for (final st in orderTimeline)
           Row(
             children: [
               Icon(orderStatusIcon(st), size: 16, color: orderStatusColor(st)),
               const SizedBox(width: 8),
-              Text(orderStatusLabel(st), style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                orderStatusLabel(st),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
       ],
@@ -374,15 +458,19 @@ class _Kpi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 4),
-          FittedBox(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          Text(label, style: const TextStyle(fontSize: 10), textAlign: TextAlign.center),
-        ],
-      );
+    children: [
+      Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+      const SizedBox(height: 4),
+      FittedBox(
+        child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
+      Text(
+        label,
+        style: const TextStyle(fontSize: 10),
+        textAlign: TextAlign.center,
+      ),
+    ],
+  );
 }
 
 class _Line extends StatelessWidget {
@@ -393,13 +481,13 @@ class _Line extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: Theme.of(context).colorScheme.outline),
-            const SizedBox(width: 8),
-            Expanded(child: Text(text)),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.outline),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
+      ],
+    ),
+  );
 }

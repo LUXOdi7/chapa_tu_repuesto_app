@@ -38,7 +38,10 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Nombre')),
+            TextField(
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Nombre'),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: phone,
@@ -57,8 +60,14 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Guardar')),
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Guardar'),
+          ),
         ],
       ),
     );
@@ -82,7 +91,11 @@ class _ProfilePageState extends State<ProfilePage> {
   /// Foto de perfil -> uploads/avatars/ -> PATCH /auth/me.
   Future<void> _changeAvatar() async {
     final scope = AppScope.of(context);
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      imageQuality: 85,
+    );
     if (picked == null || !mounted) return;
     setState(() => _busy = true);
     try {
@@ -127,7 +140,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     d,
                     MaterialPageRoute(
                       builder: (_) => MapPickerPage(
-                        initial: lat != null && lng != null ? LatLng(lat!, lng!) : null,
+                        initial: lat != null && lng != null
+                            ? LatLng(lat!, lng!)
+                            : null,
                       ),
                     ),
                   );
@@ -139,19 +154,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   }
                 },
                 icon: const Icon(Icons.map_outlined),
-                label: Text(lat == null ? 'Marcar en el mapa' : 'Cambiar punto del mapa'),
+                label: Text(
+                  lat == null ? 'Marcar en el mapa' : 'Cambiar punto del mapa',
+                ),
               ),
               if (lat != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text('${lat!.toStringAsFixed(5)}, ${lng!.toStringAsFixed(5)}',
-                      style: Theme.of(context).textTheme.bodySmall),
+                  child: Text(
+                    '${lat!.toStringAsFixed(5)}, ${lng!.toStringAsFixed(5)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancelar')),
-            FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Guardar')),
+            TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: const Text('Guardar'),
+            ),
           ],
         ),
       ),
@@ -159,11 +184,13 @@ class _ProfilePageState extends State<ProfilePage> {
     if (ok != true || !mounted) return;
     setState(() => _busy = true);
     try {
-      scope.session.updateUser(await scope.auth.updateProfile(
-        address: address.text.trim().isEmpty ? null : address.text.trim(),
-        latitude: lat,
-        longitude: lng,
-      ));
+      scope.session.updateUser(
+        await scope.auth.updateProfile(
+          address: address.text.trim().isEmpty ? null : address.text.trim(),
+          latitude: lat,
+          longitude: lng,
+        ),
+      );
       if (mounted) showInfo(context, 'Dirección guardada');
     } catch (e) {
       if (mounted) showError(context, e);
@@ -183,24 +210,38 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: subject, decoration: const InputDecoration(labelText: 'Asunto')),
+            TextField(
+              controller: subject,
+              decoration: const InputDecoration(labelText: 'Asunto'),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: message,
               maxLines: 4,
-              decoration: const InputDecoration(labelText: '¿Qué mejorarías de la app?'),
+              decoration: const InputDecoration(
+                labelText: '¿Qué mejorarías de la app?',
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Enviar')),
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Enviar'),
+          ),
         ],
       ),
     );
     if (ok != true || !mounted) return;
     try {
-      await auth.sendFeedback(subject: subject.text.trim(), message: message.text.trim());
+      await auth.sendFeedback(
+        subject: subject.text.trim(),
+        message: message.text.trim(),
+      );
       if (mounted) showInfo(context, '¡Gracias! Leemos todas las sugerencias.');
     } catch (e) {
       if (mounted) showError(context, e);
@@ -214,134 +255,171 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mi cuenta')),
-      body: ListenableBuilder(
-        listenable: session,
-        builder: (context, _) {
-          final user = session.user;
-          if (user == null) return const SizedBox.shrink();
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Row(
-                children: [
-                  InkWell(
-                    onTap: _busy ? null : _changeAvatar,
-                    customBorder: const CircleBorder(),
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 34,
-                          backgroundColor: kBrandAmber,
-                          backgroundImage: user.avatarUrl != null
-                              ? NetworkImage(ApiConfig.imageUrl(user.avatarUrl)!)
-                              : null,
-                          child: user.avatarUrl == null
-                              ? Text(user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
-                                  style: const TextStyle(fontSize: 26, color: Colors.white))
-                              : null,
-                        ),
-                        const Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: CircleAvatar(
-                            radius: 11,
-                            child: Icon(Icons.photo_camera, size: 13),
+      body: FormBox(
+        child: ListenableBuilder(
+          listenable: session,
+          builder: (context, _) {
+            final user = session.user;
+            if (user == null) return const SizedBox.shrink();
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: _busy ? null : _changeAvatar,
+                      customBorder: const CircleBorder(),
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 34,
+                            backgroundColor: kBrandAmber,
+                            backgroundImage: user.avatarUrl != null
+                                ? NetworkImage(
+                                    ApiConfig.imageUrl(user.avatarUrl)!,
+                                  )
+                                : null,
+                            child: user.avatarUrl == null
+                                ? Text(
+                                    user.name.isEmpty
+                                        ? '?'
+                                        : user.name[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 26,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : null,
                           ),
-                        ),
-                      ],
+                          const Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: CircleAvatar(
+                              radius: 11,
+                              child: Icon(Icons.photo_camera, size: 13),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user.name, style: Theme.of(context).textTheme.titleLarge),
-                        Text(user.email),
-                        Chip(label: Text(user.role.label), visualDensity: VisualDensity.compact),
-                      ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.name,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          Text(user.email),
+                          Chip(
+                            label: Text(user.role.label),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: const Text('Editar datos y contraseña'),
-                subtitle: Text(user.phone ?? 'Sin teléfono'),
-                onTap: _busy ? null : () => _editProfile(user),
-              ),
-              if (!user.isAdmin) ...[
+                  ],
+                ),
+                const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(Icons.location_on_outlined),
-                  title: const Text('Mi dirección de entrega'),
-                  subtitle: Text(user.hasSavedAddress
-                      ? '${user.address}${user.latitude != null ? '  ·  📍 en el mapa' : ''}'
-                      : 'Guárdala y la eliges al pagar'),
-                  onTap: _busy ? null : () => _editAddress(user),
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Editar datos y contraseña'),
+                  subtitle: Text(user.phone ?? 'Sin teléfono'),
+                  onTap: _busy ? null : () => _editProfile(user),
                 ),
-                ListenableBuilder(
-                  listenable: session,
-                  builder: (context, _) => ListTile(
-                    leading: const Icon(Icons.two_wheeler),
-                    title: const Text('Mis motos'),
-                    subtitle: Text(session.motos.isEmpty
-                        ? 'Guarda tu moto para buscar solo lo compatible'
-                        : session.motos.map((m) => m.label).join(', ')),
-                    onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MyMotosPage())),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.notifications_none),
-                  title: const Text('Mis alertas'),
-                  subtitle: const Text('Avisos de stock y precio'),
-                  onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const AlertsPage())),
-                ),
-                if (user.buyerRatingCount > 0)
+                if (!user.isAdmin) ...[
                   ListTile(
-                    leading: const Icon(Icons.star_outline),
-                    title: const Text('Mi reputación como comprador'),
-                    subtitle: Text(user.buyerRatingLabel),
+                    leading: const Icon(Icons.location_on_outlined),
+                    title: const Text('Mi dirección de entrega'),
+                    subtitle: Text(
+                      user.hasSavedAddress
+                          ? '${user.address}${user.latitude != null ? '  ·  📍 en el mapa' : ''}'
+                          : 'Guárdala y la eliges al pagar',
+                    ),
+                    onTap: _busy ? null : () => _editAddress(user),
                   ),
-              ],
-              if (user.isSupplier)
-                ValueListenableBuilder<bool>(
-                  valueListenable: shopMode,
-                  builder: (context, buying, _) => SwitchListTile(
-                    secondary: const Icon(Icons.swap_horiz),
-                    title: const Text('Modo comprador'),
-                    subtitle: const Text('Compra repuestos a otras tiendas con esta cuenta'),
-                    value: buying,
-                    onChanged: (v) {
-                      shopMode.value = v;
-                      Navigator.pop(context);
-                    },
+                  ListenableBuilder(
+                    listenable: session,
+                    builder: (context, _) => ListTile(
+                      leading: const Icon(Icons.two_wheeler),
+                      title: const Text('Mis motos'),
+                      subtitle: Text(
+                        session.motos.isEmpty
+                            ? 'Guarda tu moto para buscar solo lo compatible'
+                            : session.motos.map((m) => m.label).join(', '),
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MyMotosPage(),
+                        ),
+                      ),
+                    ),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.notifications_none),
+                    title: const Text('Mis alertas'),
+                    subtitle: const Text('Avisos de stock y precio'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AlertsPage(),
+                      ),
+                    ),
+                  ),
+                  if (user.buyerRatingCount > 0)
+                    ListTile(
+                      leading: const Icon(Icons.star_outline),
+                      title: const Text('Mi reputación como comprador'),
+                      subtitle: Text(user.buyerRatingLabel),
+                    ),
+                ],
+                if (user.isSupplier)
+                  ValueListenableBuilder<bool>(
+                    valueListenable: shopMode,
+                    builder: (context, buying, _) => SwitchListTile(
+                      secondary: const Icon(Icons.swap_horiz),
+                      title: const Text('Modo comprador'),
+                      subtitle: const Text(
+                        'Compra repuestos a otras tiendas con esta cuenta',
+                      ),
+                      value: buying,
+                      onChanged: (v) {
+                        shopMode.value = v;
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.dark_mode_outlined),
+                  title: const Text('Tema oscuro'),
+                  value: dark,
+                  onChanged: (v) =>
+                      themeMode.value = v ? ThemeMode.dark : ThemeMode.light,
                 ),
-              SwitchListTile(
-                secondary: const Icon(Icons.dark_mode_outlined),
-                title: const Text('Tema oscuro'),
-                value: dark,
-                onChanged: (v) => themeMode.value = v ? ThemeMode.dark : ThemeMode.light,
-              ),
-              ListTile(
-                leading: const Icon(Icons.lightbulb_outline),
-                title: const Text('Enviar sugerencia'),
-                subtitle: const Text('Cuéntanos qué mejorarías'),
-                onTap: _feedback,
-              ),
-              const Divider(),
-              ListTile(
-                leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
-                title: const Text('Cerrar sesión'),
-                onTap: () {
-                  Navigator.pop(context);
-                  session.signOut();
-                },
-              ),
-            ],
-          );
-        },
+                ListTile(
+                  leading: const Icon(Icons.lightbulb_outline),
+                  title: const Text('Enviar sugerencia'),
+                  subtitle: const Text('Cuéntanos qué mejorarías'),
+                  onTap: _feedback,
+                ),
+                const Divider(),
+                ListTile(
+                  leading: Icon(
+                    Icons.logout,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: const Text('Cerrar sesión'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    session.signOut();
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

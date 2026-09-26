@@ -58,7 +58,10 @@ class _OrdersViewState extends State<OrdersView> {
         Expanded(
           child: AsyncView<List<Order>>(
             refreshKey: '$_filter|$_reload|${widget.asBuyer}',
-            load: () => scope.orders.list(statusFilter: _filter, asBuyer: widget.asBuyer),
+            load: () => scope.orders.list(
+              statusFilter: _filter,
+              asBuyer: widget.asBuyer,
+            ),
             isEmpty: (orders) => orders.isEmpty,
             emptyIcon: Icons.receipt_long,
             emptyMessage: _filter == null
@@ -75,18 +78,25 @@ class _OrdersViewState extends State<OrdersView> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: color.withValues(alpha: 0.2),
-                      child: Icon(orderStatusIcon(order.status),
-                          size: 20, color: color),
+                      child: Icon(
+                        orderStatusIcon(order.status),
+                        size: 20,
+                        color: color,
+                      ),
                     ),
-                    title: Text(order.code,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(
+                      order.code,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     subtitle: Text(
                       '${order.store.businessName}  ·  ${order.statusLabel}\n'
                       '${shortDate(order.createdAt)}',
                     ),
                     isThreeLine: true,
-                    trailing: Text(soles(order.total),
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: Text(
+                      soles(order.total),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     onTap: () async {
                       await Navigator.pushNamed(
                         context,

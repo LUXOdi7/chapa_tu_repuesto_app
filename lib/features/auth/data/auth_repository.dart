@@ -26,27 +26,34 @@ class AuthRepository {
     required UserRole role,
     String? phone,
   }) async {
-    final data = await _api.post('/auth/register', body: {
-      'name': name,
-      'email': email,
-      'password': password,
-      'phone': phone,
-      'role': role.key,
-    });
+    final data = await _api.post(
+      '/auth/register',
+      body: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'role': role.key,
+      },
+    );
     return AuthResult.fromJson(asMap(data));
   }
 
   /// Responde 501 hasta que el backend tenga `GOOGLE_CLIENT_ID` (ver guía).
-  Future<AuthResult> google(String idToken, {UserRole role = UserRole.buyer}) async {
-    final data = await _api.post('/auth/google', body: {
-      'id_token': idToken,
-      'role': role.key,
-    });
+  Future<AuthResult> google(
+    String idToken, {
+    UserRole role = UserRole.buyer,
+  }) async {
+    final data = await _api.post(
+      '/auth/google',
+      body: {'id_token': idToken, 'role': role.key},
+    );
     return AuthResult.fromJson(asMap(data));
   }
 
   /// Envía un código de 6 dígitos al correo (siempre responde 200).
-  Future<void> forgot(String email) => _api.post('/auth/forgot', body: {'email': email});
+  Future<void> forgot(String email) =>
+      _api.post('/auth/forgot', body: {'email': email});
 
   /// Cambia la contraseña con el código y deja la sesión iniciada.
   Future<AuthResult> reset({
@@ -54,23 +61,17 @@ class AuthRepository {
     required String code,
     required String password,
   }) async {
-    final data = await _api.post('/auth/reset', body: {
-      'email': email,
-      'code': code,
-      'password': password,
-    });
+    final data = await _api.post(
+      '/auth/reset',
+      body: {'email': email, 'code': code, 'password': password},
+    );
     return AuthResult.fromJson(asMap(data));
   }
 
   Future<User> me() async => User.fromJson(asMap(await _api.get('/auth/me')));
 
   Future<void> registerDeviceToken(String? fcmToken) async {
-    await _api.put(
-      '/auth/me/device',
-      body: {
-        'fcm_token': fcmToken,
-      },
-    );
+    await _api.put('/auth/me/device', body: {'fcm_token': fcmToken});
   }
 
   Future<User> updateProfile({
@@ -81,36 +82,52 @@ class AuthRepository {
     String? address,
     double? latitude,
     double? longitude,
-  }) async =>
-      User.fromJson(asMap(await _api.patch('/auth/me', body: {
-        'name': name,
-        'phone': phone,
-        'password': password,
-        'avatar_url': avatarUrl,
-        'address': address,
-        'latitude': latitude,
-        'longitude': longitude,
-      })));
+  }) async => User.fromJson(
+    asMap(
+      await _api.patch(
+        '/auth/me',
+        body: {
+          'name': name,
+          'phone': phone,
+          'password': password,
+          'avatar_url': avatarUrl,
+          'address': address,
+          'latitude': latitude,
+          'longitude': longitude,
+        },
+      ),
+    ),
+  );
 
-  Future<void> sendFeedback({required String subject, required String message}) =>
-      _api.post('/feedback', body: {'subject': subject, 'message': message});
+  Future<void> sendFeedback({
+    required String subject,
+    required String message,
+  }) => _api.post('/feedback', body: {'subject': subject, 'message': message});
 
   // ---- Mis motos ----
   Future<List<UserMoto>> motos() async =>
-      asMapList(await _api.get('/auth/me/motos')).map(UserMoto.fromJson).toList();
+      asMapList(await _api.get('/auth/me/motos'))
+          .map(UserMoto.fromJson)
+          .toList();
 
   Future<UserMoto> addMoto({
     required String type,
     required String brand,
     required String model,
     required int year,
-  }) async =>
-      UserMoto.fromJson(asMap(await _api.post('/auth/me/motos', body: {
-        'moto_type': type,
-        'moto_brand': brand,
-        'moto_model': model,
-        'year': year,
-      })));
+  }) async => UserMoto.fromJson(
+    asMap(
+      await _api.post(
+        '/auth/me/motos',
+        body: {
+          'moto_type': type,
+          'moto_brand': brand,
+          'moto_model': model,
+          'year': year,
+        },
+      ),
+    ),
+  );
 
   Future<void> deleteMoto(int id) => _api.delete('/auth/me/motos/$id');
 
@@ -119,9 +136,12 @@ class AuthRepository {
       asMapList(asMap(await _api.get('/notifications'))['items']);
 
   Future<int> unreadNotifications() async =>
-      asMap(await _api.get('/notifications/unread-count'))['unread'] as int? ?? 0;
+      asMap(await _api.get('/notifications/unread-count'))['unread'] as int? ??
+      0;
 
-  Future<void> markNotificationRead(int id) => _api.patch('/notifications/$id/read');
+  Future<void> markNotificationRead(int id) =>
+      _api.patch('/notifications/$id/read');
 
-  Future<void> markAllNotificationsRead() => _api.post('/notifications/read-all');
+  Future<void> markAllNotificationsRead() =>
+      _api.post('/notifications/read-all');
 }

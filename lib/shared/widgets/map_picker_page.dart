@@ -35,7 +35,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
         title: const Text('Ubicación de la tienda'),
         actions: [
           TextButton(
-            onPressed: _picked == null ? null : () => Navigator.pop(context, _picked),
+            onPressed: _picked == null
+                ? null
+                : () => Navigator.pop(context, _picked),
             child: const Text('Usar', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -44,7 +46,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
         children: [
           const Padding(
             padding: EdgeInsets.all(12),
-            child: Text('Toca el mapa sobre tu local. Puedes arrastrar y hacer zoom.'),
+            child: Text(
+              'Toca el mapa sobre tu local. Puedes arrastrar y hacer zoom.',
+            ),
           ),
           Expanded(
             child: FlutterMap(
@@ -54,20 +58,31 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 onTap: (_, point) => setState(() => _picked = point),
               ),
               children: [
-                TileLayer(urlTemplate: kOsmTiles, userAgentPackageName: kUserAgent),
+                TileLayer(
+                  urlTemplate: kOsmTiles,
+                  userAgentPackageName: kUserAgent,
+                ),
                 if (_picked != null)
-                  MarkerLayer(markers: [
-                    Marker(
-                      point: _picked!,
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.topCenter,
-                      child: const Icon(Icons.location_on, size: 40, color: Colors.red),
-                    ),
-                  ]),
-                const RichAttributionWidget(attributions: [
-                  TextSourceAttribution('© OpenStreetMap contributors'),
-                ]),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _picked!,
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.topCenter,
+                        child: const Icon(
+                          Icons.location_on,
+                          size: 40,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                const RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution('© OpenStreetMap contributors'),
+                  ],
+                ),
               ],
             ),
           ),
@@ -94,28 +109,32 @@ class StoreMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: height,
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: point,
-            initialZoom: 16,
-            interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
-          ),
-          children: [
-            TileLayer(urlTemplate: kOsmTiles, userAgentPackageName: kUserAgent),
-            MarkerLayer(markers: [
-              Marker(
-                point: point,
-                width: 40,
-                height: 40,
-                alignment: Alignment.topCenter,
-                child: const Icon(Icons.location_on, size: 40, color: Colors.red),
-              ),
-            ]),
-            const RichAttributionWidget(attributions: [
-              TextSourceAttribution('© OpenStreetMap contributors'),
-            ]),
+    height: height,
+    child: FlutterMap(
+      options: MapOptions(
+        initialCenter: point,
+        initialZoom: 16,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.none,
+        ),
+      ),
+      children: [
+        TileLayer(urlTemplate: kOsmTiles, userAgentPackageName: kUserAgent),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: point,
+              width: 40,
+              height: 40,
+              alignment: Alignment.topCenter,
+              child: const Icon(Icons.location_on, size: 40, color: Colors.red),
+            ),
           ],
         ),
-      );
+        const RichAttributionWidget(
+          attributions: [TextSourceAttribution('© OpenStreetMap contributors')],
+        ),
+      ],
+    ),
+  );
 }

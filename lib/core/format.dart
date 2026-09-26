@@ -42,7 +42,11 @@ String timeLabel(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
 String dayLabel(DateTime d, {DateTime? now}) {
   final today = now ?? DateTime.now();
   final day = DateTime(d.year, d.month, d.day);
-  final diff = DateTime(today.year, today.month, today.day).difference(day).inDays;
+  final diff = DateTime(
+    today.year,
+    today.month,
+    today.day,
+  ).difference(day).inDays;
   return switch (diff) {
     0 => 'Hoy',
     1 => 'Ayer',
@@ -92,8 +96,11 @@ final categoryLabels = <String, String>{
 /// de mostrar un hueco.
 String categoryLabel(String key) =>
     categoryLabels[key] ??
-    (key.isEmpty ? key : key[0].toUpperCase() + key.substring(1).replaceAll('-', ' '));
+    (key.isEmpty
+        ? key
+        : key[0].toUpperCase() + key.substring(1).replaceAll('-', ' '));
 
 /// Ordenadas por etiqueta.
 List<String> get knownCategories =>
-    categoryLabels.keys.toList()..sort((a, b) => categoryLabel(a).compareTo(categoryLabel(b)));
+    categoryLabels.keys.toList()
+      ..sort((a, b) => categoryLabel(a).compareTo(categoryLabel(b)));

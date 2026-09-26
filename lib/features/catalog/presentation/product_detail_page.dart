@@ -40,11 +40,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           final selected = _picked ?? detail;
           // "Mis motos" que encajan en alguna compatibilidad declarada.
           final myMotos = scope.session.motos
-              .where((m) => detail.compatibilities.any((c) =>
-                  c.motoBrand == m.brand &&
-                  c.motoModel == m.model &&
-                  m.year >= c.yearFrom &&
-                  m.year <= c.yearTo))
+              .where(
+                (m) => detail.compatibilities.any(
+                  (c) =>
+                      c.motoBrand == m.brand &&
+                      c.motoModel == m.model &&
+                      m.year >= c.yearFrom &&
+                      m.year <= c.yearTo,
+                ),
+              )
               .toList();
           // El propio producto tambien es una oferta: si el backend no lo
           // incluye en la lista, se antepone para poder volver a elegirlo.
@@ -101,7 +105,11 @@ class _Detail extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              _Gallery(images: selected.imageUrls.isEmpty ? detail.imageUrls : selected.imageUrls),
+              _Gallery(
+                images: selected.imageUrls.isEmpty
+                    ? detail.imageUrls
+                    : selected.imageUrls,
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Column(
@@ -113,13 +121,19 @@ class _Detail extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Row(
                           children: [
-                            const Icon(Icons.verified, size: 18, color: Colors.green),
+                            const Icon(
+                              Icons.verified,
+                              size: 18,
+                              color: Colors.green,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Compatible con tu ${myMotos.map((m) => '${m.brand} ${m.model}').join(' y tu ')}',
                                 style: text.bodyMedium?.copyWith(
-                                    color: Colors.green, fontWeight: FontWeight.w600),
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -162,17 +176,25 @@ class _Detail extends StatelessWidget {
                           Flexible(
                             child: InkWell(
                               onTap: () => Navigator.pushNamed(
-                                  context, StorePage.route, arguments: store.id),
+                                context,
+                                StorePage.route,
+                                arguments: store.id,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.storefront, size: 16, color: scheme.outline),
+                                  Icon(
+                                    Icons.storefront,
+                                    size: 16,
+                                    color: scheme.outline,
+                                  ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
                                       '${store.businessName}  ${store.distanceLabel}',
                                       style: text.bodySmall?.copyWith(
-                                          decoration: TextDecoration.underline),
+                                        decoration: TextDecoration.underline,
+                                      ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -186,11 +208,16 @@ class _Detail extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.shield_outlined,
-                              size: 16, color: scheme.outline),
+                          Icon(
+                            Icons.shield_outlined,
+                            size: 16,
+                            color: scheme.outline,
+                          ),
                           const SizedBox(width: 4),
-                          Text('Garantía ${selected.warrantyMonths} meses',
-                              style: text.bodySmall),
+                          Text(
+                            'Garantía ${selected.warrantyMonths} meses',
+                            style: text.bodySmall,
+                          ),
                         ],
                       ),
                     ],
@@ -216,8 +243,11 @@ class _Detail extends StatelessWidget {
                         children: [
                           for (final c in detail.compatibilities)
                             Chip(
-                              avatar: Icon(motoTypeIcons[c.motoType] ?? Icons.verified,
-                                  size: 16, color: Colors.green),
+                              avatar: Icon(
+                                motoTypeIcons[c.motoType] ?? Icons.verified,
+                                size: 16,
+                                color: Colors.green,
+                              ),
                               label: Text(c.fullLabel),
                               visualDensity: VisualDensity.compact,
                             ),
@@ -252,16 +282,21 @@ class _Detail extends StatelessWidget {
                 IconButton.outlined(
                   tooltip: 'Avísame cuando haya stock o baje de precio',
                   icon: const Icon(Icons.notifications_none),
-                  onPressed: () => showCreateAlertDialog(context,
-                      partCode: detail.partCode, price: selected.price),
+                  onPressed: () => showCreateAlertDialog(
+                    context,
+                    partCode: detail.partCode,
+                    price: selected.price,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.icon(
                     icon: const Icon(Icons.add_shopping_cart),
-                    label: Text(selected.inStock
-                        ? 'Agregar  ${soles(selected.price)}'
-                        : 'Sin stock en esta tienda'),
+                    label: Text(
+                      selected.inStock
+                          ? 'Agregar  ${soles(selected.price)}'
+                          : 'Sin stock en esta tienda',
+                    ),
                     onPressed: selected.inStock ? onAdd : null,
                   ),
                 ),
@@ -303,8 +338,11 @@ class _OfferTile extends StatelessWidget {
       title: Row(
         children: [
           Flexible(
-            child: Text(store?.businessName ?? 'Tienda',
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              store?.businessName ?? 'Tienda',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (store?.verified ?? false) ...[
             const SizedBox(width: 4),
@@ -325,11 +363,13 @@ class _OfferTile extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(soles(product.price),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: cheapest ? Colors.green : scheme.onSurface,
-              )),
+          Text(
+            soles(product.price),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: cheapest ? Colors.green : scheme.onSurface,
+            ),
+          ),
           StockChip(stock: product.stock, dense: true),
         ],
       ),
@@ -353,7 +393,10 @@ class _GalleryState extends State<_Gallery> {
   @override
   Widget build(BuildContext context) {
     if (widget.images.length <= 1) {
-      return PartImage(path: widget.images.isEmpty ? null : widget.images.first, height: 220);
+      return PartImage(
+        path: widget.images.isEmpty ? null : widget.images.first,
+        height: 220,
+      );
     }
     return SizedBox(
       height: 220,
@@ -362,7 +405,8 @@ class _GalleryState extends State<_Gallery> {
           PageView.builder(
             itemCount: widget.images.length,
             onPageChanged: (i) => setState(() => _page = i),
-            itemBuilder: (_, i) => PartImage(path: widget.images[i], height: 220),
+            itemBuilder: (_, i) =>
+                PartImage(path: widget.images[i], height: 220),
           ),
           Positioned(
             bottom: 8,
@@ -377,7 +421,9 @@ class _GalleryState extends State<_Gallery> {
                     height: 7,
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      color: i == _page ? Theme.of(context).colorScheme.secondary : Colors.white70,
+                      color: i == _page
+                          ? Theme.of(context).colorScheme.secondary
+                          : Colors.white70,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

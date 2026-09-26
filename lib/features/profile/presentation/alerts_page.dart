@@ -36,14 +36,18 @@ class _AlertsPageState extends State<AlertsPage> {
             final fired = a['fired_at'] != null;
             final maxPrice = asDouble(a['max_price']);
             return ListTile(
-              leading: Icon(fired ? Icons.notifications_active : Icons.notifications_none,
-                  color: fired ? Colors.green : null),
+              leading: Icon(
+                fired ? Icons.notifications_active : Icons.notifications_none,
+                color: fired ? Colors.green : null,
+              ),
               title: Text('${a['product_name']}  (${a['part_code']})'),
-              subtitle: Text([
-                if (a['notify_stock'] == true) 'con stock',
-                if (maxPrice != null) 'precio ≤ ${soles(maxPrice)}',
-                fired ? 'AVISADA' : 'esperando',
-              ].join('  ·  ')),
+              subtitle: Text(
+                [
+                  if (a['notify_stock'] == true) 'con stock',
+                  if (maxPrice != null) 'precio ≤ ${soles(maxPrice)}',
+                  fired ? 'AVISADA' : 'esperando',
+                ].join('  ·  '),
+              ),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
@@ -64,7 +68,11 @@ class _AlertsPageState extends State<AlertsPage> {
 }
 
 /// Diálogo "Avísame": se abre desde la ficha del repuesto.
-Future<void> showCreateAlertDialog(BuildContext context, {required String partCode, required double price}) async {
+Future<void> showCreateAlertDialog(
+  BuildContext context, {
+  required String partCode,
+  required double price,
+}) async {
   final catalog = AppScope.catalogOf(context);
   final priceCtrl = TextEditingController();
   var notifyStock = true;
@@ -84,20 +92,30 @@ Future<void> showCreateAlertDialog(BuildContext context, {required String partCo
             ),
             TextField(
               controller: priceCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Cuando baje de S/ (opcional)',
                 hintText: 'Hoy: ${soles(price)}',
               ),
             ),
             const SizedBox(height: 8),
-            const Text('Te avisamos por correo en cuanto una tienda cumpla la condición.',
-                style: TextStyle(fontSize: 12)),
+            const Text(
+              'Te avisamos por correo en cuanto una tienda cumpla la condición.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Crear alerta')),
+          TextButton(
+            onPressed: () => Navigator.pop(d, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Crear alerta'),
+          ),
         ],
       ),
     ),
@@ -109,7 +127,9 @@ Future<void> showCreateAlertDialog(BuildContext context, {required String partCo
       maxPrice: double.tryParse(priceCtrl.text.replaceAll(',', '.')),
       notifyStock: notifyStock,
     );
-    if (context.mounted) showInfo(context, 'Alerta creada. Revísalas en Mi cuenta → Mis alertas.');
+    if (context.mounted) {
+      showInfo(context, 'Alerta creada. Revísalas en Mi cuenta → Mis alertas.');
+    }
   } catch (e) {
     if (context.mounted) showError(context, e);
   }

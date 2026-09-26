@@ -89,8 +89,9 @@ class CartStore extends ChangeNotifier {
     if (quantity <= 0) {
       _items.remove(productId);
     } else {
-      _items[productId] =
-          item.copyWith(quantity: quantity.clamp(1, item.product.stock));
+      _items[productId] = item.copyWith(
+        quantity: quantity.clamp(1, item.product.stock),
+      );
     }
     _changed();
   }

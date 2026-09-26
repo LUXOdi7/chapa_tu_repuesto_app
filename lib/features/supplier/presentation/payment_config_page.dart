@@ -26,9 +26,18 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
   bool _busy = false;
 
   static const _providers = {
-    'simulado': ('Sin pasarela (demo)', 'Los pagos con tarjeta se aprueban al instante. Solo para pruebas.'),
-    'mercadopago': ('Mercado Pago', 'Checkout Pro. Necesitas el Access Token de producción de tu cuenta.'),
-    'niubiz': ('Niubiz', 'Necesitas el ID de comercio, usuario y clave de API que te entrega Niubiz.'),
+    'simulado': (
+      'Sin pasarela (demo)',
+      'Los pagos con tarjeta se aprueban al instante. Solo para pruebas.',
+    ),
+    'mercadopago': (
+      'Mercado Pago',
+      'Checkout Pro. Necesitas el Access Token de producción de tu cuenta.',
+    ),
+    'niubiz': (
+      'Niubiz',
+      'Necesitas el ID de comercio, usuario y clave de API que te entrega Niubiz.',
+    ),
   };
 
   @override
@@ -48,7 +57,8 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
         provider: _provider,
         account: switch (_provider) {
           'mercadopago' => _token.text.trim(),
-          'niubiz' => '${_merchant.text.trim()}|${_user.text.trim()}|${_pass.text.trim()}',
+          'niubiz' =>
+            '${_merchant.text.trim()}|${_user.text.trim()}|${_pass.text.trim()}',
           _ => null,
         },
       );
@@ -66,74 +76,90 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Medio de cobro')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'El dinero de cada pedido entra directo a tu cuenta de la pasarela. '
-              'ChapaTuRepuesto nunca lo toca.',
-            ),
-            const SizedBox(height: 16),
-            RadioGroup<String>(
-              groupValue: _provider,
-              onChanged: (v) => setState(() => _provider = v ?? _provider),
-              child: Column(
-                children: [
-                  for (final e in _providers.entries)
-                    RadioListTile<String>(
-                      value: e.key,
-                      title: Text(e.value.$1),
-                      subtitle: Text(e.value.$2),
-                    ),
-                ],
+      body: FormBox(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                'El dinero de cada pedido entra directo a tu cuenta de la pasarela. '
+                'ChapaTuRepuesto nunca lo toca.',
               ),
-            ),
-            const SizedBox(height: 12),
-            if (_provider == 'mercadopago')
-              TextFormField(
-                controller: _token,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Access Token',
-                  helperText: 'APP_USR-... (Tus integraciones → Credenciales de producción)',
+              const SizedBox(height: 16),
+              RadioGroup<String>(
+                groupValue: _provider,
+                onChanged: (v) => setState(() => _provider = v ?? _provider),
+                child: Column(
+                  children: [
+                    for (final e in _providers.entries)
+                      RadioListTile<String>(
+                        value: e.key,
+                        title: Text(e.value.$1),
+                        subtitle: Text(e.value.$2),
+                      ),
+                  ],
                 ),
-                validator: (v) => (v == null || v.trim().length < 20) ? 'Pega el Access Token' : null,
-              ),
-            if (_provider == 'niubiz') ...[
-              TextFormField(
-                controller: _merchant,
-                decoration: const InputDecoration(labelText: 'ID de comercio (merchantId)'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _user,
-                decoration: const InputDecoration(labelText: 'Usuario API'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _pass,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Clave API'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+              if (_provider == 'mercadopago')
+                TextFormField(
+                  controller: _token,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Access Token',
+                    helperText: 'APP_USR-... (Tus integraciones → Credenciales de producción)',
+                  ),
+                  validator: (v) => (v == null || v.trim().length < 20)
+                      ? 'Pega el Access Token'
+                      : null,
+                ),
+              if (_provider == 'niubiz') ...[
+                TextFormField(
+                  controller: _merchant,
+                  decoration: const InputDecoration(
+                    labelText: 'ID de comercio (merchantId)',
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _user,
+                  decoration: const InputDecoration(labelText: 'Usuario API'),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _pass,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Clave API'),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+                ),
+              ],
+              if (widget.store.paymentConfigured &&
+                  _provider == widget.store.paymentProvider)
+                const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: Text(
+                    'Ya tienes credenciales guardadas. Solo se reemplazan si guardas nuevas.',
+                  ),
+                ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _busy ? null : _save,
+                child: _busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Guardar'),
               ),
             ],
-            if (widget.store.paymentConfigured && _provider == widget.store.paymentProvider)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: Text('Ya tienes credenciales guardadas. Solo se reemplazan si guardas nuevas.'),
-              ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _busy ? null : _save,
-              child: _busy
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Guardar'),
-            ),
-          ],
+          ),
         ),
       ),
     );

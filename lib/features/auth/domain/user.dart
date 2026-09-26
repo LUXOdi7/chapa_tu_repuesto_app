@@ -8,7 +8,11 @@ import '../../../core/format.dart';
 ///                No se registra desde la app (`ctr admin correo clave`).
 enum UserRole {
   buyer('buyer', 'Comprador', 'Mecánico o motociclista que compra repuestos'),
-  supplier('supplier', 'Proveedor', 'Tienda de autopartes que publica y despacha'),
+  supplier(
+    'supplier',
+    'Proveedor',
+    'Tienda de autopartes que publica y despacha',
+  ),
   admin('admin', 'Administrador', 'Gestiona la plataforma');
 
   const UserRole(this.key, this.label, this.hint);
@@ -19,9 +23,9 @@ enum UserRole {
   final String hint;
 
   static UserRole parse(String? value) => UserRole.values.firstWhere(
-        (r) => r.key == value,
-        orElse: () => UserRole.buyer,
-      );
+    (r) => r.key == value,
+    orElse: () => UserRole.buyer,
+  );
 
   /// Los que se pueden elegir al registrarse.
   static const registrable = [UserRole.buyer, UserRole.supplier];
@@ -75,20 +79,20 @@ class User {
   bool get isAdmin => role == UserRole.admin;
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        id: json['id'] as int,
-        name: json['name'] as String? ?? '',
-        email: json['email'] as String? ?? '',
-        phone: json['phone'] as String?,
-        avatarUrl: json['avatar_url'] as String?,
-        isActive: json['is_active'] as bool? ?? true,
-        role: UserRole.parse(json['role'] as String?),
-        storeId: json['store_id'] as int?,
-        buyerRatingAvg: (json['buyer_rating_avg'] as num?)?.toDouble() ?? 0,
-        buyerRatingCount: json['buyer_rating_count'] as int? ?? 0,
-        address: json['address'] as String?,
-        latitude: (json['latitude'] as num?)?.toDouble(),
-        longitude: (json['longitude'] as num?)?.toDouble(),
-      );
+    id: json['id'] as int,
+    name: json['name'] as String? ?? '',
+    email: json['email'] as String? ?? '',
+    phone: json['phone'] as String?,
+    avatarUrl: json['avatar_url'] as String?,
+    isActive: json['is_active'] as bool? ?? true,
+    role: UserRole.parse(json['role'] as String?),
+    storeId: json['store_id'] as int?,
+    buyerRatingAvg: (json['buyer_rating_avg'] as num?)?.toDouble() ?? 0,
+    buyerRatingCount: json['buyer_rating_count'] as int? ?? 0,
+    address: json['address'] as String?,
+    latitude: (json['latitude'] as num?)?.toDouble(),
+    longitude: (json['longitude'] as num?)?.toDouble(),
+  );
 }
 
 /// Moto guardada por el comprador ("Mis motos").
@@ -115,12 +119,12 @@ class UserMoto {
   String get fullLabel => '${motoTypeLabel(type)} · $label';
 
   factory UserMoto.fromJson(Map<String, dynamic> json) => UserMoto(
-        id: json['id'] as int,
-        type: json['moto_type'] as String? ?? 'lineal',
-        brand: json['moto_brand'] as String? ?? '',
-        model: json['moto_model'] as String? ?? '',
-        year: json['year'] as int? ?? 0,
-      );
+    id: json['id'] as int,
+    type: json['moto_type'] as String? ?? 'lineal',
+    brand: json['moto_brand'] as String? ?? '',
+    model: json['moto_model'] as String? ?? '',
+    year: json['year'] as int? ?? 0,
+  );
 }
 
 /// Respuesta comun de `/auth/login`, `/auth/register`, `/auth/google` y `/auth/reset`.
@@ -131,7 +135,7 @@ class AuthResult {
   final User user;
 
   factory AuthResult.fromJson(Map<String, dynamic> json) => AuthResult(
-        token: json['access_token'] as String,
-        user: User.fromJson((json['user'] as Map).cast<String, dynamic>()),
-      );
+    token: json['access_token'] as String,
+    user: User.fromJson((json['user'] as Map).cast<String, dynamic>()),
+  );
 }

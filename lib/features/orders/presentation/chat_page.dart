@@ -45,6 +45,18 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
+  /// Unico punto por donde entran mensajes, deduplicado por id: el poll de 4 s
+  /// puede estar en vuelo (con el `after_id` de antes) justo cuando envias, y
+  /// su respuesta trae tu propio mensaje otra vez -> salia duplicado. Tambien
+  /// cubre dos refrescos solapados y el boton de recargar.
+  void _merge(Iterable<ChatMessage> news) {
+    final ids = {for (final m in _messages) m.id};
+    final nuevos = news.where((m) => ids.add(m.id)).toList();
+    if (nuevos.isEmpty) return;
+    setState(() => _messages.addAll(nuevos));
+    _scrollToEnd();
+  }
+
   Future<void> _refresh() async {
     try {
       final news = await AppScope.ordersOf(context).messages(
@@ -52,11 +64,8 @@ class _ChatPageState extends State<ChatPage> {
         afterId: _messages.isEmpty ? 0 : _messages.last.id,
       );
       if (!mounted) return;
-      setState(() {
-        _messages.addAll(news);
-        _loading = false;
-      });
-      if (news.isNotEmpty) _scrollToEnd();
+      if (_loading) setState(() => _loading = false);
+      _merge(news);
     } catch (e) {
       if (mounted && _loading) {
         setState(() => _loading = false);
@@ -74,8 +83,7 @@ class _ChatPageState extends State<ChatPage> {
           .sendMessage(widget.order.id, text);
       if (!mounted) return;
       _input.clear();
-      setState(() => _messages.add(sent));
-      _scrollToEnd();
+      _merge([sent]);
     } catch (e) {
       if (mounted) showError(context, e);
     } finally {
