@@ -226,7 +226,7 @@ class _StatGrid extends StatelessWidget {
     physics: const NeverScrollableScrollPhysics(),
     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
       maxCrossAxisExtent: 200,
-      mainAxisExtent: 64,
+      mainAxisExtent: 76,
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
     ),

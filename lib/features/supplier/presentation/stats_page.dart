@@ -296,7 +296,7 @@ class _Kpis extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 1.6,
+      mainAxisExtent: 124,
       children: tiles,
     );
   }
