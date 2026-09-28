@@ -18,8 +18,7 @@ jobs:
       - run: flutter pub get
 
       - run: |
-          flutter build web --release \
-            --dart-define=API_BASE_URL=chapaturepuestobackend-production.up.railway.app
+          flutter build web --release --dart-define=API_BASE_URL=chapaturepuestobackend-production.up.railway.app
 
       - uses: nwtgck/actions-netlify@v3
         with:
