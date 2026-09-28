@@ -1,0 +1,31 @@
+name: Deploy Web
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: |
+          flutter build web --release \
+            --dart-define=API_BASE_URL=chapaturepuestobackend-production.up.railway.app
+
+      - uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: build/web
+          production-branch: main
+          production-deploy: true
+        env:
+          NETLIFY_AUTH_TOKEN: nfp_v9aBAU1kxgwL6cGAPqiPPG4n3dLk74bB9cbc
+          NETLIFY_SITE_ID: e2c5f0af-ca5b-4a2f-9b48-e81833dfcc95
