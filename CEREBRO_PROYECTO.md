@@ -169,6 +169,12 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   los botones). Test `voice_search_test.dart`: simula la carrera por el canal
   `plugin.csdcorp.com/speech_to_text` con el buscador en una ruta empujada;
   **verificado que falla si se quita el cerrojo**.
+- 2026-09-28 · `DESPLIEGUE.md` en la raíz: guía para producción. Flutter web
+  build con `--dart-define=API_BASE_URL=<URL-Railway>` → Netlify.
+  GitHub Actions en `.github/workflows/deploy_web.yml` auto-despliega al hacer
+  push a main (secrets: API_BASE_URL, NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID).
+  APK build local con mismo dart-define → GitHub Releases o Firebase App
+  Distribution. Keystore en `android/chapaturepuesto.jks` + `key.properties`.
 - 2026-09-25 · **Mensaje duplicado en el chat del pedido** (solo lo veía quien
   escribía): el refresco de 4 s sale con el `after_id` de antes; si respondía
   después del envío, traía de vuelta el mensaje que `_send` ya había agregado.
