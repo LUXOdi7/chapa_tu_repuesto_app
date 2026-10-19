@@ -77,12 +77,12 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _send() async {
     final text = _input.text.trim();
     if (text.isEmpty) return;
+    _input.clear();
     setState(() => _sending = true);
     try {
       final sent = await AppScope.ordersOf(context)
           .sendMessage(widget.order.id, text);
       if (!mounted) return;
-      _input.clear();
       _merge([sent]);
     } catch (e) {
       if (mounted) showError(context, e);
