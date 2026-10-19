@@ -475,7 +475,14 @@ class _Actions extends StatelessWidget {
         buttons.add(
           FilledButton.icon(
             onPressed: busy ? null : onPay,
-            icon: const Icon(Icons.payments_outlined),
+            icon: busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.payments_outlined),
             label: Text('Pagar ${soles(order.total)}'),
           ),
         );
