@@ -175,6 +175,15 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   push a main (secrets: API_BASE_URL, NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID).
   APK build local con mismo dart-define → GitHub Releases o Firebase App
   Distribution. Keystore en `android/chapaturepuesto.jks` + `key.properties`.
+- 2026-10-18 · **Overflows corregidos**:
+  `stats_page.dart` `_Kpis` grid: `childAspectRatio: 1.6` → `mainAxisExtent: 124`
+  (altura fija; en móviles ~320 dp y/o textScaleFactor ≥1.15 el tile de
+  Calificación se desbordaba 4 px).
+  `admin_shell.dart` `_StatGrid`: `mainAxisExtent: 64` → `mainAxisExtent: 76`
+  (a textScaleFactor ~1.33 «Android Large» el contenido titleSmall+labelSmall
+  necesitaba ~48 dp y solo había 44; 76 da 56 dp de espacio, aguanta hasta ×1.5).
+- 2026-10-18 · **`rollo.md`** en raíz: documento de ventas que traduce cada
+  feature técnico a beneficio concreto para comprador y proveedor.
 - 2026-09-25 · **Mensaje duplicado en el chat del pedido** (solo lo veía quien
   escribía): el refresco de 4 s sale con el `after_id` de antes; si respondía
   después del envío, traía de vuelta el mensaje que `_send` ya había agregado.
