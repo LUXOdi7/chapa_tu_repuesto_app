@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/app_scope.dart';
@@ -341,6 +342,22 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                         child: const Text('Olvidé mi contraseña'),
                       ),
+                    if (kIsWeb) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => launchUrl(
+                          Uri.parse(
+                            'https://github.com/LUXOdi7/chapa_tu_repuesto_app'
+                            '/releases/latest/download/app-release.apk',
+                          ),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        icon: const Icon(Icons.android),
+                        label: const Text('Descargar app para Android'),
+                      ),
+                    ],
                   ],
                 ),
               ),
