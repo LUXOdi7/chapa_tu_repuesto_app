@@ -1,4 +1,4 @@
-name: Deploy Web
+name: Deploy Web a Netlify
 
 on:
   push:
@@ -12,13 +12,14 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.0'
+          flutter-version: '3.27.0'
           channel: stable
 
       - run: flutter pub get
 
       - run: |
-          flutter build web --release --dart-define=API_BASE_URL=chapaturepuestobackend-production.up.railway.app
+          flutter build web --release \
+            --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
 
       - uses: nwtgck/actions-netlify@v3
         with:
@@ -26,5 +27,5 @@ jobs:
           production-branch: main
           production-deploy: true
         env:
-          NETLIFY_AUTH_TOKEN: nfp_v9aBAU1kxgwL6cGAPqiPPG4n3dLk74bB9cbc
-          NETLIFY_SITE_ID: e2c5f0af-ca5b-4a2f-9b48-e81833dfcc95
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
