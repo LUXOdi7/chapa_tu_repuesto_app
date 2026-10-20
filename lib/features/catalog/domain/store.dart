@@ -26,6 +26,7 @@ class Store {
     this.paymentProvider,
     this.paymentConfigured = false,
     this.productCount,
+    this.ownerEmail,
   });
 
   final int id;
@@ -50,6 +51,9 @@ class Store {
   /// Solo en el panel del proveedor: si ya cargó credenciales de cobro.
   final bool paymentConfigured;
   final int? productCount;
+
+  /// Solo en el panel admin: correo del dueño de la tienda.
+  final String? ownerEmail;
 
   bool get hasLocation => latitude != null && longitude != null;
 
@@ -79,6 +83,8 @@ class Store {
     paymentProvider: json['payment_provider'] as String?,
     paymentConfigured: json['payment_configured'] as bool? ?? false,
     productCount: json['product_count'] as int?,
+    ownerEmail: (json['owner'] as Map?)
+        ?.cast<String, dynamic>()['email'] as String?,
   );
 
   /// Solo lo que necesita el carrito persistido para volver a dibujarse.

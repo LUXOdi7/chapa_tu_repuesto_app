@@ -370,7 +370,7 @@ class _UsersTabState extends State<_UsersTab> {
                 FilterChip(
                   label: Text(r.label),
                   selected: _role == r,
-                  onSelected: (_) => setState(() => _role = r),
+                  onSelected: (v) => setState(() => _role = v ? r : null),
                   visualDensity: VisualDensity.compact,
                 ),
               ],
@@ -458,6 +458,7 @@ class _StoresTabState extends State<_StoresTab> {
                   ),
                   title: Text(s.businessName),
                   subtitle: Text(
+                    '${s.ownerEmail != null ? '${s.ownerEmail}  ·  ' : ''}'
                     'RUC ${s.ruc}  ·  ${s.district}\n${s.address}',
                   ),
                   isThreeLine: true,

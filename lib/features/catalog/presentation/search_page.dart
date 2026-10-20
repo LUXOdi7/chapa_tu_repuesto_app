@@ -24,6 +24,8 @@ class _SearchViewState extends State<SearchView> {
   final _controller = TextEditingController();
   final _filtersKey = GlobalKey<CompatibilityFiltersState>();
 
+  bool _showFilters = false;
+
   String _query = '';
   String? _motoType;
   String? _motoBrand;
@@ -137,16 +139,38 @@ class _SearchViewState extends State<SearchView> {
                 controller: _controller,
                 onChanged: _onQueryChanged,
               ),
-              const SizedBox(height: 12),
-              CompatibilityFilters(
-                key: _filtersKey,
-                repo: scope.catalog,
-                onChanged: (type, brand, model, year) => setState(() {
-                  _motoType = type;
-                  _motoBrand = brand;
-                  _motoModel = model;
-                  _year = year;
-                }),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _showFilters = !_showFilters),
+                  icon: Icon(Icons.tune, size: 18),
+                  label: Text(
+                    _showFilters ? 'Ocultar filtros' : 'Mostrar filtros',
+                  ),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  ),
+                ),
+              ),
+              // Offstage keeps the widget (and _filtersKey state) alive even
+              // when hidden, so moto-chip shortcuts still call .select()/.clear().
+              Offstage(
+                offstage: !_showFilters,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: CompatibilityFilters(
+                    key: _filtersKey,
+                    repo: scope.catalog,
+                    onChanged: (type, brand, model, year) => setState(() {
+                      _motoType = type;
+                      _motoBrand = brand;
+                      _motoModel = model;
+                      _year = year;
+                    }),
+                  ),
+                ),
               ),
             ],
           ),
