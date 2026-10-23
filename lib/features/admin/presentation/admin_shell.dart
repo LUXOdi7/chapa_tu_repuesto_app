@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/app_scope.dart';
+import '../data/admin_repository.dart';
 import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../auth/domain/user.dart';
@@ -27,6 +28,7 @@ class _AdminShellState extends State<AdminShell> {
     'Tiendas',
     'Pedidos',
     'Sugerencias',
+    'Reclamos',
   ];
 
   @override
@@ -52,6 +54,7 @@ class _AdminShellState extends State<AdminShell> {
           _StoresTab(),
           _OrdersTab(),
           _FeedbackTab(),
+          _ReclamacionesTab(),
         ],
       ),
       destinations: const [
@@ -74,6 +77,10 @@ class _AdminShellState extends State<AdminShell> {
         NavigationDestination(
           icon: Icon(Icons.feedback_outlined),
           label: 'Ideas',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.report_problem_outlined),
+          label: 'Reclamos',
         ),
       ],
     );
@@ -576,6 +583,128 @@ class _FeedbackTabState extends State<_FeedbackTab> {
           );
         },
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reclamaciones INDECOPI
+// ---------------------------------------------------------------------------
+class _ReclamacionesTab extends StatefulWidget {
+  const _ReclamacionesTab();
+
+  @override
+  State<_ReclamacionesTab> createState() => _ReclamacionesTabState();
+}
+
+class _ReclamacionesTabState extends State<_ReclamacionesTab> {
+  bool _soloPendientes = true;
+  int _reload = 0;
+
+  Future<void> _responder(
+    Map<String, dynamic> rec,
+    AdminRepository admin,
+  ) async {
+    final ctrl = TextEditingController(text: rec['respuesta'] as String? ?? '');
+    var resuelto = rec['resuelto'] as bool? ?? false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => StatefulBuilder(
+        builder: (d, set) => AlertDialog(
+          title: Text('Reclamo ${rec['correlativo']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                maxLines: 4,
+                decoration: const InputDecoration(labelText: 'Respuesta al consumidor'),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                title: const Text('Marcar como resuelto'),
+                value: resuelto,
+                onChanged: (v) => set(() => resuelto = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(d, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(d, true),
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await admin.responderReclamacion(
+        rec['id'] as int,
+        respuesta: ctrl.text.trim(),
+        resuelto: resuelto,
+      );
+      if (mounted) setState(() => _reload++);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final admin = AppScope.adminOf(context);
+    return Column(
+      children: [
+        SwitchListTile(
+          title: const Text('Solo pendientes'),
+          value: _soloPendientes,
+          onChanged: (v) => setState(() {
+            _soloPendientes = v;
+            _reload++;
+          }),
+        ),
+        Expanded(
+          child: AsyncView<List<Map<String, dynamic>>>(
+            refreshKey: '$_soloPendientes|$_reload',
+            load: () => admin.reclamaciones(
+              resuelto: _soloPendientes ? false : null,
+            ),
+            isEmpty: (r) => r.isEmpty,
+            emptyIcon: Icons.check_circle_outline,
+            emptyMessage: 'No hay reclamaciones pendientes.',
+            builder: (context, items) => ListView.separated(
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, i) {
+                final r = items[i];
+                final resuelto = r['resuelto'] as bool? ?? false;
+                return ListTile(
+                  leading: Icon(
+                    resuelto
+                        ? Icons.check_circle_outline
+                        : Icons.report_problem_outlined,
+                    color: resuelto ? Colors.green : Colors.orange,
+                  ),
+                  title: Text(
+                    '${r['correlativo']}  ·  ${r['tipo']?.toString().toUpperCase() ?? ''}',
+                  ),
+                  subtitle: Text(
+                    '${r['nombre']}  ·  ${r['correo']}\n${r['bien_contratado']}',
+                  ),
+                  isThreeLine: true,
+                  trailing: const Icon(Icons.more_vert),
+                  onTap: () => _responder(r, admin),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

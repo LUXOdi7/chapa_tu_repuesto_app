@@ -104,6 +104,34 @@ class AuthRepository {
     required String message,
   }) => _api.post('/feedback', body: {'subject': subject, 'message': message});
 
+  /// Libro de reclamaciones INDECOPI. No requiere sesion iniciada.
+  Future<String> submitReclamacion({
+    required String nombre,
+    required String dni,
+    required String direccion,
+    required String telefono,
+    required String correo,
+    required String tipo,
+    required String bienContratado,
+    required String detalle,
+    required String pedidoConsumidor,
+    String numPedido = '',
+  }) async {
+    final data = await _api.post('/reclamaciones', body: {
+      'nombre': nombre,
+      'dni': dni,
+      'direccion': direccion,
+      'telefono': telefono,
+      'correo': correo,
+      'tipo': tipo,
+      'bien_contratado': bienContratado,
+      'num_pedido': numPedido,
+      'detalle': detalle,
+      'pedido_consumidor': pedidoConsumidor,
+    });
+    return asMap(data)['correlativo'] as String;
+  }
+
   // ---- Mis motos ----
   Future<List<UserMoto>> motos() async =>
       asMapList(await _api.get('/auth/me/motos'))

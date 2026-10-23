@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_widgets.dart';
 import '../../../shared/widgets/map_picker_page.dart';
 import '../../auth/domain/user.dart';
 import 'alerts_page.dart';
+import 'legal_page.dart';
 import 'my_motos_page.dart';
 
 /// Mi cuenta: datos, contraseña, tema, sugerencias y cierre de sesión.
@@ -403,6 +404,30 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: const Text('Enviar sugerencia'),
                   subtitle: const Text('Cuéntanos qué mejorarías'),
                   onTap: _feedback,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.report_problem_outlined),
+                  title: const Text('Libro de reclamaciones'),
+                  subtitle: const Text('Presenta una queja o reclamo (INDECOPI)'),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    LegalPage.route,
+                    arguments: 'complaints',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('Acerca de / Contacto'),
+                  onTap: () => Navigator.pushNamed(context, LegalPage.route),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.gavel_outlined),
+                  title: const Text('Términos y condiciones'),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    LegalPage.route,
+                    arguments: 'terms',
+                  ),
                 ),
                 const Divider(),
                 ListTile(

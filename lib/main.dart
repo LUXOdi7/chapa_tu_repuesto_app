@@ -23,6 +23,7 @@ import 'features/orders/data/order_repository.dart';
 import 'features/orders/presentation/order_tracking_page.dart';
 import 'features/orders/presentation/orders_page.dart';
 import 'features/orders/presentation/receipt_page.dart';
+import 'features/profile/presentation/legal_page.dart';
 import 'features/profile/presentation/notifications_page.dart';
 import 'features/profile/presentation/profile_page.dart';
 import 'features/supplier/data/supplier_repository.dart';
@@ -141,6 +142,11 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
         ),
         ProfilePage.route => MaterialPageRoute<void>(
           builder: (_) => const ProfilePage(),
+        ),
+        LegalPage.route => MaterialPageRoute<void>(
+          builder: (_) => LegalPage(
+            section: (settings.arguments as String?) ?? 'about',
+          ),
         ),
         _ => null,
       };

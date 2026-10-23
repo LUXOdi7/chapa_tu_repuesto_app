@@ -10,6 +10,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../domain/user.dart';
+import '../../profile/presentation/legal_page.dart';
 import 'forgot_password_page.dart';
 import 'google/google_button.dart';
 import 'session.dart';
@@ -358,6 +359,51 @@ class _LoginPageState extends State<LoginPage> {
                         label: const Text('Descargar app para Android'),
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const LegalPage(section: 'about'),
+                            ),
+                          ),
+                          child: const Text('Acerca de'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => const LegalPage(section: 'terms'),
+                            ),
+                          ),
+                          child: const Text('Terminos'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const LegalPage(section: 'returns'),
+                            ),
+                          ),
+                          child: const Text('Devoluciones'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const LegalPage(section: 'complaints'),
+                            ),
+                          ),
+                          child: const Text('Reclamaciones'),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),

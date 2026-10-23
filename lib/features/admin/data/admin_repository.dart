@@ -64,4 +64,21 @@ class AdminRepository {
       );
 
   Future<void> resolveFeedback(int id) => _api.patch('/admin/feedback/$id');
+
+  Future<List<Map<String, dynamic>>> reclamaciones({bool? resuelto}) async =>
+      asMapList(
+        await _api.get(
+          '/admin/reclamaciones',
+          query: {'resuelto': resuelto},
+        ),
+      );
+
+  Future<void> responderReclamacion(
+    int id, {
+    required String respuesta,
+    required bool resuelto,
+  }) => _api.patch(
+    '/admin/reclamaciones/$id',
+    body: {'respuesta': respuesta, 'resuelto': resuelto},
+  );
 }
