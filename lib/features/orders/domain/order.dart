@@ -81,6 +81,8 @@ class Order {
     required this.subtotal,
     required this.shippingCost,
     required this.total,
+    this.platformFee = 0.0,
+    this.platformFeeRate = 0.0,
     required this.paymentMethod,
     required this.createdAt,
     required this.store,
@@ -116,6 +118,10 @@ class Order {
 
   final double subtotal;
   final double shippingCost;
+
+  /// Comisión de plataforma cobrada al comprador (3% normal, 5% taller).
+  final double platformFee;
+  final double platformFeeRate;
   final double total;
   final PaymentMethod paymentMethod;
   final String? paymentOpNumber;
@@ -166,6 +172,8 @@ class Order {
         const [],
     subtotal: asDouble(json['subtotal']) ?? 0,
     shippingCost: asDouble(json['shipping_cost']) ?? 0,
+    platformFee: asDouble(json['platform_fee']) ?? 0,
+    platformFeeRate: asDouble(json['platform_fee_rate']) ?? 0,
     total: asDouble(json['total']) ?? 0,
     paymentMethod: PaymentMethod.parse(json['payment_method'] as String?),
     paymentOpNumber: json['payment_op_number'] as String?,

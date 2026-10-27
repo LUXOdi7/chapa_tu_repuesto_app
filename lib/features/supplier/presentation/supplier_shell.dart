@@ -281,6 +281,21 @@ class _StoreTab extends StatelessWidget {
               ),
             ),
           ),
+        if (!store.subscriptionActive)
+          Card(
+            color: Colors.red.withValues(alpha: 0.10),
+            child: ListTile(
+              leading: const Icon(Icons.warning_amber, color: Colors.red),
+              title: const Text('Suscripción mensual inactiva'),
+              subtitle: Text(
+                store.subscriptionDaysLeft > -900
+                    ? 'Venció hace ${-store.subscriptionDaysLeft} día${-store.subscriptionDaysLeft == 1 ? '' : 's'}. '
+                      'Contacta al administrador para renovar (S/ 100/mes).'
+                    : 'Tu suscripción mensual no está activada todavía (S/ 100/mes). '
+                      'Contacta al administrador.',
+              ),
+            ),
+          ),
         // Resumen del negocio
         AsyncView<Map<String, dynamic>>(
           refreshKey: store.id,

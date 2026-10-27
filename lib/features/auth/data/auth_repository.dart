@@ -25,6 +25,7 @@ class AuthRepository {
     required String password,
     required UserRole role,
     String? phone,
+    BuyerType? buyerType,
   }) async {
     final data = await _api.post(
       '/auth/register',
@@ -34,6 +35,7 @@ class AuthRepository {
         'password': password,
         'phone': phone,
         'role': role.key,
+        'buyer_type': buyerType?.key,
       },
     );
     return AuthResult.fromJson(asMap(data));

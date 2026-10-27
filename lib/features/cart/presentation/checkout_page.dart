@@ -243,22 +243,44 @@ class _CheckoutPageState extends State<CheckoutPage> {
               const SectionTitle('Total'),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    _TotalRow(label: 'Productos', value: soles(cart.subtotal)),
-                    _TotalRow(
-                      label:
-                          'Envío (${groups.length} '
-                          '${groups.length == 1 ? "tienda" : "tiendas"})',
-                      value: soles(cart.shipping),
-                    ),
-                    const Divider(),
-                    _TotalRow(
-                      label: 'Total a pagar',
-                      value: soles(cart.total),
-                      bold: true,
-                    ),
-                  ],
+                child: Builder(
+                  builder: (context) {
+                    final rate = saved?.buyerType.rate ?? 0.03;
+                    final commission = cart.subtotal * rate;
+                    final estimatedTotal = cart.total + commission;
+                    return Column(
+                      children: [
+                        _TotalRow(
+                          label: 'Productos',
+                          value: soles(cart.subtotal),
+                        ),
+                        _TotalRow(
+                          label:
+                              'Envío (${groups.length} '
+                              '${groups.length == 1 ? "tienda" : "tiendas"})',
+                          value: soles(cart.shipping),
+                        ),
+                        _TotalRow(
+                          label:
+                              'Comisión de plataforma '
+                              '(${(rate * 100).toStringAsFixed(0)}%)',
+                          value: soles(commission),
+                        ),
+                        const Divider(),
+                        _TotalRow(
+                          label: 'Total estimado',
+                          value: soles(estimatedTotal),
+                          bold: true,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'La comisión cubre el servicio de intermediación de ChapaTuRepuesto.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
@@ -269,15 +291,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: FilledButton(
-            onPressed: groups.isEmpty || _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text('Confirmar ${soles(cart.total)}'),
+          child: Builder(
+            builder: (context) {
+              final rate = saved?.buyerType.rate ?? 0.03;
+              final estimatedTotal = cart.total + cart.subtotal * rate;
+              return FilledButton(
+                onPressed: groups.isEmpty || _busy ? null : _submit,
+                child: _busy
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text('Confirmar ~${soles(estimatedTotal)}'),
+              );
+            },
           ),
         ),
       ),

@@ -35,6 +35,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _busy = false;
   bool _obscure = true;
   UserRole _role = UserRole.buyer;
+  BuyerType _buyerType = BuyerType.normal;
 
   /// Web: el boton lo dibuja Google y el resultado llega por este stream.
   StreamSubscription<GoogleSignInAuthenticationEvent>? _googleEvents;
@@ -108,6 +109,7 @@ class _LoginPageState extends State<LoginPage> {
               password: _password.text,
               phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
               role: _role,
+              buyerType: _role == UserRole.buyer ? _buyerType : null,
             )
           : await scope.auth.login(
               email: _email.text.trim(),
@@ -291,6 +293,26 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(_role.hint, style: text.bodySmall),
+                      if (_role == UserRole.buyer) ...[
+                        const SizedBox(height: 14),
+                        Text('Tipo de comprador', style: text.labelLarge),
+                        const SizedBox(height: 8),
+                        SegmentedButton<BuyerType>(
+                          showSelectedIcon: false,
+                          segments: [
+                            for (final t in BuyerType.values)
+                              ButtonSegment(
+                                value: t,
+                                label: Text(t.label),
+                              ),
+                          ],
+                          selected: {_buyerType},
+                          onSelectionChanged: (s) =>
+                              setState(() => _buyerType = s.first),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(_buyerType.hint, style: text.bodySmall),
+                      ],
                     ],
 
                     const SizedBox(height: 20),

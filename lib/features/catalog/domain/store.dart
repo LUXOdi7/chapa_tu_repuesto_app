@@ -27,6 +27,8 @@ class Store {
     this.paymentConfigured = false,
     this.productCount,
     this.ownerEmail,
+    this.subscriptionActive = false,
+    this.subscriptionDaysLeft = -999,
   });
 
   final int id;
@@ -54,6 +56,11 @@ class Store {
 
   /// Solo en el panel admin: correo del dueño de la tienda.
   final String? ownerEmail;
+
+  /// Suscripción mensual (S/ 100): activa si `subscription_paid_until` > hoy.
+  /// `subscriptionDaysLeft` < 0 = expiró hace N días; -999 = nunca activada.
+  final bool subscriptionActive;
+  final int subscriptionDaysLeft;
 
   bool get hasLocation => latitude != null && longitude != null;
 
@@ -85,6 +92,8 @@ class Store {
     productCount: json['product_count'] as int?,
     ownerEmail: (json['owner'] as Map?)
         ?.cast<String, dynamic>()['email'] as String?,
+    subscriptionActive: json['subscription_active'] as bool? ?? false,
+    subscriptionDaysLeft: json['subscription_days_left'] as int? ?? -999,
   );
 
   /// Solo lo que necesita el carrito persistido para volver a dibujarse.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -112,7 +114,7 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
           theme: buildTheme(Brightness.light),
           darkTheme: buildTheme(Brightness.dark),
           themeMode: mode,
-          home: const _Root(),
+          home: const _WebIdleRoot(),
           onGenerateRoute: _generateRoute,
         ),
       ),
@@ -150,6 +152,50 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
         ),
         _ => null,
       };
+}
+
+/// En web: cierra la sesion tras 30 min sin actividad del puntero.
+/// En movil: transparente (no hay riesgo de sesion olvidada en un navegador).
+class _WebIdleRoot extends StatefulWidget {
+  const _WebIdleRoot();
+
+  @override
+  State<_WebIdleRoot> createState() => _WebIdleRootState();
+}
+
+class _WebIdleRootState extends State<_WebIdleRoot> {
+  Timer? _idleTimer;
+  static const _timeout = Duration(minutes: 30);
+
+  void _reset() {
+    _idleTimer?.cancel();
+    _idleTimer = Timer(_timeout, () {
+      if (mounted) AppScope.sessionOf(context).signOut();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) _reset();
+  }
+
+  @override
+  void dispose() {
+    _idleTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kIsWeb) return const _Root();
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _reset(),
+      onPointerMove: (_) => _reset(),
+      child: const _Root(),
+    );
+  }
 }
 
 /// Decide que ve el usuario: splash mientras se valida el token guardado,

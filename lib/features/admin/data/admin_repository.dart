@@ -54,6 +54,9 @@ class AdminRepository {
     asMap(await _api.patch('/admin/stores/$id', body: {'verified': verified})),
   );
 
+  Future<void> extendSubscription(int storeId) =>
+      _api.patch('/admin/stores/$storeId/subscription');
+
   Future<List<Order>> orders({String? statusFilter}) async => asMapList(
     await _api.get('/admin/orders', query: {'status_filter': statusFilter}),
   ).map(Order.fromJson).toList();

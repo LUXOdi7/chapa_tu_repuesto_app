@@ -200,10 +200,15 @@ class _TermsTab extends StatelessWidget {
         '(c) contar con RUC activo y store verificada por ChapaTuRepuesto; '
         '(d) atender reclamaciones dentro de los plazos legales.'),
       _Section('6. Comisiones y pagos',
-        'ChapaTuRepuesto aplica una comision del 1% sobre el monto de cada venta '
-        'realizada a traves de la pasarela de pagos integrada. Las tiendas que operen '
-        'en modalidad de pago manual (efectivo, transferencia directa) no pagan '
-        'comision por la intermediacion.'),
+        'ChapaTuRepuesto cobra una comision de servicio al comprador sobre el subtotal '
+        'de cada pedido, segun su tipo de cuenta:\n\n'
+        '  • Usuario final (motociclista, uso personal): 3 % del subtotal.\n'
+        '  • Taller mecanico (negocio o taller profesional): 5 % del subtotal.\n\n'
+        'La comision se suma automaticamente al total antes de confirmar el pedido y '
+        'se muestra de forma desglosada en el resumen del checkout.\n\n'
+        'Los pedidos pagados con tarjeta a traves de la pasarela integrada (Mercado Pago '
+        'o Niubiz) aplican adicionalmente las tarifas propias de cada pasarela, que '
+        'corren por cuenta del proveedor.'),
       _Section('7. Propiedad intelectual',
         'El nombre, logotipo, diseno y codigo de ChapaTuRepuesto son propiedad de '
         'sus creadores. Las imagenes de productos son responsabilidad de cada tienda. '
@@ -228,6 +233,14 @@ class _TermsTab extends StatelessWidget {
         'ChapaTuRepuesto puede actualizar estos terminos notificando a los usuarios '
         'con al menos 15 dias de anticipacion. El uso continuado de la plataforma '
         'implica la aceptacion de los terminos vigentes.'),
+      _Section('12. Suscripcion mensual de proveedores',
+        'Las tiendas que deseen publicar productos en ChapaTuRepuesto deben abonar '
+        'una suscripcion mensual de S/ 100 (cien soles). El pago se coordina '
+        'directamente con el administrador de la plataforma. La suscripcion se activa '
+        'por periodos de 30 dias calendario. Si la suscripcion vence y no se renueva, '
+        'la tienda deja de aparecer en el catalogo publico hasta que se regularice el '
+        'pago. El incumplimiento no genera penalidades adicionales; simplemente suspende '
+        'la visibilidad de los productos del proveedor en la plataforma.'),
     ],
   );
 }

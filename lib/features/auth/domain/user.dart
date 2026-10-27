@@ -31,6 +31,24 @@ enum UserRole {
   static const registrable = [UserRole.buyer, UserRole.supplier];
 }
 
+/// Sub-tipo de comprador: afecta solo la comisión de plataforma.
+enum BuyerType {
+  normal('normal', 'Usuario final', 'Motociclista o uso personal · 3% de comisión', 0.03),
+  taller('taller', 'Taller mecánico', 'Negocio o taller profesional · 5% de comisión', 0.05);
+
+  const BuyerType(this.key, this.label, this.hint, this.rate);
+
+  final String key;
+  final String label;
+  final String hint;
+  final double rate;
+
+  static BuyerType parse(String? value) => BuyerType.values.firstWhere(
+    (t) => t.key == value,
+    orElse: () => BuyerType.normal,
+  );
+}
+
 class User {
   const User({
     required this.id,
@@ -46,6 +64,7 @@ class User {
     this.address,
     this.latitude,
     this.longitude,
+    this.buyerType = BuyerType.normal,
   });
 
   final int id;
@@ -68,6 +87,9 @@ class User {
   final String? address;
   final double? latitude;
   final double? longitude;
+
+  /// Subtipo de comprador: afecta la comisión de plataforma (3% normal, 5% taller).
+  final BuyerType buyerType;
 
   bool get hasSavedAddress => address != null && address!.isNotEmpty;
 
@@ -92,6 +114,7 @@ class User {
     address: json['address'] as String?,
     latitude: (json['latitude'] as num?)?.toDouble(),
     longitude: (json['longitude'] as num?)?.toDouble(),
+    buyerType: BuyerType.parse(json['buyer_type'] as String?),
   );
 }
 

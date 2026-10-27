@@ -193,6 +193,11 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   necesitaba ~48 dp y solo había 44; 76 da 56 dp de espacio, aguanta hasta ×1.5).
 - 2026-10-18 · **`rollo.md`** en raíz: documento de ventas que traduce cada
   feature técnico a beneficio concreto para comprador y proveedor.
+- 2026-10-27 · **BuyerType en User**: enum `BuyerType` (normal 3%, taller 5%) en `user.dart`; `User.buyerType` campo parseado de `json['buyer_type']`. `AuthRepository.register()` acepta `BuyerType? buyerType`. `LoginPage`: nuevo `SegmentedButton<BuyerType>` visible cuando `_registering && _role == UserRole.buyer` para elegir tipo de comprador. `Order.platformFee`/`platformFeeRate` parseados del backend.
+- 2026-10-27 · **Checkout con comisión**: `CheckoutPage` muestra fila "Comisión de plataforma (X%)" y "Total estimado" = `cart.total + cart.subtotal * buyerType.rate`. Mensaje explicativo debajo. Botón muestra `~S/ estimado`. La comisión real la calcula el backend al crear el pedido.
+- 2026-10-27 · **Suscripción en tiendas**: `Store.subscriptionActive`/`subscriptionDaysLeft` parseados del backend. `SupplierShell._StoreTab` muestra banner rojo si `!subscriptionActive`. `AdminRepository.extendSubscription(id)`. `AdminShell._StoresTab`: subtitle incluye estado de suscripción, botón "+30 días" junto a "Verificar".
+- 2026-10-27 · **T&C actualizados** (`LegalPage`): Art. 6 ahora describe la comisión 3%/5% por tipo de comprador. Art. 12 nuevo: suscripción mensual S/ 100 para proveedores.
+- 2026-10-27 · **Web idle timeout** (`main.dart`): `_WebIdleRoot` widget — si `kIsWeb`, `Listener` (onPointerDown/onPointerMove) + `Timer(30 min)` → `session.signOut()`. En mobile: transparente (solo retorna `_Root` sin listener).
 - 2026-09-25 · **Mensaje duplicado en el chat del pedido** (solo lo veía quien
   escribía): el refresco de 4 s sale con el `after_id` de antes; si respondía
   después del envío, traía de vuelta el mensaje que `_send` ya había agregado.

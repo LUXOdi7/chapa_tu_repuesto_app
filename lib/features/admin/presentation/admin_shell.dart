@@ -458,6 +458,11 @@ class _StoresTabState extends State<_StoresTab> {
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, i) {
                 final s = stores[i];
+                final subLabel = s.subscriptionActive
+                    ? 'Suscripción: ${s.subscriptionDaysLeft}d restantes'
+                    : s.subscriptionDaysLeft > -900
+                        ? 'Suscripción vencida'
+                        : 'Sin suscripción';
                 return ListTile(
                   leading: Icon(
                     s.verified ? Icons.verified_user : Icons.pending,
@@ -466,21 +471,54 @@ class _StoresTabState extends State<_StoresTab> {
                   title: Text(s.businessName),
                   subtitle: Text(
                     '${s.ownerEmail != null ? '${s.ownerEmail}  ·  ' : ''}'
-                    'RUC ${s.ruc}  ·  ${s.district}\n${s.address}',
+                    'RUC ${s.ruc}  ·  ${s.district}\n'
+                    '${s.address}\n$subLabel',
                   ),
                   isThreeLine: true,
-                  // TextButton, no FilledButton: el tema le da a FilledButton ancho
-                  // infinito (CTA a pantalla completa) y como `trailing` revienta el layout.
-                  trailing: TextButton(
-                    onPressed: () async {
-                      try {
-                        await admin.verifyStore(s.id, !s.verified);
-                        if (context.mounted) setState(() => _reload++);
-                      } catch (e) {
-                        if (context.mounted) showError(context, e);
-                      }
-                    },
-                    child: Text(s.verified ? 'Quitar' : 'Verificar'),
+                  trailing: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                        ),
+                        onPressed: () async {
+                          try {
+                            await admin.verifyStore(s.id, !s.verified);
+                            if (context.mounted) setState(() => _reload++);
+                          } catch (e) {
+                            if (context.mounted) showError(context, e);
+                          }
+                        },
+                        child: Text(s.verified ? 'Quitar' : 'Verificar'),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                        ),
+                        onPressed: () async {
+                          try {
+                            await admin.extendSubscription(s.id);
+                            if (context.mounted) {
+                              showInfo(context, 'Suscripción extendida 30 días');
+                              setState(() => _reload++);
+                            }
+                          } catch (e) {
+                            if (context.mounted) showError(context, e);
+                          }
+                        },
+                        child: const Text('+30 días'),
+                      ),
+                    ],
                   ),
                 );
               },
