@@ -214,7 +214,7 @@ const orderTimeline = <String>[
 /// `status_label` que manda el backend).
 String orderStatusLabel(String status) => switch (status) {
   'created' => 'Creado (pago pendiente)',
-  'payment_verified' => 'Pago verificado',
+  'payment_verified' => 'Pago por verificar',
   'preparing' => 'En preparación',
   'shipped' => 'Despachado',
   'delivered' => 'Entregado',

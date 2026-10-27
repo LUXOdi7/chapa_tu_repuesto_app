@@ -52,7 +52,7 @@ Future<void> main() async {
 
 /// Tema claro/oscuro conmutable. Un `ValueNotifier` global evita montar un
 /// gestor de estado entero para un unico switch de UI.
-final themeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
+final themeMode = ValueNotifier<ThemeMode>(ThemeMode.light);
 
 /// Proveedor en "modo comprador": ve la app como un comprador (busca, carrito,
 /// sus compras) y vuelve a su panel con un toque. Solo UI; el backend ya deja
