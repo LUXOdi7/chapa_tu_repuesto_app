@@ -57,6 +57,9 @@ class SupplierRepository {
 
   /// Afiliacion a la pasarela. `account`: token de Mercado Pago o
   /// "merchantId|usuario|clave" de Niubiz; null para modo simulado.
+  Future<String> mpConnectUrl() async =>
+      (await _api.get('/suppliers/store/mp/connect'))['redirect_url'] as String;
+
   Future<Store> configurePayment({
     required String provider,
     String? account,

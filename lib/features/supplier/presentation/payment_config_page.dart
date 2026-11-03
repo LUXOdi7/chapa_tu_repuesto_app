@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../shared/widgets/app_widgets.dart';
@@ -19,7 +20,6 @@ class PaymentConfigPage extends StatefulWidget {
 class _PaymentConfigPageState extends State<PaymentConfigPage> {
   final _formKey = GlobalKey<FormState>();
   late String _provider = widget.store.paymentProvider ?? 'simulado';
-  final _token = TextEditingController();
   final _merchant = TextEditingController();
   final _user = TextEditingController();
   final _pass = TextEditingController();
@@ -42,7 +42,6 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
 
   @override
   void dispose() {
-    _token.dispose();
     _merchant.dispose();
     _user.dispose();
     _pass.dispose();
@@ -50,13 +49,14 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
   }
 
   Future<void> _save() async {
+    // MP usa OAuth: el botón _MpConnectButton maneja la conexión directamente
+    if (_provider == 'mercadopago') return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _busy = true);
     try {
       await AppScope.suppliersOf(context).configurePayment(
         provider: _provider,
         account: switch (_provider) {
-          'mercadopago' => _token.text.trim(),
           'niubiz' =>
             '${_merchant.text.trim()}|${_user.text.trim()}|${_pass.text.trim()}',
           _ => null,
@@ -102,18 +102,7 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (_provider == 'mercadopago')
-                TextFormField(
-                  controller: _token,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Access Token',
-                    helperText: 'APP_USR-... (Tus integraciones → Credenciales de producción)',
-                  ),
-                  validator: (v) => (v == null || v.trim().length < 20)
-                      ? 'Pega el Access Token'
-                      : null,
-                ),
+              if (_provider == 'mercadopago') _MpConnectButton(store: widget.store),
               if (_provider == 'niubiz') ...[
                 TextFormField(
                   controller: _merchant,
@@ -139,7 +128,8 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
                       (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
                 ),
               ],
-              if (widget.store.paymentConfigured &&
+              if (_provider != 'mercadopago' &&
+                  widget.store.paymentConfigured &&
                   _provider == widget.store.paymentProvider)
                 const Padding(
                   padding: EdgeInsets.only(top: 12),
@@ -147,21 +137,85 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
                     'Ya tienes credenciales guardadas. Solo se reemplazan si guardas nuevas.',
                   ),
                 ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _busy ? null : _save,
-                child: _busy
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Guardar'),
-              ),
+              if (_provider != 'mercadopago') ...[
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _busy ? null : _save,
+                  child: _busy
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar'),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MpConnectButton extends StatefulWidget {
+  const _MpConnectButton({required this.store});
+  final Store store;
+
+  @override
+  State<_MpConnectButton> createState() => _MpConnectButtonState();
+}
+
+class _MpConnectButtonState extends State<_MpConnectButton> {
+  bool _busy = false;
+
+  Future<void> _connect() async {
+    setState(() => _busy = true);
+    try {
+      final url = await AppScope.suppliersOf(context).mpConnectUrl();
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final connected = widget.store.paymentConfigured &&
+        widget.store.paymentProvider == 'mercadopago';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (connected)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Cuenta Mercado Pago conectada'),
+              ],
+            ),
+          ),
+        FilledButton.icon(
+          onPressed: _busy ? null : _connect,
+          icon: _busy
+              ? const SizedBox(
+                  height: 18, width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.open_in_browser),
+          label: Text(connected ? 'Reconectar Mercado Pago' : 'Conectar Mercado Pago'),
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF009EE3)),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Se abrirá el navegador. Inicia sesión con tu cuenta de Mercado Pago y autoriza.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      ],
     );
   }
 }
