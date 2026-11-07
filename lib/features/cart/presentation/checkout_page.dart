@@ -30,6 +30,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _notes = TextEditingController();
 
   PaymentMethod _method = PaymentMethod.yape;
+  bool _isPickup = false;
   bool _busy = false;
 
   /// true = usar la direccion guardada del perfil; false = una para este pedido.
@@ -75,21 +76,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Future<void> _submit() async {
     final scope = AppScope.of(context);
     final saved = scope.session.user;
-    final address = _useSaved ? (saved?.address ?? '') : _address.text.trim();
-    if (!_useSaved && !_formKey.currentState!.validate()) return;
-    if (address.length < 6) {
-      showInfo(context, 'Escribe la dirección de entrega');
-      return;
+    final address = _isPickup
+        ? 'Recojo en tienda'
+        : (_useSaved ? (saved?.address ?? '') : _address.text.trim());
+    if (!_isPickup) {
+      if (!_useSaved && !_formKey.currentState!.validate()) return;
+      if (address.length < 6) {
+        showInfo(context, 'Escribe la dirección de entrega');
+        return;
+      }
     }
     setState(() => _busy = true);
     try {
       final created = await scope.orders.checkout(
         items: scope.cart.items,
         deliveryAddress: address,
+        isPickup: _isPickup,
         paymentMethod: _method,
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-        deliveryLat: _lat,
-        deliveryLng: _lng,
+        deliveryLat: _isPickup ? null : _lat,
+        deliveryLng: _isPickup ? null : _lng,
       );
       scope.cart.clear();
       if (!mounted) return;
@@ -143,26 +149,82 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
 
               const SectionTitle('Entrega'),
-              // Direccion guardada del perfil o una para este pedido; en ambos
-              // casos se puede marcar el punto exacto en el mapa.
-              if (saved?.hasSavedAddress ?? false) ...[
-                RadioGroup<bool>(
-                  groupValue: _useSaved,
-                  onChanged: (v) => setState(() {
-                    _useSaved = v ?? true;
-                    _lat = _useSaved ? saved.latitude : null;
-                    _lng = _useSaved ? saved.longitude : null;
-                  }),
+              RadioGroup<bool>(
+                groupValue: _isPickup,
+                onChanged: (v) => setState(() => _isPickup = v ?? false),
+                child: const Column(
+                  children: [
+                    RadioListTile<bool>(
+                      value: false,
+                      title: Text('Envío a domicilio'),
+                      subtitle: Text('Se calcula según tu dirección'),
+                    ),
+                    RadioListTile<bool>(
+                      value: true,
+                      title: Text('Recoger en tienda'),
+                      subtitle: Text('Sin costo de envío'),
+                    ),
+                  ],
+                ),
+              ),
+              if (!_isPickup) ...[
+                if (saved?.hasSavedAddress ?? false)
+                  RadioGroup<bool>(
+                    groupValue: _useSaved,
+                    onChanged: (v) => setState(() {
+                      _useSaved = v ?? true;
+                      _lat = _useSaved ? saved.latitude : null;
+                      _lng = _useSaved ? saved.longitude : null;
+                    }),
+                    child: Column(
+                      children: [
+                        RadioListTile<bool>(
+                          value: true,
+                          title: const Text('Usar mi dirección guardada'),
+                          subtitle: Text(saved!.address!),
+                        ),
+                        const RadioListTile<bool>(
+                          value: false,
+                          title: Text('Otra dirección para este pedido'),
+                        ),
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
-                      RadioListTile<bool>(
-                        value: true,
-                        title: const Text('Usar mi dirección guardada'),
-                        subtitle: Text(saved!.address!),
-                      ),
-                      const RadioListTile<bool>(
-                        value: false,
-                        title: Text('Otra dirección para este pedido'),
+                      if (!_useSaved)
+                        TextFormField(
+                          controller: _address,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(
+                            labelText: 'Dirección de entrega',
+                            prefixIcon: Icon(Icons.location_on_outlined),
+                          ),
+                          validator: (v) => (v == null || v.trim().length < 6)
+                              ? 'Escribe la dirección del taller'
+                              : null,
+                        ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _pickOnMap,
+                              icon: const Icon(Icons.map_outlined),
+                              label: Text(
+                                _lat == null
+                                    ? 'Marcar punto en el mapa'
+                                    : 'Cambiar punto del mapa',
+                              ),
+                            ),
+                          ),
+                          if (_lat != null) ...[
+                            const SizedBox(width: 8),
+                            const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -170,53 +232,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ],
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    if (!_useSaved)
-                      TextFormField(
-                        controller: _address,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección de entrega',
-                          prefixIcon: Icon(Icons.location_on_outlined),
-                        ),
-                        validator: (v) => (v == null || v.trim().length < 6)
-                            ? 'Escribe la dirección del taller'
-                            : null,
-                      ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _pickOnMap,
-                            icon: const Icon(Icons.map_outlined),
-                            label: Text(
-                              _lat == null
-                                  ? 'Marcar punto en el mapa'
-                                  : 'Cambiar punto del mapa',
-                            ),
-                          ),
-                        ),
-                        if (_lat != null) ...[
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _notes,
-                      decoration: const InputDecoration(
-                        labelText: 'Nota para el proveedor (opcional)',
-                        prefixIcon: Icon(Icons.sticky_note_2_outlined),
-                      ),
-                    ),
-                  ],
+                child: TextFormField(
+                  controller: _notes,
+                  decoration: const InputDecoration(
+                    labelText: 'Nota para el proveedor (opcional)',
+                    prefixIcon: Icon(Icons.sticky_note_2_outlined),
+                  ),
                 ),
               ),
 
@@ -246,8 +267,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 child: Builder(
                   builder: (context) {
                     final rate = saved?.buyerType.rate ?? 0.03;
+                    final shipping = _isPickup ? 0.0 : cart.shipping;
                     final commission = cart.subtotal * rate;
-                    final estimatedTotal = cart.total + commission;
+                    final estimatedTotal = cart.subtotal + shipping + commission;
                     return Column(
                       children: [
                         _TotalRow(
@@ -255,10 +277,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           value: soles(cart.subtotal),
                         ),
                         _TotalRow(
-                          label:
-                              'Envío (${groups.length} '
-                              '${groups.length == 1 ? "tienda" : "tiendas"})',
-                          value: soles(cart.shipping),
+                          label: _isPickup
+                              ? 'Envío (recojo en tienda)'
+                              : 'Envío (${groups.length} '
+                                '${groups.length == 1 ? "tienda" : "tiendas"})',
+                          value: _isPickup ? 'Gratis' : soles(shipping),
                         ),
                         _TotalRow(
                           label:
@@ -294,7 +317,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           child: Builder(
             builder: (context) {
               final rate = saved?.buyerType.rate ?? 0.03;
-              final estimatedTotal = cart.total + cart.subtotal * rate;
+              final estimatedTotal = cart.subtotal + (_isPickup ? 0.0 : cart.shipping) + cart.subtotal * rate;
               return FilledButton(
                 onPressed: groups.isEmpty || _busy ? null : _submit,
                 child: _busy

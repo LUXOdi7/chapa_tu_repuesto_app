@@ -247,12 +247,9 @@ class BuyerShell extends StatefulWidget {
 class _BuyerShellState extends State<BuyerShell> {
   int _tab = 0;
 
-  static const _titles = [
-    'ChapaTuRepuesto',
-    'Tiendas',
-    'Mi carrito',
-    'Mis pedidos',
-  ];
+  List<String> get _titles => widget.asSupplier
+      ? ['ChapaTuRepuesto', 'Tiendas', 'Mis pedidos']
+      : ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito', 'Mis pedidos'];
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +287,7 @@ class _BuyerShellState extends State<BuyerShell> {
           children: [
             const SearchView(),
             const StoresView(),
-            const CartView(),
+            if (!widget.asSupplier) const CartView(),
             OrdersView(asBuyer: widget.asSupplier),
           ],
         ),
@@ -303,14 +300,15 @@ class _BuyerShellState extends State<BuyerShell> {
             icon: Icon(Icons.storefront_outlined),
             label: 'Tiendas',
           ),
-          NavigationDestination(
-            icon: Badge.count(
-              count: scope.cart.unitCount,
-              isLabelVisible: scope.cart.unitCount > 0,
-              child: const Icon(Icons.shopping_cart_outlined),
+          if (!widget.asSupplier)
+            NavigationDestination(
+              icon: Badge.count(
+                count: scope.cart.unitCount,
+                isLabelVisible: scope.cart.unitCount > 0,
+                child: const Icon(Icons.shopping_cart_outlined),
+              ),
+              label: 'Carrito',
             ),
-            label: 'Carrito',
-          ),
           const NavigationDestination(
             icon: Icon(Icons.receipt_long),
             label: 'Pedidos',

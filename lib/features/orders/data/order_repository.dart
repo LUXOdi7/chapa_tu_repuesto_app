@@ -16,6 +16,7 @@ class OrderRepository {
     required List<CartItem> items,
     required String deliveryAddress,
     required PaymentMethod paymentMethod,
+    bool isPickup = false,
     String? notes,
     double? deliveryLat,
     double? deliveryLng,
@@ -27,6 +28,7 @@ class OrderRepository {
           for (final item in items)
             {'product_id': item.product.id, 'quantity': item.quantity},
         ],
+        'is_pickup': isPickup,
         'delivery_address': deliveryAddress,
         'delivery_lat': deliveryLat,
         'delivery_lng': deliveryLng,
