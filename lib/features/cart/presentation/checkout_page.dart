@@ -28,6 +28,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _formKey = GlobalKey<FormState>();
   final _address = TextEditingController();
   final _notes = TextEditingController();
+  final _ruc = TextEditingController();
 
   PaymentMethod _method = PaymentMethod.yape;
   bool _isPickup = false;
@@ -43,6 +44,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void dispose() {
     _address.dispose();
     _notes.dispose();
+    _ruc.dispose();
     super.dispose();
   }
 
@@ -73,6 +75,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
     });
   }
 
+  /// Combina RUC (si lo ingresaron) con la nota libre del comprador.
+  /// El proveedor lo ve en "Nota" del pedido y sabe que debe emitir factura.
+  String? _buildNotes() {
+    final ruc = _ruc.text.trim();
+    final note = _notes.text.trim();
+    if (ruc.isEmpty && note.isEmpty) return null;
+    if (ruc.isEmpty) return note;
+    return note.isEmpty ? 'FACTURA - RUC: $ruc' : 'FACTURA - RUC: $ruc\n$note';
+  }
+
   Future<void> _submit() async {
     final scope = AppScope.of(context);
     final saved = scope.session.user;
@@ -93,7 +105,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         deliveryAddress: address,
         isPickup: _isPickup,
         paymentMethod: _method,
-        notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+        notes: _buildNotes(),
         deliveryLat: _isPickup ? null : _lat,
         deliveryLng: _isPickup ? null : _lng,
       );
@@ -238,6 +250,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     labelText: 'Nota para el proveedor (opcional)',
                     prefixIcon: Icon(Icons.sticky_note_2_outlined),
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: TextFormField(
+                  controller: _ruc,
+                  keyboardType: TextInputType.number,
+                  maxLength: 11,
+                  decoration: const InputDecoration(
+                    labelText: '¿Necesitas factura? Ingresa tu RUC (opcional)',
+                    prefixIcon: Icon(Icons.receipt_long_outlined),
+                    helperText: 'La tienda emitirá factura electrónica a tu empresa.',
+                    counterText: '',
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null;
+                    if (!RegExp(r'^\d{11}$').hasMatch(v.trim())) {
+                      return 'El RUC debe tener exactamente 11 dígitos';
+                    }
+                    return null;
+                  },
                 ),
               ),
 
