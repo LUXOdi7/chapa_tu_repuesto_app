@@ -109,7 +109,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         deliveryLat: _isPickup ? null : _lat,
         deliveryLng: _isPickup ? null : _lng,
       );
-      scope.cart.clear();
+      // No se borra el carrito aquí: el usuario puede revisarlo al volver.
+      // Lo vaciará manualmente o al hacer un nuevo checkout.
       if (!mounted) return;
       await showDialog<void>(
         context: context,

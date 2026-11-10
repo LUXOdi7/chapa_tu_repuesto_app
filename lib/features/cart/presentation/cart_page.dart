@@ -32,8 +32,39 @@ class CartView extends StatelessWidget {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
                 children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final ok = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('¿Vaciar carrito?'),
+                            content: const Text('Se eliminarán todos los productos.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Vaciar'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true) cart.clear();
+                      },
+                      icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                      label: const Text('Vaciar carrito'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ),
                   for (final group in groups)
                     _StoreGroup(
                       group: group,

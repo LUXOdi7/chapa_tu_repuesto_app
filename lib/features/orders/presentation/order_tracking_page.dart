@@ -82,35 +82,44 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       return;
     }
 
+    final formKey = GlobalKey<FormState>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setLocal) => AlertDialog(
           title: Text('Pagar ${soles(order.total)}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<PaymentMethod>(
-                initialValue: method,
-                decoration: const InputDecoration(labelText: 'Método'),
-                items: [
-                  for (final m in PaymentMethod.values)
-                    // Tarjeta siempre pasa por pasarela; nunca va por N° operación.
-                    if (m != PaymentMethod.card)
-                      DropdownMenuItem(value: m, child: Text(m.label)),
-                ],
-                onChanged: (m) => setLocal(() => method = m ?? method),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'N° de operación (opcional)',
-                  helperText: 'Si lo dejas vacío se genera uno simulado',
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<PaymentMethod>(
+                  initialValue: method,
+                  decoration: const InputDecoration(labelText: 'Método'),
+                  items: [
+                    for (final m in PaymentMethod.values)
+                      // Tarjeta siempre pasa por pasarela; nunca va por N° operación.
+                      if (m != PaymentMethod.card)
+                        DropdownMenuItem(value: m, child: Text(m.label)),
+                  ],
+                  onChanged: (m) => setLocal(() => method = m ?? method),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'N° de operación',
+                    helperText: method == PaymentMethod.yape
+                        ? 'El número que muestra Yape al finalizar el pago'
+                        : 'Número de operación de tu banco',
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Ingresa el número de operación'
+                      : null,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -118,7 +127,11 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               child: const Text('Cancelar'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(dialogContext, true);
+                }
+              },
               child: const Text('Confirmar pago'),
             ),
           ],
