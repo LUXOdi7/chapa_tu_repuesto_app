@@ -7,7 +7,7 @@ enum PaymentMethod {
     'card',
     'Tarjeta de crédito / débito',
     Icons.credit_card,
-    'Visa, Mastercard, Amex.',
+    'Visa, Mastercard, Amex. Se pedirá al confirmar el pedido.',
   ),
   yape(
     'yape',

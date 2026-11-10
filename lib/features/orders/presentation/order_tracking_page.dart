@@ -53,23 +53,29 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     // ya no es de fiar.
     final repo = AppScope.ordersOf(context);
     final controller = TextEditingController();
-    var method = order.paymentMethod;
+    // Si el pedido venía con tarjeta pero la tienda no tiene pasarela, el
+    // comprador tiene que elegir otro método en el diálogo manual.
+    var method = (!order.storeHasGateway && order.paymentMethod == PaymentMethod.card)
+        ? PaymentMethod.yape
+        : order.paymentMethod;
 
     if (order.storeHasGateway && method == PaymentMethod.card) {
       await _run(() async {
         final start = await repo.startPayment(order.id);
         final url = start.checkoutUrl;
         if (url == null) return; // ya quedo aprobado (simulado)
+        // inAppWebView = Chrome Custom Tab en Android / SFSafariVC en iOS;
+        // el comprador paga sin salir de la app.
         if (!await launchUrl(
           Uri.parse(url),
-          mode: LaunchMode.externalApplication,
+          mode: LaunchMode.inAppWebView,
         )) {
           throw Exception('No se pudo abrir el checkout de ${start.provider}.');
         }
         if (mounted) {
           showInfo(
             context,
-            'Cuando termines de pagar, vuelve y toca actualizar.',
+            'Cuando termines de pagar, vuelve y toca "Actualizar".',
           );
         }
       });
@@ -89,8 +95,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                 decoration: const InputDecoration(labelText: 'Método'),
                 items: [
                   for (final m in PaymentMethod.values)
-                    // Con pasarela real, "tarjeta" pasa por el checkout externo
-                    if (m != PaymentMethod.card || !order.storeHasGateway)
+                    // Tarjeta siempre pasa por pasarela; nunca va por N° operación.
+                    if (m != PaymentMethod.card)
                       DropdownMenuItem(value: m, child: Text(m.label)),
                 ],
                 onChanged: (m) => setLocal(() => method = m ?? method),
