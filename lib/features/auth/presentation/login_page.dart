@@ -132,6 +132,10 @@ class _LoginPageState extends State<LoginPage> {
   /// `authenticate()`; `attemptLightweightAuthentication()` muestra el One Tap
   /// de Google y devuelve null si el usuario lo cierra.
   Future<void> _google() async {
+    // Espera hasta 5 s a que /health devuelva el client ID (corre en background).
+    for (var i = 0; i < 20 && ApiConfig.googleClientId.isEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
     final clientId = ApiConfig.googleClientId;
     if (clientId.isEmpty) {
       showInfo(
