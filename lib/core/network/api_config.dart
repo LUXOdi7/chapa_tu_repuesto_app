@@ -12,8 +12,8 @@ class ApiConfig {
 
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.132.183.51:9000',
-    //defaultValue: 'http://10.1.194.178:9000',
+    defaultValue: 'https://chapaturepuestobackend-production.up.railway.app',
+    // desarrollo local: flutter run --dart-define=API_BASE_URL=http://10.0.2.2:9000
   );
 
   /// Client ID de tipo WEB de Google Cloud (el mismo que `GOOGLE_CLIENT_ID`
