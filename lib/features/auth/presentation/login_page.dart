@@ -383,7 +383,7 @@ class _LoginPageState extends State<LoginPage> {
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          'Al terminar la descarga, revisa la barra de notificaciones y toca "Descargar de todas formas" si Chrome lo pide.',
+                          'Si la barra llega al 100 % pero no pasa nada: abre el menú de tu navegador → Descargas, toca el archivo .apk y luego "Instalar". Si Android lo bloquea, ve a Ajustes → Aplicaciones → tu navegador → Instalar apps desconocidas y actívalo.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 11, color: Colors.grey),
                         ),
