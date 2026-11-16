@@ -68,7 +68,9 @@ class ChapaTuRepuestoApp extends StatefulWidget {
   State<ChapaTuRepuestoApp> createState() => _ChapaTuRepuestoAppState();
 }
 
-class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
+class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp>
+    with WidgetsBindingObserver {
+  static final _navKey = GlobalKey<NavigatorState>();
   // Instancias de vida larga: se crean una vez y viven en el AppScope.
   final _api = ApiClient();
   late final _auth = AuthRepository(_api);
@@ -86,12 +88,27 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
     _session.loadCategories = _catalog.loadCategories;
     _session.restore();
     _cart.restore();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  Future<bool> didPushRouteInformation(RouteInformation info) async {
+    final uri = info.uri;
+    if (uri.scheme == 'chapaturepuesto' && uri.host == 'order') {
+      final id = int.tryParse(uri.pathSegments.firstOrNull ?? '');
+      if (id != null) {
+        _navKey.currentState?.pushNamed(OrderTrackingPage.route, arguments: id);
+        return true;
+      }
+    }
+    return super.didPushRouteInformation(info);
   }
 
   @override
   void dispose() {
     _session.dispose();
     _cart.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -114,6 +131,7 @@ class _ChapaTuRepuestoAppState extends State<ChapaTuRepuestoApp> {
           theme: buildTheme(Brightness.light),
           darkTheme: buildTheme(Brightness.dark),
           themeMode: mode,
+          navigatorKey: _navKey,
           home: const _WebIdleRoot(),
           onGenerateRoute: _generateRoute,
         ),
