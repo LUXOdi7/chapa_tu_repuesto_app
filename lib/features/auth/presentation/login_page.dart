@@ -196,254 +196,284 @@ class _LoginPageState extends State<LoginPage> {
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 12),
-                    const BrandLogo(height: 170),
-                    const SizedBox(height: 4),
-                    Text(
-                      _registering
-                          ? 'Crea tu cuenta para comprar o vender repuestos'
-                          : 'Ingresa con tu correo',
-                      textAlign: TextAlign.center,
-                      style: text.bodySmall,
-                    ),
-                    const SizedBox(height: 24),
-
-                    if (_registering) ...[
-                      TextFormField(
-                        controller: _name,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre o razón social',
-                          prefixIcon: Icon(Icons.person_outline),
+      body: Stack(
+        children: [
+          // Versión en esquina superior izquierda
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6, left: 12),
+              child: Text(
+                'v${ApiConfig.appVersion}',
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 12),
+                        const BrandLogo(height: 170),
+                        const SizedBox(height: 4),
+                        Text(
+                          _registering
+                              ? 'Crea tu cuenta para comprar o vender repuestos'
+                              : 'Ingresa con tu correo',
+                          textAlign: TextAlign.center,
+                          style: text.bodySmall,
                         ),
-                        validator: (v) => (v == null || v.trim().length < 3)
-                            ? 'Escribe tu nombre'
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                        const SizedBox(height: 24),
 
-                    TextFormField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: 'Correo',
-                        prefixIcon: Icon(Icons.mail_outline),
-                      ),
-                      validator: (v) => (v == null || !v.contains('@'))
-                          ? 'Correo no válido'
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-
-                    if (_registering) ...[
-                      TextFormField(
-                        controller: _phone,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'Teléfono (opcional)',
-                          prefixIcon: Icon(Icons.phone_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    TextFormField(
-                      controller: _password,
-                      obscureText: _obscure,
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                        if (_registering) ...[
+                          TextFormField(
+                            controller: _name,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre o razón social',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            validator: (v) => (v == null || v.trim().length < 3)
+                                ? 'Escribe tu nombre'
+                                : null,
                           ),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                      ),
-                      validator: (v) => (v == null || v.length < 6)
-                          ? 'Mínimo 6 caracteres'
-                          : null,
-                      onFieldSubmitted: (_) => _busy ? null : _submit(),
-                    ),
-
-                    if (_registering) ...[
-                      const SizedBox(height: 16),
-                      Text('¿Cómo vas a usar la app?', style: text.labelLarge),
-                      const SizedBox(height: 8),
-                      SegmentedButton<UserRole>(
-                        showSelectedIcon: false,
-                        segments: [
-                          for (final role in UserRole.registrable)
-                            ButtonSegment(value: role, label: Text(role.label)),
+                          const SizedBox(height: 12),
                         ],
-                        selected: {_role},
-                        onSelectionChanged: (s) =>
-                            setState(() => _role = s.first),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(_role.hint, style: text.bodySmall),
-                      if (_role == UserRole.buyer) ...[
-                        const SizedBox(height: 14),
-                        Text('Tipo de comprador', style: text.labelLarge),
-                        const SizedBox(height: 8),
-                        SegmentedButton<BuyerType>(
-                          showSelectedIcon: false,
-                          segments: [
-                            for (final t in BuyerType.values)
-                              ButtonSegment(
-                                value: t,
-                                label: Text(t.label),
-                              ),
-                          ],
-                          selected: {_buyerType},
-                          onSelectionChanged: (s) =>
-                              setState(() => _buyerType = s.first),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(_buyerType.hint, style: text.bodySmall),
-                      ],
-                    ],
 
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: _busy ? null : _submit,
-                      child: _busy
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(_registering ? 'Crear cuenta' : 'Ingresar'),
-                    ),
-                    const SizedBox(height: 8),
-                    // Web: boton oficial de Google (popup). Android: el nuestro
-                    // abre el selector de cuenta nativo.
-                    if (kIsWeb && _googleInit)
-                      Center(child: googleWebButton())
-                    else
-                      OutlinedButton.icon(
-                        onPressed: _busy ? null : _google,
-                        icon: const Icon(Icons.g_mobiledata, size: 28),
-                        label: Text(
-                          kIsWeb
-                              ? 'Cargando Google...'
-                              : 'Continuar con Google',
+                        TextFormField(
+                          controller: _email,
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email],
+                          decoration: const InputDecoration(
+                            labelText: 'Correo',
+                            prefixIcon: Icon(Icons.mail_outline),
+                          ),
+                          validator: (v) => (v == null || !v.contains('@'))
+                              ? 'Correo no válido'
+                              : null,
                         ),
-                      ),
-                    TextButton(
-                      onPressed: _busy
-                          ? null
-                          : () => setState(() => _registering = !_registering),
-                      child: Text(
-                        _registering
-                            ? 'Ya tengo cuenta, ingresar'
-                            : 'No tengo cuenta, registrarme',
-                      ),
-                    ),
-                    if (!_registering)
-                      TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () => Navigator.push(
+                        const SizedBox(height: 12),
+
+                        if (_registering) ...[
+                          TextFormField(
+                            controller: _phone,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Teléfono (opcional)',
+                              prefixIcon: Icon(Icons.phone_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        TextFormField(
+                          controller: _password,
+                          obscureText: _obscure,
+                          decoration: InputDecoration(
+                            labelText: 'Contraseña',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                          ),
+                          validator: (v) => (v == null || v.length < 6)
+                              ? 'Mínimo 6 caracteres'
+                              : null,
+                          onFieldSubmitted: (_) => _busy ? null : _submit(),
+                        ),
+
+                        if (_registering) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            '¿Cómo vas a usar la app?',
+                            style: text.labelLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          SegmentedButton<UserRole>(
+                            showSelectedIcon: false,
+                            segments: [
+                              for (final role in UserRole.registrable)
+                                ButtonSegment(
+                                  value: role,
+                                  label: Text(role.label),
+                                ),
+                            ],
+                            selected: {_role},
+                            onSelectionChanged: (s) =>
+                                setState(() => _role = s.first),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(_role.hint, style: text.bodySmall),
+                          if (_role == UserRole.buyer) ...[
+                            const SizedBox(height: 14),
+                            Text('Tipo de comprador', style: text.labelLarge),
+                            const SizedBox(height: 8),
+                            SegmentedButton<BuyerType>(
+                              showSelectedIcon: false,
+                              segments: [
+                                for (final t in BuyerType.values)
+                                  ButtonSegment(
+                                    value: t,
+                                    label: Text(t.label),
+                                  ),
+                              ],
+                              selected: {_buyerType},
+                              onSelectionChanged: (s) =>
+                                  setState(() => _buyerType = s.first),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(_buyerType.hint, style: text.bodySmall),
+                          ],
+                        ],
+
+                        const SizedBox(height: 20),
+                        FilledButton(
+                          onPressed: _busy ? null : _submit,
+                          child: _busy
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  _registering ? 'Crear cuenta' : 'Ingresar',
+                                ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Web: boton oficial de Google (popup). Android: el nuestro
+                        // abre el selector de cuenta nativo.
+                        if (kIsWeb && _googleInit)
+                          Center(child: googleWebButton())
+                        else
+                          OutlinedButton.icon(
+                            onPressed: _busy ? null : _google,
+                            icon: const Icon(Icons.g_mobiledata, size: 28),
+                            label: Text(
+                              kIsWeb
+                                  ? 'Cargando Google...'
+                                  : 'Continuar con Google',
+                            ),
+                          ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () =>
+                                  setState(() => _registering = !_registering),
+                          child: Text(
+                            _registering
+                                ? 'Ya tengo cuenta, ingresar'
+                                : 'No tengo cuenta, registrarme',
+                          ),
+                        ),
+                        if (!_registering)
+                          TextButton(
+                            onPressed: _busy
+                                ? null
+                                : () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => ForgotPasswordPage(
+                                        email: _email.text.trim(),
+                                      ),
+                                    ),
+                                  ),
+                            child: const Text('Olvidé mi contraseña'),
+                          ),
+                        if (kIsWeb) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () => launchUrl(
+                              Uri.parse(
+                                'https://github.com/LUXOdi7/chapa_tu_repuesto_app'
+                                '/releases/latest/download/app-release.apk',
+                              ),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                            icon: const Icon(Icons.android),
+                            label: Text(
+                              'Descargar app v${ApiConfig.appVersion}',
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              'Si la barra llega al 100 % pero no pasa nada: abre el menú de tu navegador → Descargas, toca el archivo .apk y luego "Instalar". Si Android lo bloquea, ve a Ajustes → Aplicaciones → tu navegador → Instalar apps desconocidas y actívalo.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        const Divider(),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.push(
                                 context,
                                 MaterialPageRoute<void>(
-                                  builder: (_) => ForgotPasswordPage(
-                                    email: _email.text.trim(),
-                                  ),
+                                  builder: (_) =>
+                                      const LegalPage(section: 'about'),
                                 ),
                               ),
-                        child: const Text('Olvidé mi contraseña'),
-                      ),
-                    if (kIsWeb) ...[
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => launchUrl(
-                          Uri.parse(
-                            'https://github.com/LUXOdi7/chapa_tu_repuesto_app'
-                            '/releases/latest/download/app-release.apk',
-                          ),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                        icon: const Icon(Icons.android),
-                        label: const Text('Descargar app para Android'),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          'Si la barra llega al 100 % pero no pasa nada: abre el menú de tu navegador → Descargas, toca el archivo .apk y luego "Instalar". Si Android lo bloquea, ve a Ajustes → Aplicaciones → tu navegador → Instalar apps desconocidas y actívalo.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 11, color: Colors.grey),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const LegalPage(section: 'about'),
+                              child: const Text('Acerca de'),
                             ),
-                          ),
-                          child: const Text('Acerca de'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const LegalPage(section: 'terms'),
+                            TextButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const LegalPage(section: 'terms'),
+                                ),
+                              ),
+                              child: const Text('Terminos'),
                             ),
-                          ),
-                          child: const Text('Terminos'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  const LegalPage(section: 'returns'),
+                            TextButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const LegalPage(section: 'returns'),
+                                ),
+                              ),
+                              child: const Text('Devoluciones'),
                             ),
-                          ),
-                          child: const Text('Devoluciones'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  const LegalPage(section: 'complaints'),
+                            TextButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      const LegalPage(section: 'complaints'),
+                                ),
+                              ),
+                              child: const Text('Reclamaciones'),
                             ),
-                          ),
-                          child: const Text('Reclamaciones'),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
