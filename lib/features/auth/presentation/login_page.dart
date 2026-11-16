@@ -380,6 +380,14 @@ class _LoginPageState extends State<LoginPage> {
                         icon: const Icon(Icons.android),
                         label: const Text('Descargar app para Android'),
                       ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'Al terminar la descarga, revisa la barra de notificaciones y toca "Descargar de todas formas" si Chrome lo pide.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 12),
                     const Divider(),
