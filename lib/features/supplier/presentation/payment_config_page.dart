@@ -23,6 +23,7 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
   final _merchant = TextEditingController();
   final _user = TextEditingController();
   final _pass = TextEditingController();
+  final _mpToken = TextEditingController();
   bool _busy = false;
 
   static const _providers = {
@@ -45,18 +46,18 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
     _merchant.dispose();
     _user.dispose();
     _pass.dispose();
+    _mpToken.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    // MP usa OAuth: el botón _MpConnectButton maneja la conexión directamente
-    if (_provider == 'mercadopago') return;
     if (!_formKey.currentState!.validate()) return;
     setState(() => _busy = true);
     try {
       await AppScope.suppliersOf(context).configurePayment(
         provider: _provider,
         account: switch (_provider) {
+          'mercadopago' => _mpToken.text.trim(),
           'niubiz' =>
             '${_merchant.text.trim()}|${_user.text.trim()}|${_pass.text.trim()}',
           _ => null,
@@ -102,7 +103,52 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              if (_provider == 'mercadopago') _MpConnectButton(store: widget.store),
+              if (_provider == 'mercadopago') ...[
+                if (widget.store.paymentConfigured &&
+                    widget.store.paymentProvider == 'mercadopago')
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green),
+                        SizedBox(width: 8),
+                        Text('Cuenta Mercado Pago conectada'),
+                      ],
+                    ),
+                  ),
+                TextFormField(
+                  controller: _mpToken,
+                  decoration: const InputDecoration(
+                    labelText: 'Access Token de producción',
+                    hintText: 'APP_USR-...',
+                    helperText:
+                        'Encuéntralo en mercadopago.com.pe → Desarrollo → Credenciales → Producción',
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Pega tu Access Token de Mercado Pago'
+                      : null,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _busy ? null : _save,
+                  child: _busy
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar token'),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                const Text(
+                  'O vincula tu cuenta abriendo el navegador:',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                _MpConnectButton(store: widget.store),
+              ],
               if (_provider == 'niubiz') ...[
                 TextFormField(
                   controller: _merchant,
@@ -128,16 +174,15 @@ class _PaymentConfigPageState extends State<PaymentConfigPage> {
                       (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
                 ),
               ],
-              if (_provider != 'mercadopago' &&
-                  widget.store.paymentConfigured &&
-                  _provider == widget.store.paymentProvider)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: Text(
-                    'Ya tienes credenciales guardadas. Solo se reemplazan si guardas nuevas.',
+              if (_provider == 'niubiz' || _provider == 'simulado') ...[
+                if (widget.store.paymentConfigured &&
+                    _provider == widget.store.paymentProvider)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text(
+                      'Ya tienes credenciales guardadas. Solo se reemplazan si guardas nuevas.',
+                    ),
                   ),
-                ),
-              if (_provider != 'mercadopago') ...[
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _busy ? null : _save,
