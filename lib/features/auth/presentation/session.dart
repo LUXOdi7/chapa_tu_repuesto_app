@@ -28,6 +28,7 @@ class Session extends ChangeNotifier {
 
   User? _user;
   bool _restoring = true;
+  bool _isGuest = false;
 
   /// Motos del comprador; se cargan al iniciar sesion y se usan en el
   /// buscador (arranca filtrado) y en la ficha ("compatible con tu ...").
@@ -36,6 +37,14 @@ class Session extends ChangeNotifier {
   User? get user => _user;
   bool get restoring => _restoring;
   bool get isSignedIn => _user != null;
+  bool get isGuest => _isGuest;
+
+  /// Entra como invitado: sin token, solo para explorar el catalogo.
+  void enterGuest() {
+    _isGuest = true;
+    _restoring = false;
+    notifyListeners();
+  }
 
   /// Al abrir la app: si hay token guardado se valida contra `/auth/me`. Si el
   /// backend lo rechaza (o no responde), se borra y se pide login otra vez.
@@ -125,6 +134,7 @@ class Session extends ChangeNotifier {
   Future<void> signOut() async {
     _api.token = null;
     _user = null;
+    _isGuest = false;
     motos = const [];
     notifyListeners(); // primero la UI: la limpieza de abajo es best-effort
     try {

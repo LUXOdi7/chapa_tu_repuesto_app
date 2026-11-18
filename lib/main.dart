@@ -234,7 +234,9 @@ class _Root extends StatelessWidget {
         final user = session.user;
         if (user == null) {
           shopMode.value = false;
-          return const LoginPage();
+          return session.isGuest
+              ? const BuyerShell(isGuest: true)
+              : const LoginPage();
         }
         if (user.isAdmin) return const AdminShell();
         if (!user.isSupplier) return const BuyerShell();
@@ -252,11 +254,14 @@ class _Root extends StatelessWidget {
 /// Contenedor de las 4 pestañas del comprador. Un `IndexedStack` conserva el
 /// scroll y los filtros al cambiar de pestaña.
 class BuyerShell extends StatefulWidget {
-  const BuyerShell({super.key, this.asSupplier = false});
+  const BuyerShell({super.key, this.asSupplier = false, this.isGuest = false});
 
   /// Proveedor en modo comprador: muestra el boton para volver a su panel y
   /// pide sus compras (no la bandeja de su tienda) en "Pedidos".
   final bool asSupplier;
+
+  /// Invitado: puede ver catalogo y carrito, pero checkout lo manda al login.
+  final bool isGuest;
 
   @override
   State<BuyerShell> createState() => _BuyerShellState();
@@ -265,9 +270,11 @@ class BuyerShell extends StatefulWidget {
 class _BuyerShellState extends State<BuyerShell> {
   int _tab = 0;
 
-  List<String> get _titles => widget.asSupplier
-      ? ['ChapaTuRepuesto', 'Tiendas', 'Mis pedidos']
-      : ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito', 'Mis pedidos'];
+  List<String> get _titles => widget.isGuest
+      ? ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito']
+      : widget.asSupplier
+          ? ['ChapaTuRepuesto', 'Tiendas', 'Mis pedidos']
+          : ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito', 'Mis pedidos'];
 
   @override
   Widget build(BuildContext context) {
@@ -292,12 +299,22 @@ class _BuyerShellState extends State<BuyerShell> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-            const NotificationBell(),
-            IconButton(
-              tooltip: 'Mi cuenta',
-              icon: const Icon(Icons.account_circle_outlined),
-              onPressed: () => Navigator.pushNamed(context, ProfilePage.route),
-            ),
+            if (!widget.isGuest) ...[
+              const NotificationBell(),
+              IconButton(
+                tooltip: 'Mi cuenta',
+                icon: const Icon(Icons.account_circle_outlined),
+                onPressed: () => Navigator.pushNamed(context, ProfilePage.route),
+              ),
+            ] else
+              TextButton.icon(
+                onPressed: () => AppScope.sessionOf(context).signOut(),
+                icon: const Icon(Icons.login, color: Colors.white),
+                label: const Text(
+                  'Iniciar sesión',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
           ],
         ),
         body: IndexedStack(
@@ -305,8 +322,8 @@ class _BuyerShellState extends State<BuyerShell> {
           children: [
             const SearchView(),
             const StoresView(),
-            if (!widget.asSupplier) const CartView(),
-            OrdersView(asBuyer: widget.asSupplier),
+            if (!widget.asSupplier || widget.isGuest) const CartView(),
+            if (!widget.isGuest) OrdersView(asBuyer: widget.asSupplier),
           ],
         ),
         destinations: [
@@ -318,7 +335,7 @@ class _BuyerShellState extends State<BuyerShell> {
             icon: Icon(Icons.storefront_outlined),
             label: 'Tiendas',
           ),
-          if (!widget.asSupplier)
+          if (!widget.asSupplier || widget.isGuest)
             NavigationDestination(
               icon: Badge.count(
                 count: scope.cart.unitCount,
@@ -327,10 +344,11 @@ class _BuyerShellState extends State<BuyerShell> {
               ),
               label: 'Carrito',
             ),
-          const NavigationDestination(
-            icon: Icon(Icons.receipt_long),
-            label: 'Pedidos',
-          ),
+          if (!widget.isGuest)
+            const NavigationDestination(
+              icon: Icon(Icons.receipt_long),
+              label: 'Pedidos',
+            ),
         ],
       ),
     );

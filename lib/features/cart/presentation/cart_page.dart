@@ -7,6 +7,32 @@ import '../domain/cart_item.dart';
 import 'cart_store.dart';
 import 'checkout_page.dart';
 
+/// Dialogo que aparece cuando un invitado intenta comprar.
+Future<void> _showGuestDialog(BuildContext context) => showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        icon: const Icon(Icons.lock_outline, size: 36),
+        title: const Text('Inicia sesión para comprar'),
+        content: const Text(
+          'Regístrate o inicia sesión para completar tu compra. '
+          'Tu carrito se conservará.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Seguir mirando'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              AppScope.sessionOf(context).signOut();
+            },
+            child: const Text('Ir al login'),
+          ),
+        ],
+      ),
+    );
+
 /// Carrito agrupado por tienda: cada proveedor genera su propio pedido, asi que
 /// el comprador ve desde aqui en cuantos pedidos se va a dividir y cuanto envio
 /// paga por cada uno.
@@ -79,8 +105,13 @@ class CartView extends StatelessWidget {
               subtotal: cart.subtotal,
               shipping: cart.shipping,
               total: cart.total,
-              onCheckout: () =>
-                  Navigator.pushNamed(context, CheckoutPage.route),
+              onCheckout: () {
+                if (AppScope.sessionOf(context).isGuest) {
+                  _showGuestDialog(context);
+                } else {
+                  Navigator.pushNamed(context, CheckoutPage.route);
+                }
+              },
             ),
           ],
         );

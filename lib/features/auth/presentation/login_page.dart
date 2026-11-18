@@ -379,7 +379,7 @@ class _LoginPageState extends State<LoginPage> {
                                 : 'No tengo cuenta, registrarme',
                           ),
                         ),
-                        if (!_registering)
+                        if (!_registering) ...[
                           TextButton(
                             onPressed: _busy
                                 ? null
@@ -393,6 +393,14 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                             child: const Text('Olvidé mi contraseña'),
                           ),
+                          OutlinedButton.icon(
+                            onPressed: _busy
+                                ? null
+                                : () => AppScope.sessionOf(context).enterGuest(),
+                            icon: const Icon(Icons.visibility_outlined),
+                            label: const Text('Explorar sin cuenta'),
+                          ),
+                        ],
                         if (kIsWeb) ...[
                           const SizedBox(height: 16),
                           const Divider(),
