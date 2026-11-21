@@ -546,11 +546,12 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     if (order.nextStatus.isEmpty) return const SizedBox.shrink();
 
+    final isAdmin = AppScope.sessionOf(context).user?.isAdmin ?? false;
+
     final buttons = <Widget>[];
     for (final status in order.nextStatus) {
-      // El paso a payment_verified no es un cambio de estado suelto: pasa por
-      // /orders/{id}/payment, que registra el numero de operacion.
-      if (status == 'payment_verified') {
+      if (status == 'payment_verified' && !isAdmin) {
+        // Comprador/proveedor: mostrar QR de Yape para pagar.
         buttons.add(
           FilledButton.icon(
             onPressed: busy ? null : onPay,
@@ -563,6 +564,15 @@ class _Actions extends StatelessWidget {
                   )
                 : const Icon(Icons.payments_outlined),
             label: Text('Pagar ${soles(order.total)}'),
+          ),
+        );
+      } else if (status == 'payment_verified' && isAdmin) {
+        // Admin: verificar/aprobar el pago (no paga, solo confirma).
+        buttons.add(
+          FilledButton.icon(
+            onPressed: busy ? null : () => onStatus(status),
+            icon: const Icon(Icons.verified_outlined),
+            label: const Text('Verificar pago'),
           ),
         );
       } else if (status == 'closed') {
