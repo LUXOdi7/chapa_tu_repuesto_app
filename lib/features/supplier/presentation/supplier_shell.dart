@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
+import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/domain/product.dart';
 import '../../catalog/domain/store.dart';
@@ -37,6 +41,7 @@ class _SupplierShellState extends State<SupplierShell> {
     'Estadísticas',
     'Pedidos de mi tienda',
     'Mis repuestos',
+    'Chat con Admin',
   ];
 
   @override
@@ -88,6 +93,7 @@ class _SupplierShellState extends State<SupplierShell> {
                 const SupplierStatsView(),
                 const OrdersView(),
                 const _SupplierProducts(),
+                const _SupplierDirectChat(),
               ],
             ),
             destinations: const [
@@ -107,6 +113,10 @@ class _SupplierShellState extends State<SupplierShell> {
               NavigationDestination(
                 icon: Icon(Icons.inventory_2_outlined),
                 label: 'Repuestos',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.chat_outlined),
+                label: 'Chat',
               ),
             ],
           );
@@ -505,4 +515,215 @@ class _Line extends StatelessWidget {
       ],
     ),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Chat directo proveedor <-> admin
+// ---------------------------------------------------------------------------
+class _SupplierDirectChat extends StatefulWidget {
+  const _SupplierDirectChat();
+
+  @override
+  State<_SupplierDirectChat> createState() => _SupplierDirectChatState();
+}
+
+class _SupplierDirectChatState extends State<_SupplierDirectChat> {
+  final _messages = <DirectChatMessage>[];
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  Timer? _poll;
+  bool _loading = true;
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_refresh);
+    _poll = Timer.periodic(const Duration(seconds: 4), (_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    _input.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _merge(Iterable<DirectChatMessage> news) {
+    final ids = {for (final m in _messages) m.id};
+    final nuevos = news.where((m) => ids.add(m.id)).toList();
+    if (nuevos.isEmpty) return;
+    setState(() => _messages.addAll(nuevos));
+    _scrollToEnd();
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final news = await AppScope.suppliersOf(context).directMessages(
+        afterId: _messages.isEmpty ? 0 : _messages.last.id,
+      );
+      if (!mounted) return;
+      if (_loading) setState(() => _loading = false);
+      _merge(news);
+    } catch (e) {
+      if (mounted && _loading) {
+        setState(() => _loading = false);
+        showError(context, e);
+      }
+    }
+  }
+
+  Future<void> _send() async {
+    final text = _input.text.trim();
+    if (text.isEmpty) return;
+    _input.clear();
+    setState(() => _sending = true);
+    try {
+      final sent = await AppScope.suppliersOf(context).sendDirectMessage(text);
+      if (!mounted) return;
+      _merge([sent]);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _sendImage() async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      imageQuality: 80,
+    );
+    if (file == null || !mounted) return;
+    setState(() => _sending = true);
+    try {
+      final imageUrl = await AppScope.of(context).api.uploadImage(file, folder: 'chat');
+      if (!mounted) return;
+      final sent = await AppScope.suppliersOf(context)
+          .sendDirectMessage('Imagen adjunta', imageUrl: imageUrl);
+      if (!mounted) return;
+      _merge([sent]);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final me = AppScope.sessionOf(context).user?.id;
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          color: Colors.blue.shade50,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: const Text(
+            'Chat directo con el administrador de ChapaTuRepuesto.',
+            style: TextStyle(fontSize: 11, color: Colors.blueGrey),
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _messages.isEmpty
+                  ? const EmptyState(
+                      message: 'No hay mensajes aun.\nEscribe al administrador.',
+                      icon: Icons.chat_bubble_outline,
+                    )
+                  : ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, i) {
+                        final m = _messages[i];
+                        final mine = m.senderId == me;
+                        return Align(
+                          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                            ),
+                            decoration: BoxDecoration(
+                              color: mine ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (!mine)
+                                  Text(
+                                    m.senderName,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: scheme.outline,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                if (m.imageUrl != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        ApiConfig.imageUrl(m.imageUrl!) ?? m.imageUrl!,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Icon(Icons.broken_image, size: 48),
+                                      ),
+                                    ),
+                                  ),
+                                Text(m.body),
+                                Text(
+                                  timeLabel(m.at),
+                                  style: TextStyle(fontSize: 10, color: scheme.outline),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: _sending ? null : _sendImage,
+                  icon: const Icon(Icons.image_outlined),
+                  tooltip: 'Enviar imagen',
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _send(),
+                    decoration: const InputDecoration(hintText: 'Escribe un mensaje'),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton.filled(
+                  onPressed: _sending ? null : _send,
+                  icon: const Icon(Icons.send),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

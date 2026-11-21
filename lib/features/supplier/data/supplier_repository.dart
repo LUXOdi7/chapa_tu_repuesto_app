@@ -4,6 +4,7 @@ import '../../../core/network/api_client.dart';
 import '../../catalog/domain/compatibility.dart';
 import '../../catalog/domain/product.dart';
 import '../../catalog/domain/store.dart';
+import '../../orders/domain/order.dart';
 
 /// Panel del proveedor. Todo requiere token con perfil `supplier`.
 class SupplierRepository {
@@ -107,6 +108,19 @@ class SupplierRepository {
   /// antes de editar, si no el PUT las borraria.
   Future<Product> product(int id) async =>
       Product.fromJson(asMap(await _api.get('/suppliers/products/$id')));
+
+  // ---- Chat directo con admin ----
+  Future<List<DirectChatMessage>> directMessages({int afterId = 0}) async =>
+      asMapList(await _api.get('/supplier/direct-messages',
+          query: {'after_id': afterId > 0 ? afterId : null}))
+          .map(DirectChatMessage.fromJson)
+          .toList();
+
+  Future<DirectChatMessage> sendDirectMessage(String body, {String? imageUrl}) async =>
+      DirectChatMessage.fromJson(asMap(await _api.post(
+        '/supplier/direct-messages',
+        body: {'body': body, 'image_url': imageUrl},
+      )));
 
   /// Cuerpo comun de POST y PUT de productos.
   static Map<String, dynamic> productBody({

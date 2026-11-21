@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../data/admin_repository.dart';
@@ -779,6 +780,18 @@ class _RegistrationsTabState extends State<_RegistrationsTab> {
     });
   }
 
+  Future<void> _exportPdf(BuildContext context) async {
+    final base = ApiConfig.baseUrl;
+    final token = AppScope.of(context).api.token;
+    final params = <String, String>{};
+    if (_dateFrom != null) params['date_from'] = _dateFrom!;
+    if (_dateTo != null) params['date_to'] = _dateTo!;
+    if (_role != null) params['role'] = _role!;
+    if (token != null) params['token'] = token;
+    final uri = Uri.parse('$base/admin/registrations.pdf').replace(queryParameters: params);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final admin = AppScope.adminOf(context);
@@ -843,9 +856,23 @@ class _RegistrationsTabState extends State<_RegistrationsTab> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _StatGrid(items: [
-                    ('Total registros', '${data['total']}', Icons.people),
-                  ]),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatGrid(items: [
+                          ('Total registros', '${data['total']}', Icons.people),
+                        ]),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: OutlinedButton.icon(
+                          onPressed: () => _exportPdf(context),
+                          icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                          label: const Text('PDF'),
+                        ),
+                      ),
+                    ],
+                  ),
                   if (daily.isNotEmpty) ...[
                     const SectionTitle('Registros por día'),
                     SizedBox(
@@ -870,10 +897,18 @@ class _RegistrationsTabState extends State<_RegistrationsTab> {
                           size: 20,
                         ),
                         title: Text('${raw['name']}'),
-                        subtitle: Text(
-                          '${raw['email']}  ·  ${raw['role']}\n'
-                          'Pedidos: ${raw['order_count']}  ·  ${shortDate(parseServerDate(raw['created_at'] as String))}',
-                        ),
+                        subtitle: Builder(builder: (_) {
+                          final pc = raw['product_count'];
+                          final prodTxt = pc != null && pc > 0 ? '  ·  $pc prods' : '';
+                          final loginTxt = raw['last_login_at'] != null
+                              ? '  ·  Login: ${shortDate(parseServerDate(raw['last_login_at'] as String))}'
+                              : '';
+                          return Text(
+                            '${raw['email']}  ·  ${raw['role']}$prodTxt\n'
+                            'Pedidos: ${raw['order_count']}  ·  Registro: ${shortDate(parseServerDate(raw['created_at'] as String))}'
+                            '$loginTxt',
+                          );
+                        }),
                         isThreeLine: true,
                       ),
                 ],
