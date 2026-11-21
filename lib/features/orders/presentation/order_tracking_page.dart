@@ -64,11 +64,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         final start = await repo.startPayment(order.id);
         final url = start.checkoutUrl;
         if (url == null) return; // ya quedo aprobado (simulado)
-        // inAppWebView = Chrome Custom Tab en Android / SFSafariVC en iOS;
-        // el comprador paga sin salir de la app.
+        // Navegador externo: comparte cookies/sesión de MP, así el
+        // comprador ve la opción "Ingresar con mi cuenta" para pagar
+        // con saldo MP. Chrome Custom Tab no comparte sesión.
         if (!await launchUrl(
           Uri.parse(url),
-          mode: LaunchMode.inAppWebView,
+          mode: LaunchMode.externalApplication,
         )) {
           throw Exception('No se pudo abrir el checkout de ${start.provider}.');
         }

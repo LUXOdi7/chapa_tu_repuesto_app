@@ -272,9 +272,7 @@ class _BuyerShellState extends State<BuyerShell> {
 
   List<String> get _titles => widget.isGuest
       ? ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito']
-      : widget.asSupplier
-          ? ['ChapaTuRepuesto', 'Tiendas', 'Mis pedidos']
-          : ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito', 'Mis pedidos'];
+      : ['ChapaTuRepuesto', 'Tiendas', 'Mi carrito', 'Mis pedidos'];
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +320,7 @@ class _BuyerShellState extends State<BuyerShell> {
           children: [
             const SearchView(),
             const StoresView(),
-            if (!widget.asSupplier || widget.isGuest) const CartView(),
+            const CartView(),
             if (!widget.isGuest) OrdersView(asBuyer: widget.asSupplier),
           ],
         ),
@@ -335,8 +333,7 @@ class _BuyerShellState extends State<BuyerShell> {
             icon: Icon(Icons.storefront_outlined),
             label: 'Tiendas',
           ),
-          if (!widget.asSupplier || widget.isGuest)
-            NavigationDestination(
+          NavigationDestination(
               icon: Badge.count(
                 count: scope.cart.unitCount,
                 isLabelVisible: scope.cart.unitCount > 0,

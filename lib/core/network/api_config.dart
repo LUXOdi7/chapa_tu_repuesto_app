@@ -8,7 +8,7 @@ class ApiConfig {
   const ApiConfig._();
 
   /// Versión visible en la pantalla de login. Actualizar junto con pubspec.yaml.
-  static const appVersion = '1.6.4';
+  static const appVersion = '1.6.5';
 
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
