@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/presentation/store_page.dart';
+import '../data/order_repository.dart';
 import '../domain/order.dart';
-import '../domain/payment_method.dart';
 import 'chat_page.dart';
 import 'receipt_page.dart';
 
@@ -44,109 +45,167 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// Tarjeta en tienda con pasarela: `/payments/{id}/start` devuelve la URL
-  /// del checkout (Mercado Pago o Niubiz); se abre en el navegador y el
-  /// backend aprueba el pedido cuando la pasarela confirma. Sin pasarela o con
-  /// Yape/transferencia: pago manual con numero de operacion.
+  /// Muestra el QR de Yape del admin + codigo de pedido + telefono.
+  /// El comprador paga en Yape y luego sube la captura al chat.
   Future<void> _pay(Order order) async {
-    // El repositorio se toma ANTES del dialogo: despues del await el context
-    // ya no es de fiar.
     final repo = AppScope.ordersOf(context);
-    final controller = TextEditingController();
-    // Si el pedido venía con tarjeta pero la tienda no tiene pasarela, el
-    // comprador tiene que elegir otro método en el diálogo manual.
-    var method = (!order.storeHasGateway && order.paymentMethod == PaymentMethod.card)
-        ? PaymentMethod.yape
-        : order.paymentMethod;
 
-    if (order.storeHasGateway && method == PaymentMethod.card) {
-      await _run(() async {
-        final start = await repo.startPayment(order.id);
-        final url = start.checkoutUrl;
-        if (url == null) return; // ya quedo aprobado (simulado)
-        // Navegador externo: comparte cookies/sesión de MP, así el
-        // comprador ve la opción "Ingresar con mi cuenta" para pagar
-        // con saldo MP. Chrome Custom Tab no comparte sesión.
-        if (!await launchUrl(
-          Uri.parse(url),
-          mode: LaunchMode.externalApplication,
-        )) {
-          throw Exception('No se pudo abrir el checkout de ${start.provider}.');
-        }
-        if (mounted) {
-          showInfo(
-            context,
-            'Cuando termines de pagar, vuelve y toca "Actualizar".',
-          );
-        }
-      });
-      return;
-    }
+    // Cargar datos de Yape (QR + telefono)
+    YapeInfo? yape;
+    try {
+      yape = await repo.yapeInfo();
+    } catch (_) {}
 
-    final formKey = GlobalKey<FormState>();
-    final confirmed = await showDialog<bool>(
+    if (!mounted) return;
+
+    await showDialog<void>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setLocal) => AlertDialog(
-          title: Text('Pagar ${soles(order.total)}'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<PaymentMethod>(
-                  initialValue: method,
-                  decoration: const InputDecoration(labelText: 'Método'),
-                  items: [
-                    for (final m in PaymentMethod.values)
-                      // Tarjeta siempre pasa por pasarela; nunca va por N° operación.
-                      if (m != PaymentMethod.card)
-                        DropdownMenuItem(value: m, child: Text(m.label)),
-                  ],
-                  onChanged: (m) => setLocal(() => method = m ?? method),
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Pagar ${soles(order.total)}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // QR image
+              if (yape?.qrImage != null && yape!.qrImage!.isNotEmpty)
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: Image.network(
+                    yape.qrImage!,
+                    height: 220,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.qr_code_2,
+                      size: 120,
+                      color: Colors.grey,
+                    ),
+                  ),
+                )
+              else
+                const Icon(Icons.qr_code_2, size: 120, color: Colors.grey),
+              const SizedBox(height: 12),
+              // Phone number
+              if (yape != null && yape.phone.isNotEmpty) ...[
+                const Text(
+                  'O paga al numero:',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: yape!.phone));
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(content: Text('Numero copiado')),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        yape.phone,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.copy, size: 18),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'N° de operación',
-                    helperText: method == PaymentMethod.yape
-                        ? 'El número que muestra Yape al finalizar el pago'
-                        : 'Número de operación de tu banco',
-                  ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Ingresa el número de operación'
-                      : null,
-                ),
               ],
-            ),
+              // Order code for reference
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Pon este codigo como referencia en Yape:',
+                      style: TextStyle(fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    InkWell(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: order.code));
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(content: Text('Codigo copiado')),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            order.code,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.copy, size: 18),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Monto: ${soles(order.total)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Despues de pagar, envia la captura de pantalla '
+                'en el chat con el administrador para que verifique tu pago.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(dialogContext, true);
-                }
-              },
-              child: const Text('Confirmar pago'),
-            ),
-          ],
         ),
-      ),
-    );
-
-    if (confirmed != true) return;
-    final number = controller.text.trim();
-    await _run(
-      () => repo.pay(
-        order.id,
-        method: method,
-        operationNumber: number.isEmpty ? null : number,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cerrar'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              // Abrir el chat con el admin para enviar la captura
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => ChatPage(
+                    order: order,
+                    initialChannel: 'admin',
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) _refresh();
+              });
+            },
+            icon: const Icon(Icons.chat),
+            label: const Text('Ir al chat'),
+          ),
+        ],
       ),
     );
   }

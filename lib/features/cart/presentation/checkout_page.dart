@@ -276,7 +276,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
 
               const SectionTitle('Método de pago'),
-              for (final method in PaymentMethod.values)
+              for (final method in PaymentMethod.available)
                 ListTile(
                   onTap: () => setState(() => _method = method),
                   selected: _method == method,

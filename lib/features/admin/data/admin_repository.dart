@@ -4,9 +4,6 @@ import '../../catalog/domain/store.dart';
 import '../../orders/domain/order.dart';
 
 /// Panel del administrador. Todo requiere token con perfil `admin`.
-///
-/// ponytail: las respuestas de stats y feedback se usan como mapas crudos; con
-/// dos pantallas que las leen no vale la pena un modelo por cada una.
 class AdminRepository {
   const AdminRepository(this._api);
 
@@ -83,5 +80,60 @@ class AdminRepository {
   }) => _api.patch(
     '/admin/reclamaciones/$id',
     body: {'respuesta': respuesta, 'resuelto': resuelto},
+  );
+
+  // ---- Movimientos de pago ----
+  Future<Map<String, dynamic>> movements({
+    String? dateFrom,
+    String? dateTo,
+    String? buyerEmail,
+    int? storeId,
+  }) async => asMap(
+    await _api.get('/admin/movements', query: {
+      'date_from': dateFrom,
+      'date_to': dateTo,
+      'buyer_email': buyerEmail,
+      'store_id': storeId,
+    }),
+  );
+
+  // ---- Registros de usuarios ----
+  Future<Map<String, dynamic>> registrations({
+    String? dateFrom,
+    String? dateTo,
+    String? role,
+  }) async => asMap(
+    await _api.get('/admin/registrations', query: {
+      'date_from': dateFrom,
+      'date_to': dateTo,
+      'role': role,
+    }),
+  );
+
+  // ---- Chat directo con proveedores ----
+  Future<List<Map<String, dynamic>>> directConversations() async =>
+      asMapList(await _api.get('/admin/direct-conversations'));
+
+  Future<List<DirectChatMessage>> directMessages(
+    int userId, {
+    int afterId = 0,
+  }) async => asMapList(
+    await _api.get(
+      '/admin/direct-messages/$userId',
+      query: {'after_id': afterId > 0 ? afterId : null},
+    ),
+  ).map(DirectChatMessage.fromJson).toList();
+
+  Future<DirectChatMessage> sendDirectMessage(
+    int userId,
+    String body, {
+    String? imageUrl,
+  }) async => DirectChatMessage.fromJson(
+    asMap(
+      await _api.post(
+        '/admin/direct-messages/$userId',
+        body: {'body': body, 'image_url': imageUrl},
+      ),
+    ),
   );
 }

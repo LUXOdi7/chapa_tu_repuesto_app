@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/app_scope.dart';
 import '../data/admin_repository.dart';
 import '../../../core/format.dart';
+import '../../../core/network/api_config.dart';
 import '../../../shared/widgets/app_widgets.dart';
 import '../../auth/domain/user.dart';
 import '../../catalog/domain/store.dart';
@@ -11,7 +15,7 @@ import '../../orders/presentation/order_tracking_page.dart';
 import '../../profile/presentation/profile_page.dart';
 
 /// Panel del administrador: resumen, cuentas, tiendas por verificar,
-/// pedidos y sugerencias de los usuarios.
+/// pedidos, sugerencias, reclamos, movimientos, registros y chat directo.
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
 
@@ -27,6 +31,9 @@ class _AdminShellState extends State<AdminShell> {
     'Usuarios',
     'Tiendas',
     'Pedidos',
+    'Movimientos',
+    'Registros',
+    'Chat',
     'Sugerencias',
     'Reclamos',
   ];
@@ -53,35 +60,23 @@ class _AdminShellState extends State<AdminShell> {
           _UsersTab(),
           _StoresTab(),
           _OrdersTab(),
+          _MovementsTab(),
+          _RegistrationsTab(),
+          _DirectChatTab(),
           _FeedbackTab(),
           _ReclamacionesTab(),
         ],
       ),
       destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          label: 'Resumen',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.people_outline),
-          label: 'Usuarios',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.storefront_outlined),
-          label: 'Tiendas',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.receipt_long_outlined),
-          label: 'Pedidos',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.feedback_outlined),
-          label: 'Ideas',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.report_problem_outlined),
-          label: 'Reclamos',
-        ),
+        NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Resumen'),
+        NavigationDestination(icon: Icon(Icons.people_outline), label: 'Usuarios'),
+        NavigationDestination(icon: Icon(Icons.storefront_outlined), label: 'Tiendas'),
+        NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Pedidos'),
+        NavigationDestination(icon: Icon(Icons.payments_outlined), label: 'Movimientos'),
+        NavigationDestination(icon: Icon(Icons.person_add_outlined), label: 'Registros'),
+        NavigationDestination(icon: Icon(Icons.chat_outlined), label: 'Chat'),
+        NavigationDestination(icon: Icon(Icons.feedback_outlined), label: 'Ideas'),
+        NavigationDestination(icon: Icon(Icons.report_problem_outlined), label: 'Reclamos'),
       ],
     );
   }
@@ -185,7 +180,6 @@ class _StatsTabState extends State<_StatsTab> {
   }
 }
 
-/// Alta de categoria desde el panel (tambien pueden las tiendas).
 Future<void> _newCategory(BuildContext context) async {
   final catalog = AppScope.catalogOf(context);
   final ctrl = TextEditingController();
@@ -200,10 +194,7 @@ Future<void> _newCategory(BuildContext context) async {
         decoration: const InputDecoration(labelText: 'Nombre'),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(d),
-          child: const Text('Cancelar'),
-        ),
+        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(d, ctrl.text.trim()),
           child: const Text('Crear'),
@@ -226,8 +217,6 @@ class _StatGrid extends StatelessWidget {
   final List<(String, String, IconData)> items;
 
   @override
-  // Tarjetas compactas de alto fijo: en web/tablet entran 4-6 por fila en
-  // vez de estirarse a media pantalla.
   Widget build(BuildContext context) => GridView(
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
@@ -244,11 +233,7 @@ class _StatGrid extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -280,7 +265,7 @@ class _StatGrid extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Usuarios: buscar, bloquear/activar, cambiar perfil
+// Usuarios
 // ---------------------------------------------------------------------------
 class _UsersTab extends StatefulWidget {
   const _UsersTab();
@@ -310,12 +295,8 @@ class _UsersTabState extends State<_UsersTab> {
             const Divider(height: 1),
             if (user.id != me?.id)
               ListTile(
-                leading: Icon(
-                  user.isActive ? Icons.block : Icons.check_circle_outline,
-                ),
-                title: Text(
-                  user.isActive ? 'Bloquear cuenta' : 'Reactivar cuenta',
-                ),
+                leading: Icon(user.isActive ? Icons.block : Icons.check_circle_outline),
+                title: Text(user.isActive ? 'Bloquear cuenta' : 'Reactivar cuenta'),
                 onTap: () => Navigator.pop(sheet, 'toggle'),
               ),
             for (final role in UserRole.values)
@@ -334,10 +315,7 @@ class _UsersTabState extends State<_UsersTab> {
       if (action == 'toggle') {
         await admin.updateUser(user.id, isActive: !user.isActive);
       } else {
-        await admin.updateUser(
-          user.id,
-          role: UserRole.parse(action.substring(5)),
-        );
+        await admin.updateUser(user.id, role: UserRole.parse(action.substring(5)));
       }
       if (mounted) setState(() => _reload++);
     } catch (e) {
@@ -397,9 +375,7 @@ class _UsersTabState extends State<_UsersTab> {
                 final u = users[i];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: u.isActive
-                        ? null
-                        : Colors.red.withValues(alpha: 0.2),
+                    backgroundColor: u.isActive ? null : Colors.red.withValues(alpha: 0.2),
                     child: Icon(switch (u.role) {
                       UserRole.admin => Icons.admin_panel_settings,
                       UserRole.supplier => Icons.storefront,
@@ -423,7 +399,7 @@ class _UsersTabState extends State<_UsersTab> {
 }
 
 // ---------------------------------------------------------------------------
-// Tiendas: verificar RUC
+// Tiendas
 // ---------------------------------------------------------------------------
 class _StoresTab extends StatefulWidget {
   const _StoresTab();
@@ -482,10 +458,7 @@ class _StoresTabState extends State<_StoresTab> {
                       TextButton(
                         style: TextButton.styleFrom(
                           minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         ),
                         onPressed: () async {
                           try {
@@ -500,10 +473,7 @@ class _StoresTabState extends State<_StoresTab> {
                       TextButton(
                         style: TextButton.styleFrom(
                           minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         ),
                         onPressed: () async {
                           try {
@@ -531,7 +501,7 @@ class _StoresTabState extends State<_StoresTab> {
 }
 
 // ---------------------------------------------------------------------------
-// Pedidos de toda la plataforma
+// Pedidos
 // ---------------------------------------------------------------------------
 class _OrdersTab extends StatelessWidget {
   const _OrdersTab();
@@ -549,10 +519,7 @@ class _OrdersTab extends StatelessWidget {
         itemBuilder: (context, i) {
           final o = orders[i];
           return ListTile(
-            leading: Icon(
-              orderStatusIcon(o.status),
-              color: orderStatusColor(o.status),
-            ),
+            leading: Icon(orderStatusIcon(o.status), color: orderStatusColor(o.status)),
             title: Text('${o.code}  ·  ${soles(o.total)}'),
             subtitle: Text(
               '${o.buyerName ?? ''} → ${o.store.businessName}\n${o.statusLabel}  ·  ${shortDate(o.createdAt)}',
@@ -566,6 +533,615 @@ class _OrdersTab extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Movimientos de pago
+// ---------------------------------------------------------------------------
+class _MovementsTab extends StatefulWidget {
+  const _MovementsTab();
+
+  @override
+  State<_MovementsTab> createState() => _MovementsTabState();
+}
+
+class _MovementsTabState extends State<_MovementsTab> {
+  String? _dateFrom;
+  String? _dateTo;
+  final _emailCtrl = TextEditingController();
+  String _preset = 'month';
+  int _reload = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _applyPreset('month');
+  }
+
+  void _applyPreset(String preset) {
+    final now = DateTime.now();
+    _preset = preset;
+    switch (preset) {
+      case 'day':
+        _dateFrom = DateTime(now.year, now.month, now.day).toIso8601String();
+        _dateTo = null;
+      case 'week':
+        _dateFrom = now.subtract(const Duration(days: 7)).toIso8601String();
+        _dateTo = null;
+      case 'month':
+        _dateFrom = DateTime(now.year, now.month, 1).toIso8601String();
+        _dateTo = null;
+      case 'year':
+        _dateFrom = DateTime(now.year, 1, 1).toIso8601String();
+        _dateTo = null;
+      default:
+        _dateFrom = null;
+        _dateTo = null;
+    }
+    setState(() => _reload++);
+  }
+
+  Future<void> _pickRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (range == null) return;
+    setState(() {
+      _preset = 'custom';
+      _dateFrom = range.start.toIso8601String();
+      _dateTo = range.end.add(const Duration(days: 1)).toIso8601String();
+      _reload++;
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final admin = AppScope.adminOf(context);
+    return Column(
+      children: [
+        // Filtros
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: TextField(
+            controller: _emailCtrl,
+            decoration: const InputDecoration(
+              hintText: 'Buscar por correo del comprador',
+              prefixIcon: Icon(Icons.email_outlined),
+              isDense: true,
+            ),
+            onSubmitted: (_) => setState(() => _reload++),
+          ),
+        ),
+        SizedBox(
+          height: 46,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            children: [
+              for (final (key, label) in [
+                ('day', 'Hoy'),
+                ('week', 'Semana'),
+                ('month', 'Mes'),
+                ('year', 'Año'),
+              ]) ...[
+                FilterChip(
+                  label: Text(label),
+                  selected: _preset == key,
+                  onSelected: (_) => _applyPreset(key),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 8),
+              ],
+              ActionChip(
+                label: const Text('Rango...'),
+                onPressed: _pickRange,
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: AsyncView<Map<String, dynamic>>(
+            refreshKey: '$_dateFrom|$_dateTo|${_emailCtrl.text}|$_reload',
+            load: () => admin.movements(
+              dateFrom: _dateFrom,
+              dateTo: _dateTo,
+              buyerEmail: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+            ),
+            builder: (context, data) {
+              final items = (data['items'] as List?) ?? [];
+              final daily = (data['daily'] as List?) ?? [];
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // Summary cards
+                  _StatGrid(items: [
+                    ('Pagos', '${data['total']}', Icons.receipt_long),
+                    ('Total', soles(data['total_amount'] ?? 0), Icons.payments),
+                    ('Comisión', soles(data['total_fee'] ?? 0), Icons.percent),
+                  ]),
+                  if (daily.isNotEmpty) ...[
+                    const SectionTitle('Ventas por día'),
+                    SizedBox(
+                      height: 120,
+                      child: _BarChart(
+                        values: daily
+                            .map((d) => (
+                              (d['day'] as String).substring(5),
+                              (d['amount'] as num).toDouble(),
+                            ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                  const SectionTitle('Detalle'),
+                  for (final raw in items)
+                    if (raw is Map)
+                      ListTile(
+                        dense: true,
+                        leading: Icon(
+                          orderStatusIcon(raw['status'] as String? ?? ''),
+                          color: orderStatusColor(raw['status'] as String? ?? ''),
+                          size: 20,
+                        ),
+                        title: Text('${raw['code']}  ·  ${soles((raw['total'] as num?) ?? 0)}'),
+                        subtitle: Text(
+                          '${(raw['buyer'] as Map?)?['name'] ?? ''} → '
+                          '${(raw['store'] as Map?)?['business_name'] ?? ''}\n'
+                          '${raw['status_label'] ?? ''}  ·  comisión ${soles((raw['platform_fee'] as num?) ?? 0)}',
+                        ),
+                        isThreeLine: true,
+                        onTap: () {
+                          final id = raw['id'] as int?;
+                          if (id != null) {
+                            Navigator.pushNamed(context, OrderTrackingPage.route, arguments: id);
+                          }
+                        },
+                      ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Registros de usuarios
+// ---------------------------------------------------------------------------
+class _RegistrationsTab extends StatefulWidget {
+  const _RegistrationsTab();
+
+  @override
+  State<_RegistrationsTab> createState() => _RegistrationsTabState();
+}
+
+class _RegistrationsTabState extends State<_RegistrationsTab> {
+  String? _dateFrom;
+  String? _dateTo;
+  String? _role;
+  String _preset = 'month';
+  int _reload = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _applyPreset('month');
+  }
+
+  void _applyPreset(String preset) {
+    final now = DateTime.now();
+    _preset = preset;
+    switch (preset) {
+      case 'day':
+        _dateFrom = DateTime(now.year, now.month, now.day).toIso8601String();
+        _dateTo = null;
+      case 'week':
+        _dateFrom = now.subtract(const Duration(days: 7)).toIso8601String();
+        _dateTo = null;
+      case 'month':
+        _dateFrom = DateTime(now.year, now.month, 1).toIso8601String();
+        _dateTo = null;
+      case 'year':
+        _dateFrom = DateTime(now.year, 1, 1).toIso8601String();
+        _dateTo = null;
+      default:
+        _dateFrom = null;
+        _dateTo = null;
+    }
+    setState(() => _reload++);
+  }
+
+  Future<void> _pickRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2024),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (range == null) return;
+    setState(() {
+      _preset = 'custom';
+      _dateFrom = range.start.toIso8601String();
+      _dateTo = range.end.add(const Duration(days: 1)).toIso8601String();
+      _reload++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final admin = AppScope.adminOf(context);
+    return Column(
+      children: [
+        SizedBox(
+          height: 46,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            children: [
+              for (final (key, label) in [
+                ('day', 'Hoy'),
+                ('week', 'Semana'),
+                ('month', 'Mes'),
+                ('year', 'Año'),
+              ]) ...[
+                FilterChip(
+                  label: Text(label),
+                  selected: _preset == key,
+                  onSelected: (_) => _applyPreset(key),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 8),
+              ],
+              ActionChip(
+                label: const Text('Rango...'),
+                onPressed: _pickRange,
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 8),
+              for (final (key, label) in [
+                (null, 'Todos'),
+                ('buyer', 'Compradores'),
+                ('supplier', 'Proveedores'),
+              ]) ...[
+                FilterChip(
+                  label: Text(label),
+                  selected: _role == key,
+                  onSelected: (_) => setState(() {
+                    _role = key;
+                    _reload++;
+                  }),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 8),
+              ],
+            ],
+          ),
+        ),
+        Expanded(
+          child: AsyncView<Map<String, dynamic>>(
+            refreshKey: '$_dateFrom|$_dateTo|$_role|$_reload',
+            load: () => admin.registrations(
+              dateFrom: _dateFrom,
+              dateTo: _dateTo,
+              role: _role,
+            ),
+            builder: (context, data) {
+              final items = (data['items'] as List?) ?? [];
+              final daily = (data['daily'] as List?) ?? [];
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _StatGrid(items: [
+                    ('Total registros', '${data['total']}', Icons.people),
+                  ]),
+                  if (daily.isNotEmpty) ...[
+                    const SectionTitle('Registros por día'),
+                    SizedBox(
+                      height: 120,
+                      child: _BarChart(
+                        values: daily
+                            .map((d) => (
+                              (d['day'] as String).substring(5),
+                              (d['count'] as num).toDouble(),
+                            ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                  const SectionTitle('Detalle'),
+                  for (final raw in items)
+                    if (raw is Map)
+                      ListTile(
+                        dense: true,
+                        leading: Icon(
+                          raw['role'] == 'supplier' ? Icons.storefront : Icons.person,
+                          size: 20,
+                        ),
+                        title: Text('${raw['name']}'),
+                        subtitle: Text(
+                          '${raw['email']}  ·  ${raw['role']}\n'
+                          'Pedidos: ${raw['order_count']}  ·  ${shortDate(parseServerDate(raw['created_at'] as String))}',
+                        ),
+                        isThreeLine: true,
+                      ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chat directo admin <-> proveedores
+// ---------------------------------------------------------------------------
+class _DirectChatTab extends StatefulWidget {
+  const _DirectChatTab();
+
+  @override
+  State<_DirectChatTab> createState() => _DirectChatTabState();
+}
+
+class _DirectChatTabState extends State<_DirectChatTab> {
+  int? _selectedUserId;
+  int _reload = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_selectedUserId != null) {
+      return _DirectChatView(
+        userId: _selectedUserId!,
+        onBack: () => setState(() {
+          _selectedUserId = null;
+          _reload++;
+        }),
+      );
+    }
+
+    final admin = AppScope.adminOf(context);
+    return AsyncView<List<Map<String, dynamic>>>(
+      refreshKey: _reload,
+      load: admin.directConversations,
+      isEmpty: (c) => c.isEmpty,
+      emptyIcon: Icons.chat_outlined,
+      emptyMessage: 'No hay proveedores registrados.',
+      builder: (context, convos) => ListView.separated(
+        itemCount: convos.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, i) {
+          final c = convos[i];
+          return ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.storefront)),
+            title: Text('${c['name']}'),
+            subtitle: Text(
+              '${c['store_name']}  ·  ${c['email']}\n'
+              '${c['last_message'] ?? 'Sin mensajes'}',
+            ),
+            isThreeLine: true,
+            onTap: () => setState(() => _selectedUserId = c['user_id'] as int),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DirectChatView extends StatefulWidget {
+  const _DirectChatView({required this.userId, required this.onBack});
+
+  final int userId;
+  final VoidCallback onBack;
+
+  @override
+  State<_DirectChatView> createState() => _DirectChatViewState();
+}
+
+class _DirectChatViewState extends State<_DirectChatView> {
+  final _messages = <DirectChatMessage>[];
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  Timer? _poll;
+  bool _loading = true;
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(_refresh);
+    _poll = Timer.periodic(const Duration(seconds: 4), (_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    _input.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _merge(Iterable<DirectChatMessage> news) {
+    final ids = {for (final m in _messages) m.id};
+    final nuevos = news.where((m) => ids.add(m.id)).toList();
+    if (nuevos.isEmpty) return;
+    setState(() => _messages.addAll(nuevos));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    });
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final news = await AppScope.adminOf(context).directMessages(
+        widget.userId,
+        afterId: _messages.isEmpty ? 0 : _messages.last.id,
+      );
+      if (!mounted) return;
+      if (_loading) setState(() => _loading = false);
+      _merge(news);
+    } catch (e) {
+      if (mounted && _loading) {
+        setState(() => _loading = false);
+        showError(context, e);
+      }
+    }
+  }
+
+  Future<void> _send() async {
+    final text = _input.text.trim();
+    if (text.isEmpty) return;
+    _input.clear();
+    setState(() => _sending = true);
+    try {
+      final sent = await AppScope.adminOf(context).sendDirectMessage(
+        widget.userId,
+        text,
+      );
+      if (!mounted) return;
+      _merge([sent]);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _sendImage() async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      imageQuality: 80,
+    );
+    if (file == null || !mounted) return;
+    setState(() => _sending = true);
+    try {
+      final imageUrl = await AppScope.of(context).api.uploadImage(file, folder: 'chat');
+      if (!mounted) return;
+      final sent = await AppScope.adminOf(context).sendDirectMessage(
+        widget.userId,
+        'Imagen adjunta',
+        imageUrl: imageUrl,
+      );
+      if (!mounted) return;
+      _merge([sent]);
+    } catch (e) {
+      if (mounted) showError(context, e);
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final me = AppScope.sessionOf(context).user?.id;
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        // Back button bar
+        Material(
+          elevation: 1,
+          child: Row(
+            children: [
+              IconButton(icon: const Icon(Icons.arrow_back), onPressed: widget.onBack),
+              const Expanded(child: Text('Chat con proveedor', style: TextStyle(fontWeight: FontWeight.bold))),
+              IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _messages.isEmpty
+              ? const EmptyState(
+                  message: 'Escribe al proveedor.\nPuedes enviar capturas de pagos, avisos, etc.',
+                  icon: Icons.chat_bubble_outline,
+                )
+              : ListView.builder(
+                  controller: _scroll,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, i) {
+                    final m = _messages[i];
+                    final mine = m.senderId == me;
+                    return Align(
+                      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                        ),
+                        decoration: BoxDecoration(
+                          color: mine ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!mine)
+                              Text(m.senderName, style: TextStyle(fontSize: 11, color: scheme.outline, fontWeight: FontWeight.bold)),
+                            if (m.imageUrl != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    ApiConfig.imageUrl(m.imageUrl!) ?? m.imageUrl!,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 48),
+                                  ),
+                                ),
+                              ),
+                            Text(m.body),
+                            Text(timeLabel(m.at), style: TextStyle(fontSize: 10, color: scheme.outline)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: _sending ? null : _sendImage,
+                  icon: const Icon(Icons.image_outlined),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _send(),
+                    decoration: const InputDecoration(hintText: 'Escribe un mensaje'),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton.filled(
+                  onPressed: _sending ? null : _send,
+                  icon: const Icon(Icons.send),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -668,25 +1244,15 @@ class _ReclamacionesTabState extends State<_ReclamacionesTab> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(d, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(d, true),
-              child: const Text('Guardar'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Guardar')),
           ],
         ),
       ),
     );
     if (ok != true || !mounted) return;
     try {
-      await admin.responderReclamacion(
-        rec['id'] as int,
-        respuesta: ctrl.text.trim(),
-        resuelto: resuelto,
-      );
+      await admin.responderReclamacion(rec['id'] as int, respuesta: ctrl.text.trim(), resuelto: resuelto);
       if (mounted) setState(() => _reload++);
     } catch (e) {
       if (mounted) showError(context, e);
@@ -709,9 +1275,7 @@ class _ReclamacionesTabState extends State<_ReclamacionesTab> {
         Expanded(
           child: AsyncView<List<Map<String, dynamic>>>(
             refreshKey: '$_soloPendientes|$_reload',
-            load: () => admin.reclamaciones(
-              resuelto: _soloPendientes ? false : null,
-            ),
+            load: () => admin.reclamaciones(resuelto: _soloPendientes ? false : null),
             isEmpty: (r) => r.isEmpty,
             emptyIcon: Icons.check_circle_outline,
             emptyMessage: 'No hay reclamaciones pendientes.',
@@ -723,17 +1287,11 @@ class _ReclamacionesTabState extends State<_ReclamacionesTab> {
                 final resuelto = r['resuelto'] as bool? ?? false;
                 return ListTile(
                   leading: Icon(
-                    resuelto
-                        ? Icons.check_circle_outline
-                        : Icons.report_problem_outlined,
+                    resuelto ? Icons.check_circle_outline : Icons.report_problem_outlined,
                     color: resuelto ? Colors.green : Colors.orange,
                   ),
-                  title: Text(
-                    '${r['correlativo']}  ·  ${r['tipo']?.toString().toUpperCase() ?? ''}',
-                  ),
-                  subtitle: Text(
-                    '${r['nombre']}  ·  ${r['correo']}\n${r['bien_contratado']}',
-                  ),
+                  title: Text('${r['correlativo']}  ·  ${r['tipo']?.toString().toUpperCase() ?? ''}'),
+                  subtitle: Text('${r['nombre']}  ·  ${r['correo']}\n${r['bien_contratado']}'),
                   isThreeLine: true,
                   trailing: const Icon(Icons.more_vert),
                   onTap: () => _responder(r, admin),
@@ -743,6 +1301,60 @@ class _ReclamacionesTabState extends State<_ReclamacionesTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Grafico de barras minimo (sin dependencias)
+// ---------------------------------------------------------------------------
+class _BarChart extends StatelessWidget {
+  const _BarChart({required this.values});
+
+  final List<(String label, double value)> values;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) return const SizedBox.shrink();
+    final maxVal = values.map((v) => v.$2).reduce((a, b) => a > b ? a : b);
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var i = 0; i < values.length; i++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      values[i].$2.toInt().toString(),
+                      style: const TextStyle(fontSize: 8),
+                      maxLines: 1,
+                    ),
+                    Container(
+                      height: maxVal > 0 ? (values[i].$2 / maxVal) * 80 : 2,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      values[i].$1,
+                      style: TextStyle(fontSize: 7, color: scheme.outline),
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

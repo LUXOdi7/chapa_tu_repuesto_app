@@ -265,7 +265,7 @@ Color orderStatusColor(String status) => switch (status) {
   _ => Colors.grey,
 };
 
-/// Mensaje del chat comprador <-> tienda dentro del pedido.
+/// Mensaje del chat del pedido (canal supplier o admin).
 class ChatMessage {
   const ChatMessage({
     required this.id,
@@ -273,12 +273,16 @@ class ChatMessage {
     required this.senderName,
     required this.body,
     required this.at,
+    this.imageUrl,
+    this.channel = 'supplier',
   });
 
   final int id;
   final int senderId;
   final String senderName;
   final String body;
+  final String? imageUrl;
+  final String channel;
   final DateTime at;
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
@@ -286,6 +290,37 @@ class ChatMessage {
     senderId: json['sender_id'] as int,
     senderName: json['sender_name'] as String? ?? '',
     body: json['body'] as String? ?? '',
+    imageUrl: json['image_url'] as String?,
+    channel: json['channel'] as String? ?? 'supplier',
     at: parseServerDate(json['created_at'] as String),
   );
+}
+
+/// Mensaje directo admin <-> proveedor (sin pedido).
+class DirectChatMessage {
+  const DirectChatMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderName,
+    required this.body,
+    required this.at,
+    this.imageUrl,
+  });
+
+  final int id;
+  final int senderId;
+  final String senderName;
+  final String body;
+  final String? imageUrl;
+  final DateTime at;
+
+  factory DirectChatMessage.fromJson(Map<String, dynamic> json) =>
+      DirectChatMessage(
+        id: json['id'] as int,
+        senderId: json['sender_id'] as int,
+        senderName: json['sender_name'] as String? ?? '',
+        body: json['body'] as String? ?? '',
+        imageUrl: json['image_url'] as String?,
+        at: parseServerDate(json['created_at'] as String),
+      );
 }

@@ -10,8 +10,6 @@ class OrderRepository {
   final ApiClient _api;
 
   /// DEVUELVE UNA LISTA: el backend parte el carrito en una orden por tienda.
-  /// Un carrito con productos de 3 proveedores genera 3 pedidos, cada uno con
-  /// su codigo y su envio.
   Future<List<Order>> checkout({
     required List<CartItem> items,
     required String deliveryAddress,
@@ -39,8 +37,6 @@ class OrderRepository {
     return asMapList(data).map(Order.fromJson).toList();
   }
 
-  /// Si el usuario es proveedor, el backend devuelve los pedidos de SU tienda;
-  /// con `asBuyer` (modo comprador) devuelve sus compras.
   Future<List<Order>> list({String? statusFilter, bool asBuyer = false}) async {
     final data = await _api.get(
       '/orders',
@@ -55,20 +51,16 @@ class OrderRepository {
   Future<Order> byId(int id) async =>
       Order.fromJson(asMap(await _api.get('/orders/$id')));
 
-  /// Inicia el cobro con tarjeta por la pasarela de la tienda.
-  /// Devuelve `checkout_url` para abrir en el navegador (Mercado Pago / Niubiz)
-  /// o null si la tienda no tiene pasarela: el backend ya aprobo el pago.
-  Future<PaymentStart> startPayment(int id) async {
-    final data = asMap(await _api.post('/payments/$id/start'));
-    return PaymentStart(
-      provider: data['provider'] as String,
-      checkoutUrl: data['checkout_url'] as String?,
-      order: Order.fromJson(asMap(data['order'])),
+  /// Datos del QR de Yape (telefono + imagen QR del admin).
+  Future<YapeInfo> yapeInfo() async {
+    final data = asMap(await _api.get('/payments/yape-info'));
+    return YapeInfo(
+      phone: data['phone'] as String? ?? '',
+      qrImage: data['qr_image'] as String?,
     );
   }
 
-  /// Pago manual (Yape / transferencia): sin numero de operacion el backend
-  /// genera uno "SIM...".
+  /// Pago manual (Yape): el comprador informa que ya pago.
   Future<Order> pay(
     int id, {
     required PaymentMethod method,
@@ -89,40 +81,47 @@ class OrderRepository {
     return Order.fromJson(asMap(data));
   }
 
-  /// Constancia en JSON (los importes vienen como texto ya formateado).
-  /// ponytail: la misma constancia existe en `/orders/{id}/receipt.html` lista
-  /// para imprimir; se dibuja desde el JSON para no arrastrar `webview_flutter`
-  /// solo por eso. Cambiar cuando haga falta el PDF/impresion.
   Future<Map<String, dynamic>> receipt(int id) async =>
       asMap(await _api.get('/orders/$id/receipt'));
 
-  /// URL absoluta al PDF con un token firmado de 10 min: se abre con
-  /// `url_launcher` en Android y web sin mandar cabeceras.
   Future<String> receiptPdfUrl(int id) async => ApiConfig.imageUrl(
     asMap(await _api.get('/orders/$id/receipt-link'))['path'] as String,
   )!;
 
-  /// Solo se puede calificar un pedido entregado; al hacerlo queda cerrado.
   Future<void> review(int id, {required int rating, String? comment}) => _api
       .post('/orders/$id/review', body: {'rating': rating, 'comment': comment});
 
-  /// `afterId`: solo lo nuevo (el chat refresca cada pocos segundos).
-  Future<List<ChatMessage>> messages(int orderId, {int afterId = 0}) async =>
+  /// `channel`: "supplier" o "admin". `afterId`: solo lo nuevo.
+  Future<List<ChatMessage>> messages(
+    int orderId, {
+    int afterId = 0,
+    String channel = 'supplier',
+  }) async =>
       asMapList(
         await _api.get(
           '/orders/$orderId/messages',
-          query: {'after_id': afterId > 0 ? afterId : null},
+          query: {
+            'after_id': afterId > 0 ? afterId : null,
+            'channel': channel,
+          },
         ),
       ).map(ChatMessage.fromJson).toList();
 
-  Future<ChatMessage> sendMessage(int orderId, String body) async =>
+  Future<ChatMessage> sendMessage(
+    int orderId,
+    String body, {
+    String? imageUrl,
+    String channel = 'supplier',
+  }) async =>
       ChatMessage.fromJson(
         asMap(
-          await _api.post('/orders/$orderId/messages', body: {'body': body}),
+          await _api.post(
+            '/orders/$orderId/messages',
+            body: {'body': body, 'image_url': imageUrl, 'channel': channel},
+          ),
         ),
       );
 
-  /// La tienda califica al comprador (pedido entregado o cerrado).
   Future<Order> reviewBuyer(
     int orderId, {
     required int rating,
@@ -137,14 +136,9 @@ class OrderRepository {
   );
 }
 
-class PaymentStart {
-  const PaymentStart({
-    required this.provider,
-    required this.order,
-    this.checkoutUrl,
-  });
+class YapeInfo {
+  const YapeInfo({required this.phone, this.qrImage});
 
-  final String provider;
-  final String? checkoutUrl;
-  final Order order;
+  final String phone;
+  final String? qrImage;
 }
