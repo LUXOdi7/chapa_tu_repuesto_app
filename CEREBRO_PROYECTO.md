@@ -204,3 +204,7 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   por el que pasan el envío, el poll y el botón de recargar (también cubre dos
   refrescos solapados). Test `chat_page_test.dart`, verificado en los dos
   sentidos: sin el dedupe salen 2 burbujas, con él 1.
+- 2026-11-21 · **Pago Yape QR (reemplaza MP/Niubiz)**: `order_tracking_page.dart` muestra QR de Yape + instrucciones al comprador cuando `status == payment_verified && !isAdmin`. Admin ve botón "Verificar pago" en lugar de "Pagar". QR e instrucciones en el chat admin del pedido.
+- 2026-11-21 · **Chat directo proveedor↔admin**: nuevo 5º tab "Chat con Admin" en `SupplierShell` con polling 4s, dedup por id, envío de imágenes. Repositorio: `directMessages()` y `sendDirectMessage()` en `supplier_repository.dart`. Modelo `DirectChatMessage` en `order.dart`.
+- 2026-11-21 · **PDF export de registros**: botón "PDF" en `_RegistrationsTab` del admin, abre URL del backend con JWT como query param → descarga PDF landscape con fpdf.
+- 2026-11-21 · **Action tracking UI**: `_RegistrationsTab` muestra `last_login_at` y `product_count` por proveedor en cada registro.
