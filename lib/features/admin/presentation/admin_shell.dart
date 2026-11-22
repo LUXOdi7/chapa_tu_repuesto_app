@@ -599,6 +599,19 @@ class _MovementsTabState extends State<_MovementsTab> {
     });
   }
 
+  Future<void> _exportMovementsPdf(BuildContext context) async {
+    final base = ApiConfig.baseUrl;
+    final token = AppScope.of(context).api.token;
+    final params = <String, String>{};
+    if (_dateFrom != null) params['date_from'] = _dateFrom!;
+    if (_dateTo != null) params['date_to'] = _dateTo!;
+    final email = _emailCtrl.text.trim();
+    if (email.isNotEmpty) params['buyer_email'] = email;
+    if (token != null) params['token'] = token;
+    final uri = Uri.parse('$base/admin/movements.pdf').replace(queryParameters: params);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -665,12 +678,25 @@ class _MovementsTabState extends State<_MovementsTab> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // Summary cards
-                  _StatGrid(items: [
-                    ('Pagos', '${data['total']}', Icons.receipt_long),
-                    ('Total', soles(data['total_amount'] ?? 0), Icons.payments),
-                    ('Comisión', soles(data['total_fee'] ?? 0), Icons.percent),
-                  ]),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatGrid(items: [
+                          ('Pagos', '${data['total']}', Icons.receipt_long),
+                          ('Total', soles(data['total_amount'] ?? 0), Icons.payments),
+                          ('Comisión', soles(data['total_fee'] ?? 0), Icons.percent),
+                        ]),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: OutlinedButton.icon(
+                          onPressed: () => _exportMovementsPdf(context),
+                          icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                          label: const Text('PDF'),
+                        ),
+                      ),
+                    ],
+                  ),
                   if (daily.isNotEmpty) ...[
                     const SectionTitle('Ventas por día'),
                     SizedBox(
