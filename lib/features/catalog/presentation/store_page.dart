@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -247,6 +248,7 @@ class StoresView extends StatefulWidget {
 class _StoresViewState extends State<StoresView> {
   String _q = '';
   bool _onlyVerified = false;
+  bool _mapView = false;
 
   @override
   Widget build(BuildContext context) {
@@ -263,11 +265,25 @@ class _StoresViewState extends State<StoresView> {
             onSubmitted: (v) => setState(() => _q = v.trim()),
           ),
         ),
-        SwitchListTile(
-          dense: true,
-          title: const Text('Solo tiendas verificadas'),
-          value: _onlyVerified,
-          onChanged: (v) => setState(() => _onlyVerified = v),
+        Row(
+          children: [
+            Expanded(
+              child: SwitchListTile(
+                dense: true,
+                title: const Text('Solo verificadas'),
+                value: _onlyVerified,
+                onChanged: (v) => setState(() => _onlyVerified = v),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton.outlined(
+                icon: Icon(_mapView ? Icons.list : Icons.map_outlined),
+                tooltip: _mapView ? 'Ver lista' : 'Ver mapa',
+                onPressed: () => setState(() => _mapView = !_mapView),
+              ),
+            ),
+          ],
         ),
         Expanded(
           child: AsyncView<List<Store>>(
@@ -279,7 +295,9 @@ class _StoresViewState extends State<StoresView> {
             isEmpty: (s) => s.isEmpty,
             emptyIcon: Icons.storefront_outlined,
             emptyMessage: 'No encontramos tiendas.',
-            builder: (context, stores) => ListView.separated(
+            builder: (context, stores) => _mapView
+                ? _StoresMap(stores: stores, onTap: (s) => Navigator.pushNamed(context, StorePage.route, arguments: s.id))
+                : ListView.separated(
               itemCount: stores.length,
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, i) {
@@ -324,6 +342,64 @@ class _StoresViewState extends State<StoresView> {
               },
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StoresMap extends StatelessWidget {
+  const _StoresMap({required this.stores, required this.onTap});
+  final List<Store> stores;
+  final ValueChanged<Store> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final withLocation = stores.where((s) => s.hasLocation).toList();
+    if (withLocation.isEmpty) {
+      return const Center(child: Text('Ninguna tienda tiene ubicación registrada.'));
+    }
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: LatLng(withLocation.first.latitude!, withLocation.first.longitude!),
+        initialZoom: 13,
+      ),
+      children: [
+        TileLayer(urlTemplate: kOsmTiles, userAgentPackageName: kUserAgent),
+        MarkerLayer(
+          markers: [
+            for (final s in withLocation)
+              Marker(
+                point: LatLng(s.latitude!, s.longitude!),
+                width: 160,
+                height: 60,
+                child: GestureDetector(
+                  onTap: () => onTap(s),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on, size: 32, color: Colors.red),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: const [BoxShadow(blurRadius: 2, color: Colors.black26)],
+                        ),
+                        child: Text(
+                          s.businessName,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const RichAttributionWidget(
+          attributions: [TextSourceAttribution('© OpenStreetMap contributors')],
         ),
       ],
     );

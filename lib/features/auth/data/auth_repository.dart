@@ -26,6 +26,7 @@ class AuthRepository {
     required UserRole role,
     String? phone,
     BuyerType? buyerType,
+    String? referralCode,
   }) async {
     final data = await _api.post(
       '/auth/register',
@@ -36,6 +37,7 @@ class AuthRepository {
         'phone': phone,
         'role': role.key,
         'buyer_type': buyerType?.key,
+        'referral_code': referralCode,
       },
     );
     return AuthResult.fromJson(asMap(data));

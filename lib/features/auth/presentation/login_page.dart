@@ -31,6 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   final _phone = TextEditingController();
   final _password = TextEditingController();
 
+  final _referral = TextEditingController();
   bool _registering = false;
   bool _busy = false;
   bool _obscure = true;
@@ -110,6 +111,7 @@ class _LoginPageState extends State<LoginPage> {
               phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
               role: _role,
               buyerType: _role == UserRole.buyer ? _buyerType : null,
+              referralCode: _referral.text.trim().isEmpty ? null : _referral.text.trim(),
             )
           : await scope.auth.login(
               email: _email.text.trim(),
@@ -338,6 +340,18 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ],
 
+                        if (_registering) ...[
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _referral,
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: const InputDecoration(
+                              labelText: '¿Te recomendó alguien? (opcional)',
+                              hintText: 'Código de referido',
+                              prefixIcon: Icon(Icons.group_add_outlined),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 20),
                         FilledButton(
                           onPressed: _busy ? null : _submit,

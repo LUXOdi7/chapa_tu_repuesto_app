@@ -25,6 +25,7 @@ class _OrdersViewState extends State<OrdersView> {
   static const _filters = {
     null: 'Todos',
     'created': 'Por pagar',
+    'payment_rejected': 'Rechazados',
     'payment_verified': 'Pagados',
     'preparing': 'En preparación',
     'shipped': 'Despachados',

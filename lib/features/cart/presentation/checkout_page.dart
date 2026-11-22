@@ -31,7 +31,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final _ruc = TextEditingController();
 
   PaymentMethod _method = PaymentMethod.yape;
-  bool _isPickup = false;
+  bool _isPickup = true;
   bool _busy = false;
 
   /// true = usar la direccion guardada del perfil; false = una para este pedido.
@@ -168,14 +168,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 child: const Column(
                   children: [
                     RadioListTile<bool>(
-                      value: false,
-                      title: Text('Envío a domicilio'),
-                      subtitle: Text('Se calcula según tu dirección'),
-                    ),
-                    RadioListTile<bool>(
                       value: true,
                       title: Text('Recoger en tienda'),
-                      subtitle: Text('Sin costo de envío'),
+                      subtitle: Text('Sin costo de envío · Coordina horario por chat'),
+                    ),
+                    RadioListTile<bool>(
+                      value: false,
+                      title: Text('Envío a domicilio'),
+                      subtitle: Text('S/ 10.00 · Coordina el delivery por chat con el proveedor'),
                     ),
                   ],
                 ),

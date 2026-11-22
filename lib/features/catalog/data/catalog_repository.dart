@@ -148,4 +148,7 @@ class CatalogRepository {
       asMapList(await _api.get('/catalog/stores/$id/reviews'))
           .map(StoreReview.fromJson)
           .toList();
+
+  Future<Map<String, dynamic>> publicStats() async =>
+      asMap(await _api.get('/catalog/public-stats'));
 }

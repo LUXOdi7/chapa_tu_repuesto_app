@@ -394,6 +394,28 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                 children: [
                   _OrderHeader(order: order),
                   _Timeline(order: order),
+                  if (order.status == 'payment_rejected')
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.warning_amber, color: Colors.red),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Tu pago fue rechazado. Revisa el chat con el admin para ver el motivo y sube una nueva captura.',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (order.items.isNotEmpty) ...[
                     const SectionTitle('Productos'),
                     for (final item in order.items)
@@ -422,6 +444,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   _Fact(label: 'Pago', value: order.paymentMethod.label),
                   if (order.paymentOpNumber != null)
                     _Fact(label: 'N° operación', value: order.paymentOpNumber!),
+                  if (order.paidAt != null)
+                    _Fact(label: 'Pagado', value: dateTimeLabel(order.paidAt!)),
+                  if (order.platformFee > 0)
+                    _Fact(
+                      label: 'Comisión (${(order.platformFeeRate * 100).toStringAsFixed(0)}%)',
+                      value: soles(order.platformFee),
+                    ),
                   if (order.deliveryAddress != null)
                     _Fact(
                       label: 'Entrega',
@@ -573,6 +602,17 @@ class _Actions extends StatelessWidget {
             onPressed: busy ? null : () => onStatus(status),
             icon: const Icon(Icons.verified_outlined),
             label: const Text('Verificar pago'),
+          ),
+        );
+      } else if (status == 'payment_rejected') {
+        buttons.add(
+          FilledButton.icon(
+            onPressed: busy ? null : () => onStatus(status),
+            icon: const Icon(Icons.block),
+            label: const Text('Rechazar pago'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
           ),
         );
       } else if (status == 'closed') {

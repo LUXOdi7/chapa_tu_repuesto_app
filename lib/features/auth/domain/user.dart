@@ -65,6 +65,7 @@ class User {
     this.latitude,
     this.longitude,
     this.buyerType = BuyerType.normal,
+    this.referralCode,
   });
 
   final int id;
@@ -74,6 +75,7 @@ class User {
   final String? avatarUrl;
   final bool isActive;
   final UserRole role;
+  final String? referralCode;
 
   /// Solo para proveedores: null si todavía no registró su tienda.
   final int? storeId;
@@ -115,6 +117,7 @@ class User {
     latitude: (json['latitude'] as num?)?.toDouble(),
     longitude: (json['longitude'] as num?)?.toDouble(),
     buyerType: BuyerType.parse(json['buyer_type'] as String?),
+    referralCode: json['referral_code'] as String?,
   );
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/app_theme.dart';
@@ -374,6 +375,23 @@ class _ProfilePageState extends State<ProfilePage> {
                       leading: const Icon(Icons.star_outline),
                       title: const Text('Mi reputación como comprador'),
                       subtitle: Text(user.buyerRatingLabel),
+                    ),
+                  if (user.referralCode != null)
+                    ListTile(
+                      leading: const Icon(Icons.group_add_outlined),
+                      title: const Text('Mi código de referido'),
+                      subtitle: Text(user.referralCode!),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.share),
+                        tooltip: 'Compartir por WhatsApp',
+                        onPressed: () {
+                          final msg = 'Únete a ChapaTuRepuesto con mi código '
+                              '${user.referralCode} y encuentra repuestos de moto al mejor precio.';
+                          launchUrl(Uri.parse(
+                            'https://wa.me/?text=${Uri.encodeComponent(msg)}',
+                          ));
+                        },
+                      ),
                     ),
                 ],
                 if (user.isSupplier)

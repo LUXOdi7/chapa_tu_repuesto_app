@@ -154,7 +154,7 @@ class Order {
   final List<OrderEvent> events;
 
   bool get isCancelled => status == 'cancelled';
-  bool get canPay => status == 'created';
+  bool get canPay => status == 'created' || status == 'payment_rejected';
   bool get isPaid => paidAt != null;
 
   /// La tienda cobra con tarjeta por pasarela (Mercado Pago / Niubiz): el pago
@@ -223,6 +223,7 @@ const orderTimeline = <String>[
 String orderStatusLabel(String status) => switch (status) {
   'created' => 'Creado (pago pendiente)',
   'payment_verified' => 'Pago por verificar',
+  'payment_rejected' => 'Pago rechazado',
   'preparing' => 'En preparación',
   'shipped' => 'Despachado',
   'delivered' => 'Entregado',
@@ -235,6 +236,7 @@ String orderStatusLabel(String status) => switch (status) {
 /// puede hacerla.
 String orderActionLabel(String status) => switch (status) {
   'payment_verified' => 'Confirmar pago',
+  'payment_rejected' => 'Rechazar pago',
   'preparing' => 'Marcar en preparación',
   'shipped' => 'Marcar despachado',
   'delivered' => 'Confirmar recepción',
@@ -246,6 +248,7 @@ String orderActionLabel(String status) => switch (status) {
 IconData orderStatusIcon(String status) => switch (status) {
   'created' => Icons.hourglass_empty,
   'payment_verified' => Icons.verified,
+  'payment_rejected' => Icons.block,
   'preparing' => Icons.inventory_2,
   'shipped' => Icons.local_shipping,
   'delivered' => Icons.check_circle,
@@ -257,6 +260,7 @@ IconData orderStatusIcon(String status) => switch (status) {
 Color orderStatusColor(String status) => switch (status) {
   'created' => Colors.orange,
   'payment_verified' => Colors.blue,
+  'payment_rejected' => Colors.red,
   'preparing' => Colors.indigo,
   'shipped' => Colors.purple,
   'delivered' => Colors.green,

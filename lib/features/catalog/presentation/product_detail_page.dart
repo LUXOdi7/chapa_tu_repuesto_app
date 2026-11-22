@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../core/format.dart';
@@ -254,12 +255,14 @@ class _Detail extends StatelessWidget {
                         ],
                       ),
               ),
-              SectionTitle('Ofertas (${offers.length})'),
+              SectionTitle('Comparar precios (${offers.length})'),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Text(
-                  'Ordenadas por precio y luego por cercanía. Toca una para '
-                  'comprarle a esa tienda.',
+                  offers.length > 1
+                      ? 'Desde ${soles(cheapest)}. '
+                        'Toca una oferta para comprarle a esa tienda.'
+                      : 'Solo una tienda vende este repuesto.',
                   style: text.bodySmall?.copyWith(color: scheme.outline),
                 ),
               ),
@@ -287,6 +290,19 @@ class _Detail extends StatelessWidget {
                     partCode: detail.partCode,
                     price: selected.price,
                   ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: 'Compartir por WhatsApp',
+                  icon: const Icon(Icons.share),
+                  onPressed: () {
+                    final msg = 'Mira este repuesto en ChapaTuRepuesto:\n'
+                        '${detail.name} - ${soles(selected.price)}\n'
+                        'Código: ${detail.partCode}';
+                    launchUrl(Uri.parse(
+                      'https://wa.me/?text=${Uri.encodeComponent(msg)}',
+                    ));
+                  },
                 ),
                 const SizedBox(width: 8),
                 Expanded(

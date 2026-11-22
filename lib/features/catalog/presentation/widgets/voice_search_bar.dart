@@ -45,6 +45,14 @@ String speechErrorText(String code) => switch (code) {
   _ => 'No se pudo usar el micrófono ($code).',
 };
 
+const _hints = [
+  'Ej: pastillas de freno para Pulsar 200 del 2020',
+  'Ej: kit de arrastre Honda XR 150',
+  'Ej: bujía NGK para Bajaj Dominar',
+  'Ej: espejo retrovisor mototaxi Torito',
+  'Ej: llanta delantera carguero Honda GL',
+];
+
 class _VoiceSearchBarState extends State<VoiceSearchBar> {
   final _speech = SpeechToText();
 
@@ -54,6 +62,7 @@ class _VoiceSearchBarState extends State<VoiceSearchBar> {
   final _status = ValueNotifier<String>('');
   String? _locale;
   bool _ready = false;
+  late final String _hint = (_hints..shuffle()).first;
 
   @override
   void dispose() {
@@ -117,7 +126,7 @@ class _VoiceSearchBarState extends State<VoiceSearchBar> {
       onChanged: widget.onChanged,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
-        hintText: 'Ej: pastillas de freno para Pulsar 200 del 2020',
+        hintText: _hint,
         hintStyle: const TextStyle(fontSize: 13),
         prefixIcon: const Icon(Icons.search),
         suffixIcon: Row(
