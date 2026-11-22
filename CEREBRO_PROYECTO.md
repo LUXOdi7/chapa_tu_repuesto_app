@@ -50,7 +50,10 @@ sin gestor de estado: `AppScope` (InheritedWidget) reparte repositorios y dos
 - Errores: `{"detail": "texto en español"}` → se muestra tal cual en SnackBar.
 - `next_status` del pedido ya viene filtrado por rol: los botones salen de ahí.
 - Imágenes: rutas relativas `/uploads/<folder>/x.jpg`; la app antepone base URL.
-- Pagos: Yape QR del admin (`/payments/yape-info`) → se muestra QR + nº teléfono + código pedido; comprador envía captura por chat canal admin. MP/Niubiz eliminados.
+- Pagos: Yape QR del admin (`/payments/yape-info` → `{phone, qr_image}`) → se muestra QR + nº teléfono + código pedido; comprador envía captura por chat canal admin; admin marca `payment_verified`. MP/Niubiz eliminados.
+- Registrations: `GET /admin/registrations` devuelve `{total, daily, items}` donde cada item incluye `last_login_at` y `product_count`. PDF: `GET /admin/registrations.pdf?token=JWT`.
+- DMs: `GET/POST /supplier/direct-messages` (lado proveedor), `GET /admin/direct-conversations` + `GET/POST /admin/direct-messages/{user_id}` (lado admin).
+- Token JWT: `ApiClient.token` (campo público `String?`). `ApiConfig.baseUrl` es static const. Para abrir URLs en browser con auth, pasar token como query param.
 
 ## Dependencias (todas sirven en Android y web)
 
@@ -208,3 +211,9 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
 - 2026-11-21 · **Chat directo proveedor↔admin**: nuevo 5º tab "Chat con Admin" en `SupplierShell` con polling 4s, dedup por id, envío de imágenes. Repositorio: `directMessages()` y `sendDirectMessage()` en `supplier_repository.dart`. Modelo `DirectChatMessage` en `order.dart`.
 - 2026-11-21 · **PDF export de registros**: botón "PDF" en `_RegistrationsTab` del admin, abre URL del backend con JWT como query param → descarga PDF landscape con fpdf.
 - 2026-11-21 · **Action tracking UI**: `_RegistrationsTab` muestra `last_login_at` y `product_count` por proveedor en cada registro.
+- 2026-11-22 · **Fix `_exportPdf`**: usaba `AppScope.of(context).api.baseUrl` (no existe) y `AppScope.sessionOf(context).token` (no existe). Corregido a `ApiConfig.baseUrl` (static const) y `AppScope.of(context).api.token` (campo público de `ApiClient`).
+- 2026-11-22 · **Fix string interpolation en `_RegistrationsTab`**: comillas anidadas en ternarios dentro de `${}` rompían el string literal. Extraído a variables `prodTxt`/`loginTxt` con `Builder` widget.
+- 2026-11-22 · **Version bump a 1.7.1+13** (`pubspec.yaml`). APK v1.7.1 (58.5 MB) subido a GitHub Releases: `https://github.com/LUXOdi7/chapa_tu_repuesto_app/releases/tag/v1.7.1`. Release notes: chat proveedor↔admin, PDF export, tracking, fix syntax registros.
+- 2026-11-22 · **Deploy confirmado**: Netlify auto-deploy OK (GitHub Actions, 3 builds exitosos). Backend Railway auto-deploy OK. Test E2E 19/19 PASS contra producción (script `D:\ChapaTuRepuesto\test_flow.py`).
+- 2026-11-22 · **flutter analyze limpio**: 0 errors, 0 warnings, solo 10 info-level (unnecessary_underscores y use_build_context_synchronously pre-existentes, no de los cambios nuevos).
+- 2026-11-22 · **Pendiente**: auditoría completa del sistema (lógica, errores, código muerto, seguridad) + generación de manual de usuario desde 3 POVs (comprador, proveedor, admin). El dueño lo pidió en esta sesión.
