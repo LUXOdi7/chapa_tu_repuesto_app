@@ -18,7 +18,7 @@ jobs:
       - run: flutter pub get
 
       - run: |
-          flutter build web --release \
+          flutter build web --release --pwa-strategy=none \
             --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }}
 
       - name: Deploy to Netlify
