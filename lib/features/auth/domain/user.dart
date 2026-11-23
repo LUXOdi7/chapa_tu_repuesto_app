@@ -59,6 +59,7 @@ class User {
     this.avatarUrl,
     this.isActive = true,
     this.storeId,
+    this.storeVerified = false,
     this.buyerRatingAvg = 0,
     this.buyerRatingCount = 0,
     this.address,
@@ -79,6 +80,7 @@ class User {
 
   /// Solo para proveedores: null si todavía no registró su tienda.
   final int? storeId;
+  final bool storeVerified;
 
   /// Reputación como comprador (la tienda lo califica al entregar).
   final double buyerRatingAvg;
@@ -111,6 +113,7 @@ class User {
     isActive: json['is_active'] as bool? ?? true,
     role: UserRole.parse(json['role'] as String?),
     storeId: json['store_id'] as int?,
+    storeVerified: json['store_verified'] as bool? ?? false,
     buyerRatingAvg: (json['buyer_rating_avg'] as num?)?.toDouble() ?? 0,
     buyerRatingCount: json['buyer_rating_count'] as int? ?? 0,
     address: json['address'] as String?,

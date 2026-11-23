@@ -300,6 +300,13 @@ class _UsersTabState extends State<_UsersTab> {
                 title: Text(user.isActive ? 'Bloquear cuenta' : 'Reactivar cuenta'),
                 onTap: () => Navigator.pop(sheet, 'toggle'),
               ),
+            if (user.isSupplier && user.storeId != null)
+              ListTile(
+                leading: Icon(user.storeVerified ? Icons.remove_moderator : Icons.verified_user,
+                    color: user.storeVerified ? Colors.orange : Colors.blue),
+                title: Text(user.storeVerified ? 'Quitar verificación de tienda' : 'Verificar tienda'),
+                onTap: () => Navigator.pop(sheet, 'verify:${!user.storeVerified}'),
+              ),
             for (final role in UserRole.values)
               if (role != user.role && (user.id != me?.id))
                 ListTile(
@@ -315,6 +322,8 @@ class _UsersTabState extends State<_UsersTab> {
     try {
       if (action == 'toggle') {
         await admin.updateUser(user.id, isActive: !user.isActive);
+      } else if (action.startsWith('verify:')) {
+        await admin.verifyStore(user.storeId!, action == 'verify:true');
       } else {
         await admin.updateUser(user.id, role: UserRole.parse(action.substring(5)));
       }
@@ -385,7 +394,9 @@ class _UsersTabState extends State<_UsersTab> {
                   ),
                   title: Text(u.name),
                   subtitle: Text(
-                    '${u.email}  ·  ${u.role.label}${u.isActive ? '' : '  ·  BLOQUEADO'}',
+                    '${u.email}  ·  ${u.role.label}'
+                    '${u.isActive ? '' : '  ·  BLOQUEADO'}'
+                    '${u.isSupplier && u.storeId != null ? (u.storeVerified ? '  ·  VERIFICADO' : '  ·  NO VERIFICADO') : ''}',
                   ),
                   trailing: const Icon(Icons.more_vert),
                   onTap: () => _edit(u),
@@ -504,36 +515,69 @@ class _StoresTabState extends State<_StoresTab> {
 // ---------------------------------------------------------------------------
 // Pedidos
 // ---------------------------------------------------------------------------
-class _OrdersTab extends StatelessWidget {
+class _OrdersTab extends StatefulWidget {
   const _OrdersTab();
+
+  @override
+  State<_OrdersTab> createState() => _OrdersTabState();
+}
+
+class _OrdersTabState extends State<_OrdersTab> {
+  Future<void> _exportOrdersPdf(BuildContext context) async {
+    final base = ApiConfig.baseUrl;
+    final token = AppScope.of(context).api.token;
+    final params = <String, String>{};
+    if (token != null) params['token'] = token;
+    final uri = Uri.parse('$base/admin/orders.pdf').replace(queryParameters: params);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
     final admin = AppScope.adminOf(context);
-    return AsyncView<List<Order>>(
-      load: admin.orders,
-      isEmpty: (o) => o.isEmpty,
-      emptyMessage: 'Todavía no hay pedidos.',
-      builder: (context, orders) => ListView.separated(
-        itemCount: orders.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, i) {
-          final o = orders[i];
-          return ListTile(
-            leading: Icon(orderStatusIcon(o.status), color: orderStatusColor(o.status)),
-            title: Text('${o.code}  ·  ${soles(o.total)}'),
-            subtitle: Text(
-              '${o.buyerName ?? ''} → ${o.store.businessName}\n${o.statusLabel}  ·  ${shortDate(o.createdAt)}',
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            children: [
+              const Expanded(child: Text('Todos los pedidos', style: TextStyle(fontWeight: FontWeight.bold))),
+              OutlinedButton.icon(
+                onPressed: () => _exportOrdersPdf(context),
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                label: const Text('PDF'),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: AsyncView<List<Order>>(
+            load: admin.orders,
+            isEmpty: (o) => o.isEmpty,
+            emptyMessage: 'Todavía no hay pedidos.',
+            builder: (context, orders) => ListView.separated(
+              itemCount: orders.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, i) {
+                final o = orders[i];
+                return ListTile(
+                  leading: Icon(orderStatusIcon(o.status), color: orderStatusColor(o.status)),
+                  title: Text('${o.code}  ·  ${soles(o.total)}'),
+                  subtitle: Text(
+                    '${o.buyerName ?? ''} → ${o.store.businessName}\n${o.statusLabel}  ·  ${shortDate(o.createdAt)}',
+                  ),
+                  isThreeLine: true,
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    OrderTrackingPage.route,
+                    arguments: o.id,
+                  ),
+                );
+              },
             ),
-            isThreeLine: true,
-            onTap: () => Navigator.pushNamed(
-              context,
-              OrderTrackingPage.route,
-              arguments: o.id,
-            ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -714,27 +758,53 @@ class _MovementsTabState extends State<_MovementsTab> {
                   const SectionTitle('Detalle'),
                   for (final raw in items)
                     if (raw is Map)
-                      ListTile(
-                        dense: true,
-                        leading: Icon(
-                          orderStatusIcon(raw['status'] as String? ?? ''),
-                          color: orderStatusColor(raw['status'] as String? ?? ''),
-                          size: 20,
-                        ),
-                        title: Text('${raw['code']}  ·  ${soles((raw['total'] as num?) ?? 0)}'),
-                        subtitle: Text(
-                          '${(raw['buyer'] as Map?)?['name'] ?? ''} → '
-                          '${(raw['store'] as Map?)?['business_name'] ?? ''}\n'
-                          '${raw['status_label'] ?? ''}  ·  comisión ${soles((raw['platform_fee'] as num?) ?? 0)}',
-                        ),
-                        isThreeLine: true,
-                        onTap: () {
-                          final id = raw['id'] as int?;
-                          if (id != null) {
-                            Navigator.pushNamed(context, OrderTrackingPage.route, arguments: id);
-                          }
-                        },
-                      ),
+                      Builder(builder: (context) {
+                        final images = (raw['payment_images'] as List?)
+                            ?.cast<String>()
+                            .map((p) => ApiConfig.imageUrl(p))
+                            .whereType<String>()
+                            .toList() ?? [];
+                        return ListTile(
+                          dense: true,
+                          leading: images.isNotEmpty
+                              ? GestureDetector(
+                                  onTap: () => _showPaymentImages(context, images),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      images.first,
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) => Icon(
+                                        Icons.receipt_long,
+                                        size: 20,
+                                        color: orderStatusColor(raw['status'] as String? ?? ''),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  orderStatusIcon(raw['status'] as String? ?? ''),
+                                  color: orderStatusColor(raw['status'] as String? ?? ''),
+                                  size: 20,
+                                ),
+                          title: Text('${raw['code']}  ·  ${soles((raw['total'] as num?) ?? 0)}'),
+                          subtitle: Text(
+                            '${(raw['buyer'] as Map?)?['name'] ?? ''} → '
+                            '${(raw['store'] as Map?)?['business_name'] ?? ''}\n'
+                            '${raw['status_label'] ?? ''}  ·  comisión ${soles((raw['platform_fee'] as num?) ?? 0)}'
+                            '${images.isNotEmpty ? '  ·  ${images.length} captura(s)' : ''}',
+                          ),
+                          isThreeLine: true,
+                          onTap: () {
+                            final id = raw['id'] as int?;
+                            if (id != null) {
+                              Navigator.pushNamed(context, OrderTrackingPage.route, arguments: id);
+                            }
+                          },
+                        );
+                      }),
                 ],
               );
             },
@@ -743,6 +813,24 @@ class _MovementsTabState extends State<_MovementsTab> {
       ],
     );
   }
+}
+
+void _showPaymentImages(BuildContext context, List<String> urls) {
+  showDialog(
+    context: context,
+    builder: (_) => Dialog(
+      child: SizedBox(
+        width: 400,
+        height: 400,
+        child: PageView.builder(
+          itemCount: urls.length,
+          itemBuilder: (_, i) => InteractiveViewer(
+            child: Image.network(urls[i], fit: BoxFit.contain),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------

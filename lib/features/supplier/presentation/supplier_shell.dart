@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/app_scope.dart';
@@ -10,6 +11,7 @@ import '../../../shared/widgets/app_widgets.dart';
 import '../../catalog/domain/product.dart';
 import '../../catalog/domain/store.dart';
 import '../../catalog/presentation/store_page.dart';
+import '../../orders/data/order_repository.dart' show YapeInfo;
 import '../../orders/domain/order.dart';
 import '../../orders/presentation/orders_page.dart';
 import '../../profile/presentation/notifications_page.dart';
@@ -266,6 +268,92 @@ class _SupplierProductsState extends State<_SupplierProducts> {
   }
 }
 
+Future<void> _showSubscriptionPayment(BuildContext context, Store store) async {
+  final repo = AppScope.ordersOf(context);
+  YapeInfo? yape;
+  try { yape = await repo.yapeInfo(); } catch (_) {}
+  if (!context.mounted) return;
+  final scheme = Theme.of(context).colorScheme;
+  final ref = 'SUB-${store.businessName.substring(0, store.businessName.length.clamp(0, 15))}';
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Pagar suscripción S/ 100'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (yape?.qrImage != null && yape!.qrImage!.isNotEmpty)
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: Image.network(yape.qrImage!, height: 220,
+                  errorBuilder: (_, _, _) => const Icon(Icons.qr_code_2, size: 120, color: Colors.grey)),
+              )
+            else
+              const Icon(Icons.qr_code_2, size: 120, color: Colors.grey),
+            const SizedBox(height: 12),
+            if (yape != null && yape.phone.isNotEmpty) ...[
+              const Text('Paga al número:', style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: yape!.phone));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Número copiado')));
+                },
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(yape.phone, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.copy, size: 18),
+                ]),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: scheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: scheme.outline.withValues(alpha: 0.3)),
+              ),
+              child: Column(children: [
+                Text('Pon esta referencia en Yape:',
+                  style: TextStyle(fontSize: 12, color: scheme.onSecondaryContainer),
+                  textAlign: TextAlign.center),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: ref));
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Referencia copiada')));
+                  },
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(ref, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)),
+                    const SizedBox(width: 6),
+                    Icon(Icons.copy, size: 18, color: scheme.onSecondaryContainer),
+                  ]),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            const Text('Monto: S/ 100.00', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            const Text(
+              'Después de pagar, envía la captura al chat con el administrador. '
+              'El admin activará tu suscripción por 30 días.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar'))],
+    ),
+  );
+}
+
 class _StoreTab extends StatelessWidget {
   const _StoreTab({required this.store, required this.onEdited});
 
@@ -299,10 +387,12 @@ class _StoreTab extends StatelessWidget {
               title: const Text('Suscripción mensual inactiva'),
               subtitle: Text(
                 store.subscriptionDaysLeft > -900
-                    ? 'Venció hace ${-store.subscriptionDaysLeft} día${-store.subscriptionDaysLeft == 1 ? '' : 's'}. '
-                      'Contacta al administrador para renovar (S/ 100/mes).'
-                    : 'Tu suscripción mensual no está activada todavía (S/ 100/mes). '
-                      'Contacta al administrador.',
+                    ? 'Venció hace ${-store.subscriptionDaysLeft} día${-store.subscriptionDaysLeft == 1 ? '' : 's'}.'
+                    : 'Tu suscripción mensual no está activada todavía (S/ 100/mes).',
+              ),
+              trailing: FilledButton(
+                onPressed: () => _showSubscriptionPayment(context, store),
+                child: const Text('Pagar'),
               ),
             ),
           ),
