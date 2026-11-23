@@ -45,7 +45,7 @@ String speechErrorText(String code) => switch (code) {
   _ => 'No se pudo usar el micrófono ($code).',
 };
 
-const _hints = [
+final _hints = [
   'Ej: pastillas de freno para Pulsar 200 del 2020',
   'Ej: kit de arrastre Honda XR 150',
   'Ej: bujía NGK para Bajaj Dominar',
