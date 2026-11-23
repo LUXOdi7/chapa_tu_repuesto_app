@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "777718780925",
-    "project_id": "chapaturepuesto-b71e9",
-    "storage_bucket": "chapaturepuesto-b71e9.firebasestorage.app"
+    "project_number": "492760870783",
+    "project_id": "chapaturepuesto-8b196",
+    "storage_bucket": "chapaturepuesto-8b196.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:777718780925:android:cc0efa4e5cff621af1bf94",
+        "mobilesdk_app_id": "1:492760870783:android:9877d0b1ea67e6935a344a",
         "android_client_info": {
           "package_name": "com.negocios.chapaturepuesto"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD9v73SZLk07S-9LxPoVZ4NOQy0VFRfyUc"
+          "current_key": "AIzaSyDesaCCD76UQKytKhzbdROiLkHrj8JTZfg"
         }
       ],
       "services": {
