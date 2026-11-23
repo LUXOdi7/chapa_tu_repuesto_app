@@ -131,26 +131,6 @@ class _SearchViewState extends State<SearchView> {
 
     return Column(
       children: [
-        FutureBuilder<Map<String, dynamic>>(
-          future: scope.catalog.publicStats(),
-          builder: (context, snap) {
-            if (!snap.hasData) return const SizedBox.shrink();
-            final d = snap.data!;
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _MiniStat(d['stores'] ?? 0, 'tiendas'),
-                  _MiniStat(d['products'] ?? 0, 'repuestos'),
-                  _MiniStat(d['orders_completed'] ?? 0, 'ventas'),
-                  _MiniStat(d['brands'] ?? 0, 'marcas'),
-                ],
-              ),
-            );
-          },
-        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Column(
@@ -475,17 +455,3 @@ class _ResultsHeader extends StatelessWidget {
   }
 }
 
-class _MiniStat extends StatelessWidget {
-  const _MiniStat(this.value, this.label);
-  final int value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text('$value', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-      Text(label, style: Theme.of(context).textTheme.bodySmall),
-    ],
-  );
-}
