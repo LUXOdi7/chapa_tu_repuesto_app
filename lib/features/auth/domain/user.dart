@@ -67,6 +67,7 @@ class User {
     this.longitude,
     this.buyerType = BuyerType.normal,
     this.referralCode,
+    this.referralCredits = 0,
   });
 
   final int id;
@@ -77,6 +78,7 @@ class User {
   final bool isActive;
   final UserRole role;
   final String? referralCode;
+  final int referralCredits;
 
   /// Solo para proveedores: null si todavía no registró su tienda.
   final int? storeId;
@@ -121,6 +123,7 @@ class User {
     longitude: (json['longitude'] as num?)?.toDouble(),
     buyerType: BuyerType.parse(json['buyer_type'] as String?),
     referralCode: json['referral_code'] as String?,
+    referralCredits: (json['referral_credits'] as num?)?.toInt() ?? 0,
   );
 }
 

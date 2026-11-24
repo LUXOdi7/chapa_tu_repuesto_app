@@ -300,7 +300,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Builder(
                   builder: (context) {
-                    final rate = saved?.buyerType.rate ?? 0.03;
+                    final baseRate = saved?.buyerType.rate ?? 0.03;
+                    final credits = saved?.referralCredits ?? 0;
+                    final discount = credits > 0 ? (credits * 0.01).clamp(0.0, baseRate) : 0.0;
+                    final rate = baseRate - discount;
                     final shipping = _isPickup ? 0.0 : cart.shipping;
                     final commission = cart.subtotal * rate;
                     final estimatedTotal = cart.subtotal + shipping + commission;
@@ -323,6 +326,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               '(${(rate * 100).toStringAsFixed(0)}%)',
                           value: soles(commission),
                         ),
+                        if (discount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              'Descuento por referido: -${(discount * 100).toStringAsFixed(0)}% '
+                              '($credits crédito${credits == 1 ? '' : 's'})',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
                         const Divider(),
                         _TotalRow(
                           label: 'Total estimado',
@@ -350,7 +364,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           padding: const EdgeInsets.all(16),
           child: Builder(
             builder: (context) {
-              final rate = saved?.buyerType.rate ?? 0.03;
+              final baseRate = saved?.buyerType.rate ?? 0.03;
+              final credits = saved?.referralCredits ?? 0;
+              final rate = baseRate - (credits > 0 ? (credits * 0.01).clamp(0.0, baseRate) : 0.0);
               final estimatedTotal = cart.subtotal + (_isPickup ? 0.0 : cart.shipping) + cart.subtotal * rate;
               return FilledButton(
                 onPressed: groups.isEmpty || _busy ? null : _submit,

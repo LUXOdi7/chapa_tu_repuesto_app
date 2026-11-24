@@ -488,6 +488,27 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              tooltip: 'Instagram',
+                              icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                              onPressed: () => launchUrl(Uri.parse('https://www.instagram.com/chapaturepuesto/'), mode: LaunchMode.externalApplication),
+                            ),
+                            IconButton(
+                              tooltip: 'Facebook',
+                              icon: const Icon(Icons.facebook_outlined, size: 20),
+                              onPressed: () => launchUrl(Uri.parse('https://www.facebook.com/profile.php?id=61595410627794'), mode: LaunchMode.externalApplication),
+                            ),
+                            IconButton(
+                              tooltip: 'TikTok',
+                              icon: const Icon(Icons.music_note_outlined, size: 20),
+                              onPressed: () => launchUrl(Uri.parse('https://www.tiktok.com/@chapaturepuesto'), mode: LaunchMode.externalApplication),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

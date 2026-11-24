@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/app_scope.dart';
 import '../../../shared/widgets/app_widgets.dart';
@@ -128,9 +129,38 @@ class _AboutTab extends StatelessWidget {
           'Horario de atencion: Lunes a Sabado, 8:00 am - 7:00 pm',
           style: Theme.of(context).textTheme.bodySmall,
         ),
+        const SizedBox(height: 24),
+        const SectionTitle('Siguenos'),
+        const _SocialLinks(),
       ],
     );
   }
+}
+
+class _SocialLinks extends StatelessWidget {
+  const _SocialLinks();
+
+  static const _links = [
+    (Icons.camera_alt_outlined, 'Instagram', 'https://www.instagram.com/chapaturepuesto/'),
+    (Icons.facebook_outlined, 'Facebook', 'https://www.facebook.com/profile.php?id=61595410627794'),
+    (Icons.music_note_outlined, 'TikTok', 'https://www.tiktok.com/@chapaturepuesto'),
+  ];
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      for (final (icon, label, url) in _links)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: IconButton.filled(
+            tooltip: label,
+            icon: Icon(icon),
+            onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+          ),
+        ),
+    ],
+  );
 }
 
 class _ContactTile extends StatelessWidget {
@@ -174,7 +204,7 @@ class _TermsTab extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(20),
     children: const [
-      _LegalHeader('Terminos y Condiciones de Uso', 'Vigente desde el 01 de enero de 2025'),
+      _LegalHeader('Terminos y Condiciones de Uso', 'Ultima actualizacion: 24 de noviembre de 2026'),
       _Section('1. Identificacion del proveedor',
         'ChapaTuRepuesto es un servicio de intermediacion digital operado desde '
         'Calle Nueva York 198, Chiclayo, Peru. Contacto: luisbarboza0503@gmail.com / '
@@ -206,18 +236,52 @@ class _TermsTab extends StatelessWidget {
         '  • Taller mecanico (negocio o taller profesional): 5 % del subtotal.\n\n'
         'La comision se suma automaticamente al total antes de confirmar el pedido y '
         'se muestra de forma desglosada en el resumen del checkout.\n\n'
-        'Los pedidos pagados con tarjeta a traves de la pasarela integrada (Mercado Pago '
-        'o Niubiz) aplican adicionalmente las tarifas propias de cada pasarela, que '
-        'corren por cuenta del proveedor.'),
+        'El pago de los pedidos se coordina directamente entre el comprador y la tienda '
+        'proveedora mediante transferencia Yape (codigo QR). ChapaTuRepuesto no procesa '
+        'pagos con tarjeta de credito o debito ni actua como pasarela de pagos. El '
+        'comprador debe enviar la captura del pago por el chat del pedido para que la '
+        'tienda confirme la recepcion.\n\n'
+        'Programa de referidos: los usuarios que inviten a nuevos compradores mediante '
+        'su codigo de referido obtienen creditos de descuento en la comision de la '
+        'plataforma (1 % menos por cada credito, maximo 3 creditos acumulables). '
+        'El usuario referido disfruta de 0 % de comision en su primera compra. Los '
+        'creditos no tienen valor monetario, no son transferibles y no son canjeables '
+        'por dinero.'),
       _Section('7. Propiedad intelectual',
         'El nombre, logotipo, diseno y codigo de ChapaTuRepuesto son propiedad de '
         'sus creadores. Las imagenes de productos son responsabilidad de cada tienda. '
         'Queda prohibida la reproduccion no autorizada del contenido de la plataforma.'),
-      _Section('8. Privacidad y datos personales',
+      _Section('8. Politica de privacidad y datos personales',
         'El tratamiento de datos personales se rige por la Ley N 29733 (Ley de '
-        'Proteccion de Datos Personales del Peru) y su reglamento. Los datos '
-        'recopilados se usan exclusivamente para operar el marketplace. No se ceden '
-        'a terceros sin consentimiento, salvo obligacion legal.'),
+        'Proteccion de Datos Personales) y su reglamento DS 003-2013-JUS.\n\n'
+        'Responsable: ChapaTuRepuesto, Calle Nueva York 198, Chiclayo, Peru. '
+        'Correo de contacto: luisbarboza0503@gmail.com.\n\n'
+        'Datos que recopilamos: nombre completo, correo electronico, telefono, '
+        'direccion de entrega, ubicacion GPS (opcional), tipo y modelo de moto, '
+        'historial de pedidos, imagenes enviadas por chat, capturas de pago, '
+        'token de notificaciones push (FCM), calificaciones como comprador, '
+        'codigo de referido y creditos de referido.\n\n'
+        'Finalidad: (a) gestionar tu cuenta y procesar pedidos; (b) conectar '
+        'compradores con proveedores; (c) enviar notificaciones del estado de '
+        'pedidos y alertas de stock/precio; (d) mejorar el servicio y prevenir fraude; '
+        '(e) administrar el programa de referidos.\n\n'
+        'Base legal: consentimiento al registrarse (art. 13.5, Ley 29733) y '
+        'ejecucion del contrato de intermediacion.\n\n'
+        'Derechos ARCO: puedes ejercer tus derechos de Acceso, Rectificacion, '
+        'Cancelacion y Oposicion escribiendo a luisbarboza0503@gmail.com. '
+        'Responderemos en un plazo maximo de 10 dias habiles (art. 24, Ley 29733).\n\n'
+        'Conservacion: tus datos se conservan mientras tu cuenta este activa y '
+        'durante 5 anios adicionales para cumplir con obligaciones tributarias '
+        '(Codigo Tributario, art. 87).\n\n'
+        'Compartimos datos con terceros solo en estos casos: (a) obligacion legal '
+        'o requerimiento judicial; (b) proveedores de servicios tecnologicos '
+        '(alojamiento en la nube, notificaciones push) bajo acuerdos de '
+        'confidencialidad; (c) la tienda proveedora recibe tu nombre, direccion '
+        'de entrega y telefono para despachar el pedido.\n\n'
+        'Seguridad: utilizamos cifrado en transito (HTTPS/TLS), almacenamiento '
+        'seguro de contrasenas (bcrypt) y control de acceso por roles.\n\n'
+        'Autoridad de control: Autoridad Nacional de Proteccion de Datos '
+        'Personales (ANPDP), Ministerio de Justicia y Derechos Humanos del Peru.'),
       _Section('9. Limitacion de responsabilidad',
         'ChapaTuRepuesto no es responsable de: (a) calidad o estado de los productos '
         'vendidos por las tiendas; (b) retrasos por causa mayor; '
@@ -241,6 +305,28 @@ class _TermsTab extends StatelessWidget {
         'la tienda deja de aparecer en el catalogo publico hasta que se regularice el '
         'pago. El incumplimiento no genera penalidades adicionales; simplemente suspende '
         'la visibilidad de los productos del proveedor en la plataforma.'),
+      _Section('13. Programa de referidos',
+        'ChapaTuRepuesto ofrece un programa de referidos voluntario. Cada usuario '
+        'registrado recibe un codigo unico que puede compartir. Cuando un nuevo '
+        'usuario se registra con dicho codigo y realiza su primera compra:\n\n'
+        '  • El usuario referido no paga comision de plataforma en esa primera compra.\n'
+        '  • El usuario que refirio recibe un credito de descuento (maximo 3 acumulables).\n\n'
+        'Los creditos reducen la comision de plataforma en 1 % por credito y se aplican '
+        'automaticamente en el siguiente pedido. No son canjeables por dinero, no son '
+        'transferibles y ChapaTuRepuesto se reserva el derecho de modificar o suspender '
+        'el programa en cualquier momento, notificando con 15 dias de anticipacion.'),
+      _Section('14. Comunicaciones electronicas',
+        'De conformidad con la Ley 27291 (Ley de manifestacion de voluntad por medios '
+        'electronicos), el usuario acepta que las comunicaciones relativas al servicio '
+        '(confirmaciones de pedido, notificaciones de estado, cambios en estos terminos) '
+        'se envien por medios electronicos: notificaciones push en la app, correo '
+        'electronico y mensajes dentro de la plataforma. Estas comunicaciones tienen '
+        'la misma validez que las realizadas por escrito.'),
+      _Section('15. Contratacion electronica',
+        'Al confirmar un pedido a traves de la plataforma, el comprador celebra un '
+        'contrato de compraventa con la tienda proveedora en los terminos del Codigo '
+        'Civil peruano y la Ley 27291. ChapaTuRepuesto actua unicamente como '
+        'intermediario tecnologico y no es parte del contrato de compraventa.'),
     ],
   );
 }

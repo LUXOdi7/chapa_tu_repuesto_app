@@ -380,13 +380,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     ListTile(
                       leading: const Icon(Icons.group_add_outlined),
                       title: const Text('Mi código de referido'),
-                      subtitle: Text(user.referralCode!),
+                      subtitle: Text(
+                        '${user.referralCode!}'
+                        '${user.referralCredits > 0 ? '  ·  ${user.referralCredits} crédito(s) de descuento' : ''}',
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.share),
                         tooltip: 'Compartir por WhatsApp',
                         onPressed: () {
                           final msg = 'Únete a ChapaTuRepuesto con mi código '
-                              '${user.referralCode} y encuentra repuestos de moto al mejor precio.';
+                              '${user.referralCode} y tu primera compra es sin comisión. '
+                              'Encuentra repuestos de moto al mejor precio.';
                           launchUrl(Uri.parse(
                             'https://wa.me/?text=${Uri.encodeComponent(msg)}',
                           ));

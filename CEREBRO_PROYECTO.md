@@ -230,3 +230,5 @@ Firebase (push por polling/correo hasta que exista proyecto FCM).
   - **Admin notificaciones** (backend): todos los admins reciben notificación campana en cambios de pedido, nuevas tiendas, y feedback.
   - **13 cuentas de prueba eliminadas** de producción vía `DELETE /admin/users/{id}`.
   - APK v1.8.2+18 subido a GitHub Releases.
+- 2026-11-24 · **Redes sociales en la app**: iconos de Instagram, Facebook y TikTok (`@chapaturepuesto`) en `_AboutTab` de `legal_page.dart` (sección "Síguenos") y en footer de `login_page.dart`. Usan `url_launcher` con `LaunchMode.externalApplication`.
+- 2026-11-24 · **Programa de referidos con incentivos (frontend)**: `User.referralCredits` (int) parseado del backend. En `profile_page.dart`: muestra créditos junto al código de referido + mensaje WhatsApp mejorado ("primera compra sin comisión"). En `checkout_page.dart`: calcula descuento de referido (1% por crédito, resta de la comisión base) y muestra texto verde "Descuento por referido: -X%". Backend calcula la comisión real.
